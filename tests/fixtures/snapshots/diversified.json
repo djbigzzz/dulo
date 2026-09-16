@@ -1,0 +1,12 @@
+{
+  "_note": "diversified. Latest snapshot: TSLAx $400 (Consumer Cyclical), AAPLx $460 (Technology), NVDAx $180 (Technology), METAx $0.50 (dust, below the $1 default). 3 qualifying assets across 2 sectors.",
+  "snapshots": [
+    { "dayOffset": -1, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 400 }] },
+    { "dayOffset": 0,  "hour": 11, "minute": 55, "holdings": [
+      { "symbol": "TSLAx", "qty": 1,     "price": 400 },
+      { "symbol": "AAPLx", "qty": 2,     "price": 230 },
+      { "symbol": "NVDAx", "qty": 1,     "price": 180 },
+      { "symbol": "METAx", "qty": 0.001, "price": 500 }
+    ] }
+  ]
+}

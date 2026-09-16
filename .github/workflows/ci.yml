@@ -1,0 +1,56 @@
+# Lint, typecheck, test and build on every push and pull request.
+# No database is needed: `prisma generate` (postinstall) only reads the schema, and every
+# DB-touching module is mocked in tests. The env below is the same dummy set tests/siws.test.ts
+# uses; JWT_SECRET must be >= 32 and CRON_SECRET >= 16 characters or env() refuses to parse.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      DIRECT_URL: postgresql://test:test@localhost:5432/test
+      JWT_SECRET: ci-only-jwt-secret-with-at-least-32-characters
+      CRON_SECRET: ci-only-cron-secret-16
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_NAME: Dulo
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install (npm ci runs postinstall = prisma generate)
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # next-env.d.ts and .next/types are gitignored; `next typegen` (Next 15.5+) creates them
+      # without a build so `tsc --noEmit` sees the route types. Skipped on older Next.
+      - name: Generate Next.js types
+        run: npx next typegen || echo "next typegen unavailable on this Next version; skipping"
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      # Catches build-only breaks (route export validation, prerender errors) that tsc and vitest miss.
+      # Same dummy env; VERCEL_ENV is unset here, so next.config's production APP_URL guard stays off.
+      - name: Build
+        run: npm run build

@@ -1,0 +1,11 @@
+{
+  "_note": "hold_consecutive bridging rule. Day -3 has NO snapshot at all (cron outage). The day before it (-4) still qualifies, so -3 is bridged and the run is 7 days.",
+  "snapshots": [
+    { "dayOffset": -6, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 400 }] },
+    { "dayOffset": -5, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 405 }] },
+    { "dayOffset": -4, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 398 }] },
+    { "dayOffset": -2, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 412 }] },
+    { "dayOffset": -1, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 415 }] },
+    { "dayOffset": 0,  "hour": 11, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 420 }] }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "_note": "hold_through_date. The test sets earnings TSLA = day -3 (2026-09-11) and AAPL = day -3 too. Day -3 has NO snapshot, so 'after' falls to day -2. TSLAx is held on every snapshotted day (before -4, after -2). AAPLx only appears from day -2, so it was NOT held before its date.",
+  "snapshots": [
+    { "dayOffset": -6, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 400 }] },
+    { "dayOffset": -5, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 405 }] },
+    { "dayOffset": -4, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 398 }] },
+    { "dayOffset": -2, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 430 }, { "symbol": "AAPLx", "qty": 2, "price": 230 }] },
+    { "dayOffset": -1, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 432 }, { "symbol": "AAPLx", "qty": 2, "price": 231 }] },
+    { "dayOffset": 0,  "hour": 11, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 428 }, { "symbol": "AAPLx", "qty": 2, "price": 229 }] }
+  ]
+}

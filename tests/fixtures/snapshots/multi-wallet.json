@@ -1,0 +1,7 @@
+{
+  "_note": "mergeSnapshots. Two wallets snapshotted in the same tick. TSLAx appears in both (1 + 0.5 = 1.5 qty, $400 + $200 = $600, raw 1000000 + 500000); AAPLx only in w1.",
+  "snapshots": [
+    { "dayOffset": 0, "hour": 11, "minute": 55, "walletId": "w1", "holdings": [{ "symbol": "TSLAx", "qty": 1,   "price": 400, "raw": "1000000" }, { "symbol": "AAPLx", "qty": 2, "price": 230, "raw": "2000000" }] },
+    { "dayOffset": 0, "hour": 11, "minute": 55, "walletId": "w2", "holdings": [{ "symbol": "TSLAx", "qty": 0.5, "price": 400, "raw": "500000" }] }
+  ]
+}

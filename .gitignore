@@ -1,0 +1,56 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# keypairs: the badge-minting wallet lives outside the repo; only its secret goes in Vercel env
+badge-wallet.json
+*keypair*.json
+*-wallet.json
+id.json
+/keys/
+*.key
+# test fixtures are not keys
+!/tests/fixtures/**/*.json
+
+# internal planning notes (odds, competitor notes, spend) stay off the public repo
+/docs/private/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+# the template is the one env file that must be committed (README: cp .env.example .env.local)
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

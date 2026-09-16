@@ -1,0 +1,58 @@
+# Cron tick pinger — the Vercel HOBBY fallback. STAYS DISABLED unless enabled in repo settings.
+#
+# Vercel Pro is the default plan for the judging window: vercel.json schedules /api/cron/tick
+# every 5 minutes and nothing here runs. If the deployment is on Hobby (daily crons only), this
+# workflow takes over the 5-minute cadence: it sends the same `Authorization: Bearer <CRON_SECRET>`
+# header Vercel Cron sends and fails the run unless every step reports ok.
+#
+# The job is gated on a repository VARIABLE so the schedule is inert until someone opts in:
+#   Settings -> Secrets and variables -> Actions
+#     Variables: TICK_PINGER_ENABLED = true            (delete it, or set anything else, to disable)
+#                APP_URL             = https://<project>.vercel.app (the deployed origin, no trailing slash;
+#                                      switch to https://dulo.fun only once that domain resolves)
+#     Secrets:   CRON_SECRET         = the same value as the Vercel env var
+# Then, on Hobby, set vercel.json to a daily "10 20 * * *" (Friday settle/rollover backstop
+# inside the Calls void window) and keep this at */5. GitHub schedules can run 5-30 minutes
+# late under load; that is fine for snapshots and evaluation, and the daily Vercel entry
+# still covers the Friday 20:00/20:05 UTC settle.
+#
+# Manual run: Actions -> "Cron tick (Hobby fallback)" -> Run workflow (also respects the variable).
+name: Cron tick (Hobby fallback)
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: cron-tick
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    # Inert until the repository variable is set (see the header comment).
+    if: ${{ vars.TICK_PINGER_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_URL: ${{ vars.APP_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Check configuration
+        run: |
+          test -n "$APP_URL" || { echo "::error::APP_URL repository variable is not set"; exit 1; }
+          test -n "$CRON_SECRET" || { echo "::error::CRON_SECRET repository secret is not set"; exit 1; }
+
+      # --max-time matches the route's maxDuration (300s). The secret travels in the header only;
+      # a query-string secret is refused in production because it would land in request logs.
+      - name: Poke /api/cron/tick
+        run: |
+          curl -fsS --max-time 300 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Accept: application/json" \
+            "$APP_URL/api/cron/tick" > tick.json
+          jq '.data.health' tick.json
+          jq -e '.data.steps | all(.ok)' tick.json > /dev/null \
+            || { echo "::error::a tick step failed"; jq '.data.steps[] | select(.ok | not)' tick.json; exit 1; }

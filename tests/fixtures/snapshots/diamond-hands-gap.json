@@ -1,0 +1,10 @@
+{
+  "_note": "hold_consecutive broken run. Days -4 and -3 both have NO snapshot (two-day gap), so the run ending today is only 3 days (-2, -1, 0) even though TSLAx was held before the gap.",
+  "snapshots": [
+    { "dayOffset": -6, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 400 }] },
+    { "dayOffset": -5, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 405 }] },
+    { "dayOffset": -2, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 412 }] },
+    { "dayOffset": -1, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 415 }] },
+    { "dayOffset": 0,  "hour": 11, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 420 }] }
+  ]
+}

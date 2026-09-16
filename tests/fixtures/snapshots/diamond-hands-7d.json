@@ -1,0 +1,13 @@
+{
+  "_note": "hold_consecutive positive case. Day offsets are relative to the test NOW (2026-09-14T12:00Z); hour/minute are UTC. TSLAx is held on all 7 day-end snapshots. Day -2 has an EARLY snapshot where TSLAx is gone and a LATE one where it is back: only the last snapshot of a day counts. AAPLx appears for the last 3 days only, so TSLAx is the best candidate.",
+  "snapshots": [
+    { "dayOffset": -6, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 400 }] },
+    { "dayOffset": -5, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 405 }] },
+    { "dayOffset": -4, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 398 }] },
+    { "dayOffset": -3, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 410 }] },
+    { "dayOffset": -2, "hour": 9,  "minute": 5,  "holdings": [] },
+    { "dayOffset": -2, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 412 }, { "symbol": "AAPLx", "qty": 2, "price": 230 }] },
+    { "dayOffset": -1, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 415 }, { "symbol": "AAPLx", "qty": 2, "price": 231 }] },
+    { "dayOffset": 0,  "hour": 11, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1, "price": 420 }, { "symbol": "AAPLx", "qty": 2, "price": 229 }] }
+  ]
+}

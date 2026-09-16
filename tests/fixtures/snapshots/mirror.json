@@ -1,0 +1,7 @@
+{
+  "_note": "mirror_match. The test places a mirror_executed event at day -1 12:00Z with target TSLAx 0.6 / AAPLx 0.4. The day -1 18:00Z snapshot (after the event) is 50/50 => deltas of 0.1. The day -2 snapshot is before the event and must be ignored.",
+  "snapshots": [
+    { "dayOffset": -2, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 2.5, "price": 400 }] },
+    { "dayOffset": -1, "hour": 18, "minute": 0,  "holdings": [{ "symbol": "TSLAx", "qty": 1.25, "price": 400 }, { "symbol": "AAPLx", "qty": 2.5, "price": 200 }] }
+  ]
+}

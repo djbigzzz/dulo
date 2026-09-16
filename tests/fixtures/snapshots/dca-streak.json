@@ -1,0 +1,13 @@
+{
+  "_note": "net_increase_days. Increase days (qty up vs the previous snapshotted day): -10 (TSLAx 1 -> 1.5), -5 (TSLAx 1.2 -> 1.4), -3 (AAPLx 0 -> 2). Day -12 is a price-only move (no qty change), day -7 is a decrease, day 0 is unchanged. Day -13 is the baseline (first snapshot never counts).",
+  "snapshots": [
+    { "dayOffset": -13, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1,   "price": 400 }] },
+    { "dayOffset": -12, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1,   "price": 450 }] },
+    { "dayOffset": -10, "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1.5, "price": 440 }] },
+    { "dayOffset": -8,  "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1.5, "price": 380 }] },
+    { "dayOffset": -7,  "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1.2, "price": 385 }] },
+    { "dayOffset": -5,  "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1.4, "price": 390 }] },
+    { "dayOffset": -3,  "hour": 23, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1.4, "price": 395 }, { "symbol": "AAPLx", "qty": 2, "price": 230 }] },
+    { "dayOffset": 0,   "hour": 11, "minute": 55, "holdings": [{ "symbol": "TSLAx", "qty": 1.4, "price": 410 }, { "symbol": "AAPLx", "qty": 2, "price": 232 }] }
+  ]
+}

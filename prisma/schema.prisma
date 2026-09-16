@@ -1,0 +1,253 @@
+// Dulo — Prisma schema (see docs/HANDOFF.md §4.1)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  handle    String?  @unique
+  createdAt DateTime @default(now())
+
+  wallets        Wallet[]
+  identities     Identity[]
+  playProgress   PlayProgress[]
+  pointsEvents   PointsEvent[]
+  leagueAccounts LeagueAccount[]
+  positions      Position[]
+  badges         Badge[]
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String
+  chainId   String   // CAIP-2, e.g. solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp
+  address   String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshots Snapshot[]
+
+  @@unique([chainId, address])
+  @@index([userId])
+}
+
+// Reserved for later (X / Telegram / email). Unused in Season 0.
+model Identity {
+  id         String @id @default(cuid())
+  userId     String
+  provider   String // x | telegram | email
+  externalId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+}
+
+model Season {
+  id         String   @id @default(cuid())
+  name       String
+  chainScope Json     // CAIP-2 chain ids in scope
+  startsAt   DateTime
+  endsAt     DateTime
+
+  campaigns    Campaign[]
+  pointsEvents PointsEvent[]
+  leagues      League[]
+  markets      Market[]
+}
+
+model Partner {
+  id       String  @id @default(cuid())
+  slug     String  @unique
+  name     String
+  logoUrl  String?
+  blurb    String
+  links    Json    // { website?, x?, docs? }
+  chainIds Json    // CAIP-2 ids
+  sortOrder Int    @default(0)
+
+  campaigns Campaign[]
+}
+
+model Campaign {
+  id        String   @id @default(cuid())
+  partnerId String
+  seasonId  String
+  title     String
+  startsAt  DateTime
+  endsAt    DateTime
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  season  Season  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  plays   Play[]
+
+  @@index([partnerId])
+  @@index([seasonId])
+}
+
+model Play {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  campaignId  String
+  assetSource String  // e.g. "xstocks"
+  title       String
+  desc        String
+  points      Int
+  badgeKey    String?
+  rule        Json    // evaluated by lib/plays/engine.ts
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+
+  campaign Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  progress PlayProgress[]
+
+  @@index([campaignId])
+}
+
+model PlayProgress {
+  userId      String
+  playKey     String
+  status      String    @default("in_progress") // in_progress | complete
+  completedAt DateTime?
+  proof       Json?
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  play Play @relation(fields: [playKey], references: [key], onDelete: Cascade)
+
+  @@id([userId, playKey])
+  @@index([playKey, status])
+}
+
+// Append-only ledger. Balances are derived by summing delta.
+model PointsEvent {
+  id       String   @id @default(cuid())
+  userId   String
+  seasonId String
+  source   String   // play | league | call | admin
+  ref      String   // e.g. play:first_position, league:<id>:rank:1
+  delta    Int
+  ts       DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, seasonId, ref])
+  @@index([seasonId, userId])
+}
+
+model Snapshot {
+  id       String   @id @default(cuid())
+  walletId String
+  takenAt  DateTime @default(now())
+  holdings Json     // Holding[] — see src/lib/core/types.ts
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, takenAt])
+}
+
+model League {
+  id        String   @id @default(cuid())
+  seasonId  String
+  weekStart DateTime
+  weekEnd   DateTime
+  status    String   @default("open") // open | settled
+
+  season   Season          @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  accounts LeagueAccount[]
+
+  @@unique([seasonId, weekStart])
+}
+
+model LeagueAccount {
+  id        String  @id @default(cuid())
+  leagueId  String
+  userId    String
+  cashUsd   Decimal @db.Decimal(18, 6)
+  positions Json    // { [assetId (CAIP-19)]: { symbol, qty, avgPrice } }
+  equityUsd Decimal @db.Decimal(18, 6)
+  rank      Int?
+  isBot     Boolean @default(false)
+
+  league League        @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades LeagueTrade[]
+
+  @@unique([leagueId, userId])
+  @@index([leagueId, equityUsd])
+}
+
+model LeagueTrade {
+  id              String   @id @default(cuid())
+  leagueAccountId String
+  symbol          String
+  side            String   // buy | sell
+  qty             Decimal  @db.Decimal(18, 8)
+  price           Decimal  @db.Decimal(18, 6)
+  priceSource     String
+  ts              DateTime @default(now())
+
+  account LeagueAccount @relation(fields: [leagueAccountId], references: [id], onDelete: Cascade)
+
+  @@index([leagueAccountId, ts])
+}
+
+model Market {
+  id           String    @id @default(cuid())
+  seasonId     String
+  ticker       String
+  strike       Decimal   @db.Decimal(18, 6)
+  settleAt     DateTime
+  settledPrice Decimal?  @db.Decimal(18, 6)
+  outcome      String?   // yes | no | void
+  yesPool      Int       @default(0)
+  noPool       Int       @default(0)
+  source       String?
+  createdAt    DateTime  @default(now())
+
+  season    Season     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  positions Position[]
+
+  @@unique([seasonId, ticker, settleAt])
+  @@index([seasonId, settleAt])
+}
+
+model Position {
+  marketId  String
+  userId    String
+  side      String // yes | no
+  points    Int
+  createdAt DateTime @default(now())
+
+  market Market @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([marketId, userId, side])
+}
+
+model Badge {
+  id        String   @id @default(cuid())
+  userId    String
+  playKey   String
+  mint      String?
+  txSig     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, playKey])
+}
+
+model AuthNonce {
+  nonce     String   @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
