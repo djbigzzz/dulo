@@ -115,12 +115,20 @@ Add the X and GitHub handles to this step once those accounts are registered.
 
 ## Step 5: Bounty Tracks
 
-**None ticked.**
+**Tick nothing on the first submission. Add a track only once its build is live on production and the claim is true.**
+The form stays editable until the close, so a tick costs nothing to add later and a tick that is ahead of the code is a promise, not an entry.
 
-- **Meteora DBC** and **Clawpump** both require launching a token. Dulo is points only, with no cash value, and on-chain points are on its cut list, so neither fits.
-- **Best Use of PreStocks** does not require a token, but it is out of scope this Season: Season 0 reads xStocks only, and adding a second asset source in the time left would break that scope for a track the product is not built around.
+Planned, in order:
 
-Main track only.
+- [ ] **Best Use of PreStocks** ($10,000; 1st $5k, 2nd $3k, 3rd $2k). PreStocks needs no token launch, its API needs no key, and Jupiter already quotes all eight mints in the same shape the xStocks code parses. The work is an AssetSource registry plus database rows, which is the main-track execution upgrade anyway: it is what makes `Play.assetSource` load-bearing instead of decorative. Tick it only once a PreStocks quest is live and has actually been completed by a funded mainnet wallet, with its proof drawer showing the wallet state that satisfied it.
+- [ ] **Best use of Pyth market data** (non-cash: 3 months of Pyth Pro, roughly $7,500 at list price). The track asks how central Pyth is to the product. Predictions already settle on a named Pyth feed; what makes Pyth central rather than decorative is preferring the 24/7 `Crypto.<SYMBOL>X/USD` xStock feeds over `Equity.US.<TICKER>/USD`, which also keeps live sourced prices on screen while US equities are shut. Gated on a working API key: Hermes now returns 401 without one. Do not tick this while the integration is documented and dormant.
+
+Not entered, and the reasons are worth one sentence in the full description rather than silence:
+
+- **Tessera** ($6,000) is excluded by the PreStocks track itself, which says projects integrating any non-PreStocks pre-IPO tokens are ineligible for it. T-Tokens are exactly that, so this is $10,000 XOR $6,000, not both. Explaining the choice is not integrating.
+- **Meteora DBC** and **Clawpump** ($5,000 each) both require launching a token. Dulo is points only, with no cash value, and on-chain points are on its cut list, so entering either would contradict the entry being judged on the main track. PreStocks swaps do route through Meteora pools, which is a fact about the integration rather than a bounty entry.
+
+Verify on the form itself: the PreStocks exclusion clause, and whether a cap on the number of ticks exists at all (it is not stated on the hackathon page).
 
 ---
 
