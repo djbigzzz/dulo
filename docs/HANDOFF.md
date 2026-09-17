@@ -8,18 +8,18 @@
 
 This was the pre-build handoff kit (written 14 Sep before P0). Section 0 is the brief as it was handed over; the maintained brief is `CLAUDE.md` in the repo root, so do not paste §0 over it. Nothing here depends on the chat that produced it.
 
-Deadline: **Fri 18 Sep 2026, 16:00 ET** (= 20:00 UTC = 21:00 Irish time), per the hackathon page (settled 16 Sep), and judging runs to 2 Oct. Submit a valid entry Thu 17 Sep as a hedge, then keep editing until the close. The demo must work at a weekend, with US markets closed, for the whole judging window.
+Deadline: **Fri 25 Sep 2026, 16:00 ET** (= 20:00 UTC = 21:00 Irish time), confirmed 17 Sep from the hackathon page countdown and header, and judging runs to 2 Oct. Submit a valid entry Thu 17 Sep as a hedge, then keep editing until the close. The demo must work at a weekend, with US markets closed, for the whole judging window.
 
 ---
 
 ## 0. CLAUDE.md (original project brief, 14 Sep: the repo's `CLAUDE.md` is the maintained copy)
 
-Kept verbatim as a record of what was handed over. Three things in it are superseded and must not be quoted: the positioning line (the shipped one is "The entertainment layer for xStocks. Compete, predict and get rewarded, for points."), the vocabulary section (Play, League, Call and Mirror became internal code names on 15 Sep, and the public names were updated again on 16 Sep, see the banner above and §3.10), and the "submit by Fri 12:00 Irish" discipline (the hedge submission moved to Thu 17 Sep, §8). Its Fri 18 Sep 16:00 ET deadline stands.
+Kept verbatim as a record of what was handed over. Three things in it are superseded and must not be quoted: the positioning line (the shipped one is "The entertainment layer for xStocks. Compete, predict and get rewarded, for points."), the vocabulary section (Play, League, Call and Mirror became internal code names on 15 Sep, and the public names were updated again on 16 Sep, see the banner above and §3.10), and the "submit by Fri 12:00 Irish" discipline (the hedge submission moved to Thu 17 Sep, §8). Its Fri 18 Sep deadline is superseded: the close is Fri 25 Sep 2026, 16:00 ET.
 
 ```
 # Project brief
 
-We are building a Solana-native "on-chain activity hub": a distribution network where projects list Plays (verified on-chain actions), users complete them from their real wallet activity, and everyone competes in leagues and games for points. Think Arkada/Galxe, but the first vertical is tokenized stocks (xStocks) and the entry is the Stocklana hackathon (deadline Fri 18 Sep 2026 16:00 ET).
+We are building a Solana-native "on-chain activity hub": a distribution network where projects list Plays (verified on-chain actions), users complete them from their real wallet activity, and everyone competes in leagues and games for points. Think Arkada/Galxe, but the first vertical is tokenized stocks (xStocks) and the entry is the Stocklana hackathon (deadline Fri 25 Sep 2026 16:00 ET).
 
 Long-term: multichain, multi-asset, multi-client, many partners. Hackathon: Solana only, xStocks only, web PWA only, partners seeded by hand. Build one of everything behind an interface; never build the second of anything.
 
@@ -351,7 +351,7 @@ Status 14 Sep (evening): P0–P4 shipped on Monday, ahead of this plan. The live
 
 **Wed 16**: register on the hackathon site with a linked wallet; record the Technical Video in the evening per §6b (Founder). Placeholder partners, landing + nav, mobile tables, badge mint limit (Claude, W1 to W4). Badge wallet + first mainnet mint (G5), one real Portfolio Match completion, which is one Jupiter swap done outside the app and then "verify" (G6), two paper trades (G7) (Founder). README, `docs/SUBMISSION.md` and this file rewritten for the plain names (Claude, done 16 Sep). Three games on one Season leaderboard, the Quests and Competition renames, starter points, the Season points rule, the 19-quest catalogue and these docs (Claude, 16 Sep). (`@solana/spl-token-metadata` is already pinned, G8 done.)
 **Thu 17**: press **Submit Project** as the hedge, with whatever links exist (Save Draft is not a submission); the gate is the repo being public, since the form wants at least one link. Screenshots (Claude, H3). Record the Pitch Video 14:00 to 17:00 per §6 (Founder). No Blink.
-**Fri 18**: final checks (F1, Claude). Fresh-wallet dry run, then "Save edit" on the Thursday submission by 12:00 Irish, X post tagging @solana and @xStocksFi, Colosseum interest (Founder, G12 to G14). Fri 18 Sep 16:00 ET is the hard stop: nothing is edited after it, and nothing changes during judging to 2 Oct.
+**Fri 18**: final checks (F1, Claude). Fresh-wallet dry run, then "Save edit" on the Thursday submission by 12:00 Irish, X post tagging @solana and @xStocksFi, Colosseum interest (Founder, G12 to G14). The close moved to Fri 25 Sep 2026, 16:00 ET: keep editing until then, and nothing changes during judging to 2 Oct.
 
 ---
 
@@ -474,7 +474,7 @@ Weekend demo with frozen prices → Jupiter fallback + source/age chip. Jupiter 
 - **Videos:** Pitch Video ≤ 3:00 (§6) and Technical Video ≤ 5:00 (§6b), both unlisted YouTube, both linked in the README and the form.
 - **Form fields:** Short Description ≤ 280 characters; Full Description Markdown ≤ 5,000; team Solo; bounty tracks none. Meteora DBC and Clawpump both require launching a token, which contradicts points only; "Best Use of PreStocks" needs no token, but it is skipped because it breaks the xStocks-only scope.
 - **Honest numbers:** every number is sourced or comes from `npm run -s stats` the same day. No entrant counts, no "only" claims.
-- **Timing:** submissions close Fri 18 Sep 2026, 16:00 ET (20:00 UTC, 21:00 Irish), per the hackathon page, and judging runs to 2 Oct. Hard stop at the close, with the final edit by 12:00 Irish. The same plan is in `docs/SUBMISSION.md`.
+- **Timing:** submissions close Fri 25 Sep 2026, 16:00 ET (20:00 UTC, 21:00 Irish), confirmed 17 Sep, and judging runs to 2 Oct. Hard stop at the close, with the final edit by 12:00 Irish. The same plan is in `docs/SUBMISSION.md`.
 - **After submitting:** X post with the pitch video attached natively; register for Colosseum World's Fair.
 
 ---

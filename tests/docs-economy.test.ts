@@ -343,17 +343,17 @@ describe("docs economy — honest claims across every doc", () => {
   });
 
   it("the deadline and the vision stay in step", () => {
-    // 16 Sep: the hackathon page settles the close at Fri 18 Sep 16:00 ET, with judging to 2 Oct.
-    // Every doc states that one date, and none keeps the retired 25 Sep / 9 Oct plan alive.
+    // 17 Sep: the page countdown, header and press confirm the close moved to Fri 25 Sep 16:00 ET,
+    // judging to 2 Oct. Every doc states that one date; the stale 18 Sep close must not survive.
     for (const [rel, text] of [
       ["README.md", README],
       ["docs/SUBMISSION.md", SUBMISSION],
       ["docs/HANDOFF.md", HANDOFF],
       ["CLAUDE.md", BRIEF],
     ] as const) {
-      expect(text, rel).toMatch(/Fri 18 Sep 2026,? 16:00 ET/);
+      expect(text, rel).toMatch(/Fri 25 Sep 2026,? 16:00 ET/);
       expect(text, rel).toMatch(/judging runs to 2 Oct/i);
-      expect(text, rel).not.toMatch(/25 Sep|9 Oct|which is binding|(work|plan) (to|for) the earlier (date|one)/i);
+      expect(text, rel).not.toMatch(/(close|deadline)[^.]{0,60}18 Sep 2026|9 Oct|which is binding|(work|plan) (to|for) the earlier (date|one)/i);
     }
     expect(SUBMISSION).toContain("Thu 17 Sep: press Submit Project");
     const vision = "any app or issuer runs competitions, predictions and rewards for its own holders on Dulo's API, and a player carries one score across them";

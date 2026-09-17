@@ -4,7 +4,7 @@ We are building the entertainment layer for xStocks: a distribution network wher
 
 Status (16 Sep 2026): not deployed. No public URL, no players, no partner has signed anything, no badge has been minted, no billing. Never claim otherwise in any doc or copy.
 
-Deadline (settled 16 Sep 2026, per the hackathon page): submissions close Fri 18 Sep 2026, 16:00 ET (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct. There is no later date to plan for. README.md, docs/SUBMISSION.md and docs/HANDOFF.md all say this; keep them in step.
+Deadline (confirmed 17 Sep 2026 from the hackathon page countdown, its header and press coverage): submissions close Fri 25 Sep 2026, 16:00 ET (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct. The page timeline paragraph still says 18 Sep and is stale. README.md, docs/SUBMISSION.md and docs/HANDOFF.md all say this; keep them in step.
 
 Long-term: multichain, multi-asset, multi-client, many partners. Hackathon: Solana only, xStocks only, web PWA only, partners seeded by hand. Build one of everything behind an interface; never build the second of anything.
 
@@ -42,6 +42,6 @@ Rules of the codebase:
 - Every price shown carries source + age. The app must work with markets closed.
 - Cut list is binding: no social feed, no comments, no native app, no real-money markets, no in-app swap execution, no referral, no on-chain points, no second chain, no partner self-serve dashboard, no email auth.
 
-Deadline discipline: press Submit Project on Thu 17 Sep as a hedge (Save Draft is not a submission), then keep editing until the close at Fri 18 Sep 2026, 16:00 ET. Mirror ships as "view allocation + open Jupiter with a prefilled swap per leg" by decision (14 Sep): that is the product, not a fallback; in-app swap execution stays on the cut list.
+Deadline discipline: press Submit Project on Thu 17 Sep as a hedge (Save Draft is not a submission), then keep editing until the close at Fri 25 Sep 2026, 16:00 ET. Mirror ships as "view allocation + open Jupiter with a prefilled swap per leg" by decision (14 Sep): that is the product, not a fallback; in-app swap execution stays on the cut list.
 
 Product name: Dulo (dulo.fun), after the House of Dulo, the founding Bulgar dynasty. Repo package name: dulo.

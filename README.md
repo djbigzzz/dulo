@@ -10,7 +10,7 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 
 `Live app: <LIVE_URL>` · `Pitch video: <PITCH_VIDEO>` · `Technical video: <TECH_VIDEO>` · [Stocklana hackathon](https://hackathons.solana.com/hackathons/stocklana) · [MIT licence](LICENSE)
 
-Built for the Stocklana hackathon: submissions close Fri 18 Sep 2026, 16:00 ET, and judging runs to 2 Oct.
+Built for the Stocklana hackathon: submissions close Fri 25 Sep 2026, 16:00 ET, and judging runs to 2 Oct.
 
 <!-- Screenshots (docs/screenshots/, 1280x800 and 390 px) go here once captured. Do not link images that are not in the repo. -->
 

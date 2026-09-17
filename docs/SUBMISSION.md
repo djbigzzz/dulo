@@ -2,7 +2,7 @@
 
 Paste-ready copy for the submit form at https://hackathons.solana.com/hackathons/stocklana. The headings below follow the form's own steps.
 
-- **Status:** rewritten 16 Sep 2026 for the three games (predictions first, then the virtual-cash competition, then quests), starter points and the Season points rule. Submissions close **Fri 18 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), per the hackathon page, and judging runs to 2 Oct.
+- **Status:** rewritten 16 Sep 2026 for the three games (predictions first, then the virtual-cash competition, then quests), starter points and the Season points rule. Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), confirmed 17 Sep from the page countdown and header, and judging runs to 2 Oct.
 - **No placeholders.** Everything inside a paste block is true today. Anything that depends on a thing that does not exist yet (the live URL, the videos, a minted badge, player numbers) is listed under "Add once it exists" in the Links step, outside the blocks.
 - **Limits:** Short Description 280 characters, Full Description 5,000 characters, Pitch Video 3:00, Technical Video 5:00, at least one link.
 
@@ -156,11 +156,11 @@ A judge with no xStocks can do all of this except the on-chain quests, and can s
 
 ### Timing
 
-Submissions close **Fri 18 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), per the hackathon page. Judging runs to 2 Oct, so the live demo has to keep working through two weekends with US markets closed.
+Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), confirmed 17 Sep from the page countdown and header. Judging runs to 2 Oct, so the live demo has to keep working through two weekends with US markets closed.
 
 - [ ] **Thu 17 Sep: press Submit Project** with whatever links exist, as a hedge. Save Draft is not a submission.
 - [ ] The entry shows as **submitted**, not as a draft.
-- [ ] Keep editing after that with **Save edit**. Final edit by 12:00 Irish on Fri 18 Sep; **Fri 18 Sep 16:00 ET** is the hard stop.
+- [ ] Keep editing after that with **Save edit**. Final edit by 12:00 Irish on Fri 25 Sep; **Fri 25 Sep 2026, 16:00 ET** is the hard stop.
 - [ ] Nothing is edited after the close, and nothing is expected to change during judging to 2 Oct.
 
 ### Account
