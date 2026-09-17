@@ -148,7 +148,7 @@ describe("earnings calendar (parsed)", () => {
 const MUX_ID: AssetId = `${SOLANA_MAINNET}/token:XsQLZycSZ7QnBBdBXQaTbQdiUcbRqjNJgyBGAMzhHav`;
 
 function muHolding(usd: number): Holding {
-  return { assetId: MUX_ID, symbol: "MUx", raw: "100000000", multiplier: 1, qty: 1, price: usd, priceSource: "pyth", usd };
+  return { assetId: MUX_ID, symbol: "MUx", source: "xstocks", raw: "100000000", multiplier: 1, qty: 1, price: usd, priceSource: "pyth", usd };
 }
 
 /** Day-end snapshot (23:55Z) on the given UTC day. */

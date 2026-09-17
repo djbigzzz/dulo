@@ -3,7 +3,7 @@ import { dailySnapshots, evaluatePlay, mergeSnapshots, type EvalContext, type Ev
 import type { PlayRule } from "@/lib/plays/rules";
 import { SEASON0_PLAYS } from "@/lib/plays/catalogue";
 import { SOLANA_MAINNET, type AssetId } from "@/lib/core/caip";
-import type { Holding, HoldingsSnapshot, InternalEvent } from "@/lib/core/types";
+import { DEFAULT_ASSET_SOURCE, type Holding, type HoldingsSnapshot, type InternalEvent } from "@/lib/core/types";
 import fxDiamond7d from "./fixtures/snapshots/diamond-hands-7d.json";
 import fxDiamondBridged from "./fixtures/snapshots/diamond-hands-bridged.json";
 import fxDiamondGap from "./fixtures/snapshots/diamond-hands-gap.json";
@@ -41,6 +41,7 @@ function holding(symbol: Sym, qty: number, price: number | null, extra: Partial<
   return {
     assetId: ASSETS[symbol].assetId,
     symbol,
+    source: DEFAULT_ASSET_SOURCE,
     raw: String(Math.round(qty * 1e6)),
     multiplier: 1,
     qty,
@@ -983,6 +984,74 @@ describe("internal_event distinctBy", () => {
 // ---------------------------------------------------------------------------
 // Robustness: never throw
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// assetSource scope
+// ---------------------------------------------------------------------------
+
+describe("assetSource scope", () => {
+  const OTHER = "prestocks";
+  const foreign = (symbol: Sym, qty: number, price: number) => holding(symbol, qty, price, { source: OTHER });
+  const oneForeign = () => [makeSnapshot(0, [foreign("TSLAx", 1, 400)])];
+
+  it("no Play source: every holding counts, as it did before holdings were source-tagged", () => {
+    const res = evaluatePlay({ type: "hold_any", minUsd: 5 }, ctx({ snapshots: oneForeign() }));
+    expect(res.complete).toBe(true);
+  });
+
+  it("an xStocks quest is not completed by another issuer's token", () => {
+    const res = evaluatePlay({ type: "hold_any", minUsd: 5 }, ctx({ snapshots: oneForeign() }), "xstocks");
+    expect(res.complete).toBe(false);
+    expect(res.proof.reason).toBe("no_in_scope_holding");
+  });
+
+  it("the same token completes the same quest for its own issuer", () => {
+    const res = evaluatePlay({ type: "hold_any", minUsd: 5 }, ctx({ snapshots: oneForeign() }), OTHER);
+    expect(res.complete).toBe(true);
+    expect(res.proof.symbol).toBe("TSLAx");
+  });
+
+  it("a symbol-scoped rule still obeys the issuer fence: both filters apply, the list does not replace it", () => {
+    const rule: PlayRule = { type: "hold_any", minUsd: 5, assetSymbols: ["TSLAx"] };
+    expect(evaluatePlay(rule, ctx({ snapshots: oneForeign() }), "xstocks").complete).toBe(false);
+    expect(evaluatePlay(rule, ctx({ snapshots: oneForeign() }), OTHER).complete).toBe(true);
+  });
+
+  it("an assetIds-scoped rule obeys it too", () => {
+    const rule: PlayRule = { type: "hold_any", minUsd: 5, assetIds: [id("TSLAx")] };
+    expect(evaluatePlay(rule, ctx({ snapshots: oneForeign() }), "xstocks").complete).toBe(false);
+    expect(evaluatePlay(rule, ctx({ snapshots: oneForeign() }), OTHER).complete).toBe(true);
+  });
+
+  it("another issuer's holdings never inflate diversified", () => {
+    const snapshots = [makeSnapshot(0, [holding("TSLAx", 1, 400), holding("AAPLx", 1, 230), foreign("NVDAx", 1, 180)])];
+    const res = evaluatePlay({ type: "diversified", minAssets: 3, minSectors: 2 }, ctx({ snapshots }), "xstocks");
+    expect(res.complete).toBe(false);
+    expect(res.proof.assetCount).toBe(2);
+    expect(evaluatePlay({ type: "diversified", minAssets: 3, minSectors: 2 }, ctx({ snapshots })).complete).toBe(true);
+  });
+
+  it("another issuer's position is not a mirror leg", () => {
+    const target = { [id("TSLAx")]: 0.6, [id("AAPLx")]: 0.4 };
+    const mirror = event("mirror_executed", -1, "mirror-1", { meta: { targetWallet: "LeaderWallet111", target } });
+    const rows = load(fxMirror);
+    const snapshots = rows.map((s, i) => (i === rows.length - 1 ? { ...s, holdings: [...s.holdings, foreign("NVDAx", 1, 500)] } : s));
+    const rule: PlayRule = { type: "mirror_match", tolerance: 0.2 };
+
+    const scoped = evaluatePlay(rule, ctx({ snapshots, events: [mirror] }), "xstocks");
+    expect(scoped.complete).toBe(true);
+    expect((scoped.proof.legs as unknown[]).length).toBe(2);
+
+    // Unscoped, the foreign position becomes a leg with target 0 and the copy stops matching.
+    const unscoped = evaluatePlay(rule, ctx({ snapshots, events: [mirror] }));
+    expect(unscoped.complete).toBe(false);
+    expect(unscoped.proof.reason).toBe("outside_tolerance");
+  });
+
+  it("a blank or whitespace source means no fence", () => {
+    expect(evaluatePlay({ type: "hold_any", minUsd: 5 }, ctx({ snapshots: oneForeign() }), "   ").complete).toBe(true);
+  });
+});
 
 describe("robustness", () => {
   it("malformed rules yield a reason instead of throwing", () => {

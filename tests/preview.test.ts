@@ -299,7 +299,7 @@ describe("GET /api/v1/preview/[address]", () => {
 
 describe("preview status mapping", () => {
   const takenAt = new Date("2026-09-15T14:00:00.000Z");
-  const dust: Holding = { assetId: TSLA, symbol: "TSLAx", raw: "1000000", multiplier: 1, qty: 0.01, price: 200, priceSource: "jupiter", usd: 2 };
+  const dust: Holding = { assetId: TSLA, symbol: "TSLAx", source: "xstocks", raw: "1000000", multiplier: 1, qty: 0.01, price: 200, priceSource: "jupiter", usd: 2 };
   const ctx: EvalContext = {
     now: takenAt,
     snapshots: [{ walletId: "preview", takenAt, holdings: [dust] }],

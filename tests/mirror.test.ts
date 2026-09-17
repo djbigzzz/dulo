@@ -76,7 +76,7 @@ const AAPL = `${SOL}/token:${AAPL_MINT}` as AssetId;
 const NVDA = `${SOL}/token:${NVDA_MINT}` as AssetId;
 
 function holding(assetId: AssetId, symbol: string, usd: number, qty = 1) {
-  return { assetId, symbol, raw: "1", multiplier: 1, qty, price: qty > 0 ? usd / qty : null, priceSource: "jupiter" as const, usd };
+  return { assetId, symbol, source: "xstocks", raw: "1", multiplier: 1, qty, price: qty > 0 ? usd / qty : null, priceSource: "jupiter" as const, usd };
 }
 
 function snapshot(takenAt: string, holdings: HoldingsSnapshot["holdings"]): HoldingsSnapshot {

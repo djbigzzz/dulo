@@ -1,5 +1,5 @@
 import type { AssetId } from "@/lib/core/caip";
-import type { Holding, HoldingsSnapshot, InternalEvent, PriceSourceName } from "@/lib/core/types";
+import { DEFAULT_ASSET_SOURCE, type Holding, type HoldingsSnapshot, type InternalEvent, type PriceSourceName } from "@/lib/core/types";
 import type {
   DiversifiedRule,
   HoldAnyRule,
@@ -65,10 +65,10 @@ export interface EvalResult {
   completedAt?: string;
 }
 
-export function evaluatePlay(rule: PlayRule, ctx: EvalContext): EvalResult {
+export function evaluatePlay(rule: PlayRule, ctx: EvalContext, assetSource: string | null = null): EvalResult {
   try {
     if (!isObj(rule) || typeof rule.type !== "string") return incomplete("invalid_rule");
-    const c = cleanContext(ctx);
+    const c = cleanContext(ctx, assetSource);
     switch (rule.type) {
       case "hold_any":
         return evalHoldAny(rule, c);
@@ -169,7 +169,7 @@ export function mergeSnapshots(snapshots: HoldingsSnapshot[], takenAt: Date): Ho
  * when minUsd > 0.
  */
 function evalHoldAny(rule: HoldAnyRule, c: Ctx): EvalResult {
-  const scope = scopeOf(rule);
+  const scope = scopeOf(rule, c.assetSource);
   if (scope.kind === "none") return incomplete(scope.reason);
   const latest = last(c.snapshots);
   if (!latest) return incomplete("no_snapshots");
@@ -218,7 +218,7 @@ function evalHoldAny(rule: HoldAnyRule, c: Ctx): EvalResult {
  * (the next snapshotted day when that day was bridged). Progress: run / days.
  */
 function evalHoldConsecutive(rule: HoldConsecutiveRule, c: Ctx): EvalResult {
-  const scope = scopeOf(rule);
+  const scope = scopeOf(rule, c.assetSource);
   if (scope.kind === "none") return incomplete(scope.reason);
   const days = dayEntries(c.snapshots, scope);
   if (days.length === 0) return incomplete("no_snapshots");
@@ -320,7 +320,7 @@ function evalHoldConsecutive(rule: HoldConsecutiveRule, c: Ctx): EvalResult {
  * the user can still act on. completedAt = takenAt of the count-th increase day.
  */
 function evalNetIncreaseDays(rule: NetIncreaseDaysRule, c: Ctx): EvalResult {
-  const scope = scopeOf(rule);
+  const scope = scopeOf(rule, c.assetSource);
   if (scope.kind === "none") return incomplete(scope.reason);
   const days = dayEntries(c.snapshots, scope);
   if (days.length === 0) return incomplete("no_snapshots");
@@ -410,7 +410,7 @@ function evalNetIncreaseDays(rule: NetIncreaseDaysRule, c: Ctx): EvalResult {
  * that did not qualify. No progress (a date is not a counter).
  */
 function evalHoldThroughDate(rule: HoldThroughDateRule, c: Ctx): EvalResult {
-  const scope = scopeOf(rule);
+  const scope = scopeOf(rule, c.assetSource);
   if (scope.kind === "none") return incomplete(scope.reason);
   const days = dayEntries(c.snapshots, scope);
   if (days.length === 0) return incomplete("no_snapshots");
@@ -536,7 +536,7 @@ function evalHoldThroughDate(rule: HoldThroughDateRule, c: Ctx): EvalResult {
  * usd descending. Progress: assets / minAssets (sectors are in the proof). completedAt = takenAt.
  */
 function evalDiversified(rule: DiversifiedRule, c: Ctx): EvalResult {
-  const scope = scopeOf(rule);
+  const scope = scopeOf(rule, c.assetSource);
   if (scope.kind === "none") return incomplete(scope.reason);
   const latest = last(c.snapshots);
   if (!latest) return incomplete("no_snapshots");
@@ -585,7 +585,7 @@ function evalDiversified(rule: DiversifiedRule, c: Ctx): EvalResult {
  * incomplete, so a failed distance check never reads as n / n).
  */
 function evalMirrorMatch(rule: MirrorMatchRule, c: Ctx): EvalResult {
-  const scope = scopeOf(rule);
+  const scope = scopeOf(rule, c.assetSource);
   if (scope.kind === "none") return incomplete(scope.reason);
   const tolerance = Math.min(1, Math.max(0, numOr(rule.tolerance, 0)));
 
@@ -748,9 +748,11 @@ interface Ctx {
   earnings: Record<string, string[]>;
   sectorOf: (assetId: string) => string | null;
   underlyingOf: (assetId: string) => string | null;
+  /** The evaluating Play's AssetSource; null when the caller has no Play context. */
+  assetSource: string | null;
 }
 
-function cleanContext(ctx: EvalContext): Ctx {
+function cleanContext(ctx: EvalContext, assetSource: string | null): Ctx {
   const raw = isObj(ctx) ? ctx : ({} as Partial<EvalContext>);
   const now = toDate(raw.now) ?? new Date();
   const sectorOf = safeLookup(raw.sectorOf);
@@ -763,6 +765,7 @@ function cleanContext(ctx: EvalContext): Ctx {
     earnings: isObj(raw.earnings) ? (raw.earnings as Record<string, string[]>) : {},
     sectorOf,
     underlyingOf,
+    assetSource: typeof assetSource === "string" && assetSource.trim().length > 0 ? assetSource.trim() : null,
   };
 }
 
@@ -823,6 +826,7 @@ function cleanHolding(v: unknown): Holding | null {
   return {
     assetId,
     symbol: typeof v.symbol === "string" && v.symbol.length > 0 ? v.symbol : assetId,
+    source: typeof v.source === "string" && v.source.trim().length > 0 ? v.source.trim() : DEFAULT_ASSET_SOURCE,
     raw: typeof v.raw === "string" ? v.raw : "0",
     multiplier: num(v.multiplier) ?? 1,
     qty: Math.max(0, num(v.qty) ?? 0),
@@ -837,24 +841,35 @@ function cleanHolding(v: unknown): Holding | null {
 // ---------------------------------------------------------------------------
 
 type Scope =
-  | { kind: "all" }
-  | { kind: "ids"; ids: ReadonlySet<string> }
-  | { kind: "symbols"; symbols: ReadonlySet<string> }
+  | { kind: "all"; source: string | null }
+  | { kind: "ids"; ids: ReadonlySet<string>; source: string | null }
+  | { kind: "symbols"; symbols: ReadonlySet<string>; source: string | null }
   | { kind: "none"; reason: string };
 
-function scopeOf(rule: PlayRule): Scope {
+/**
+ * Two filters, and BOTH apply. The Play's assetSource fences the quest to one issuer, so an
+ * xStocks quest can never be completed by another issuer's token — that is the whole point of
+ * tagging holdings. A rule's own assetIds / assetSymbols then narrow it further; they do not
+ * replace the issuer fence, because two issuers may one day ship the same symbol.
+ *
+ * `assetSource` null means the caller has no Play context (a unit test, say), and the scope is
+ * every holding — exactly what it meant before holdings were source-tagged.
+ */
+function scopeOf(rule: PlayRule, source: string | null): Scope {
   if (Array.isArray(rule.partnerAssetIds)) {
     if (rule.partnerAssetIds.length === 0) return { kind: "none", reason: "partner_pending" };
-    return { kind: "ids", ids: new Set(rule.partnerAssetIds) };
+    return { kind: "ids", ids: new Set(rule.partnerAssetIds), source };
   }
-  if (Array.isArray(rule.assetIds) && rule.assetIds.length > 0) return { kind: "ids", ids: new Set(rule.assetIds) };
+  if (Array.isArray(rule.assetIds) && rule.assetIds.length > 0) return { kind: "ids", ids: new Set(rule.assetIds), source };
   if (Array.isArray(rule.assetSymbols) && rule.assetSymbols.length > 0) {
-    return { kind: "symbols", symbols: new Set(rule.assetSymbols.map((s) => String(s).trim().toUpperCase())) };
+    return { kind: "symbols", symbols: new Set(rule.assetSymbols.map((s) => String(s).trim().toUpperCase())), source };
   }
-  return { kind: "all" };
+  return { kind: "all", source };
 }
 
 function inScope(scope: Scope, h: Holding): boolean {
+  if (scope.kind === "none") return false;
+  if (scope.source !== null && h.source !== scope.source) return false;
   switch (scope.kind) {
     case "all":
       return true;
@@ -862,8 +877,6 @@ function inScope(scope: Scope, h: Holding): boolean {
       return scope.ids.has(h.assetId);
     case "symbols":
       return scope.symbols.has(h.symbol.trim().toUpperCase());
-    case "none":
-      return false;
   }
 }
 

@@ -27,7 +27,7 @@
  */
 import type { Prisma } from "@prisma/client";
 import { xstocks } from "@/lib/assets/xstocks";
-import type { AssetInfo, Holding, HoldingsSnapshot, InternalEvent, PriceSourceName } from "@/lib/core";
+import { DEFAULT_ASSET_SOURCE, type AssetInfo, type Holding, type HoldingsSnapshot, type InternalEvent, type PriceSourceName } from "@/lib/core";
 import { mirrorEventsForUser } from "@/lib/mirror/events";
 import { evaluatePlay, mergeSnapshots, type EvalContext, type EvalResult } from "@/lib/plays/engine";
 import { getCalendar, safeParsePlayRule } from "@/lib/plays/rules";
@@ -67,6 +67,8 @@ export interface PlayRowInput {
   points: number;
   badgeKey: string | null;
   rule: unknown;
+  /** Play.assetSource: the issuer this quest is written for. Scopes which holdings satisfy it. */
+  assetSource?: string | null;
 }
 
 export interface SeasonRef {
@@ -162,6 +164,7 @@ export function toHoldings(json: unknown): Holding[] {
     out.push({
       assetId: h.assetId as Holding["assetId"],
       symbol: typeof h.symbol === "string" ? h.symbol : h.assetId,
+      source: typeof h.source === "string" && h.source.trim().length > 0 ? h.source.trim() : DEFAULT_ASSET_SOURCE,
       raw: typeof h.raw === "string" ? h.raw : "0",
       multiplier: num(h.multiplier, 1),
       qty: num(h.qty),
@@ -234,7 +237,7 @@ export async function findCurrentSeason(now: Date): Promise<SeasonRef | null> {
 export async function loadActivePlays(seasonId: string): Promise<PlayRowInput[]> {
   return db.play.findMany({
     where: { isActive: true, campaign: { seasonId } },
-    select: { key: true, points: true, badgeKey: true, rule: true },
+    select: { key: true, points: true, badgeKey: true, rule: true, assetSource: true },
     orderBy: [{ sortOrder: "asc" }, { key: "asc" }],
   });
 }
@@ -454,7 +457,7 @@ export async function evaluateUser(
     }
 
     try {
-      const evaluation = evaluatePlay(rule, context);
+      const evaluation = evaluatePlay(rule, context, play.assetSource ?? null);
       result.evaluated += 1;
 
       const prior = existing.get(play.key);

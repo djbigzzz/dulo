@@ -30,7 +30,7 @@ import { SOLANA_MAINNET, type Holding, type HoldingsSnapshot, type PriceQuote } 
 import { catalogueIndexFrom, earningsCalendar, findCurrentSeason, type CatalogueIndex } from "@/lib/cron/evaluate";
 import { readWalletHoldings, type WalletHoldingsRead } from "@/lib/cron/snapshot";
 import { publicWalletLabel } from "@/lib/mirror/public-wallets";
-import { activePlays } from "@/lib/plays/catalogue";
+import { activePlays, SEASON0_ASSET_SOURCE } from "@/lib/plays/catalogue";
 import { evaluatePlay, type EvalContext, type EvalResult } from "@/lib/plays/engine";
 import { safeParsePlayRule, type PlayRule } from "@/lib/plays/rules";
 import { db } from "@/lib/server/db";
@@ -192,7 +192,7 @@ export function buildPreview({ read, plays, catalogue, earnings, now }: BuildPre
   plays.forEach((row, index) => {
     const rule = safeParsePlayRule(row.rule);
     if (!rule) return;
-    const result = evaluatePlay(rule, ctx);
+    const result = evaluatePlay(rule, ctx, SEASON0_ASSET_SOURCE);
     const { status, note } = previewStatus(rule, result);
     const kind = previewKind(rule);
     let proof: Record<string, unknown>;

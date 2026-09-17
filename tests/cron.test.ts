@@ -203,9 +203,9 @@ describe("snapshotWallet", () => {
     expect(snap.takenAt).toBe(NOW);
     expect(snap.holdings).toEqual([
       // 1.5 raw units * multiplier 2 from the chain
-      { assetId: TSLAX_ID, symbol: "TSLAx", raw: "150000000", multiplier: 2, qty: 3, price: 200, priceSource: "pyth", usd: 600 },
+      { assetId: TSLAX_ID, symbol: "TSLAx", source: "xstocks", raw: "150000000", multiplier: 2, qty: 3, price: 200, priceSource: "pyth", usd: 600 },
       // chain reported no multiplier -> catalogue's (1); no price -> usd 0, source "none"
-      { assetId: AAPLX_ID, symbol: "AAPLx", raw: "50000000", multiplier: 1, qty: 0.5, price: null, priceSource: "none", usd: 0 },
+      { assetId: AAPLX_ID, symbol: "AAPLx", source: "xstocks", raw: "50000000", multiplier: 1, qty: 0.5, price: null, priceSource: "none", usd: 0 },
     ]);
 
     expect(mocks.db.snapshot.create).toHaveBeenCalledTimes(1);
@@ -245,8 +245,8 @@ describe("readWalletHoldings", () => {
     expect(read.chainId).toBe(SOL);
     expect(read.readAt).toBeInstanceOf(Date);
     expect(read.holdings).toEqual([
-      { assetId: TSLAX_ID, symbol: "TSLAx", raw: "150000000", multiplier: 2, qty: 3, price: 200, priceSource: "jupiter", usd: 600 },
-      { assetId: AAPLX_ID, symbol: "AAPLx", raw: "50000000", multiplier: 1, qty: 0.5, price: null, priceSource: "none", usd: 0 },
+      { assetId: TSLAX_ID, symbol: "TSLAx", source: "xstocks", raw: "150000000", multiplier: 2, qty: 3, price: 200, priceSource: "jupiter", usd: 600 },
+      { assetId: AAPLX_ID, symbol: "AAPLx", source: "xstocks", raw: "50000000", multiplier: 1, qty: 0.5, price: null, priceSource: "none", usd: 0 },
     ]);
     expect(read.quotes.get(TSLAX_ID)).toBe(tsla);
     expect(mocks.getTokenBalances.mock.calls[0][1]).toEqual(new Set([TSLAX, AAPLX]));
@@ -315,11 +315,23 @@ describe("toHoldings / bucketSnapshots", () => {
       "string",
     ]);
     expect(holdings).toEqual([
-      { assetId: TSLAX_ID, symbol: "TSLAx", raw: "1", multiplier: 1, qty: 1, price: 2, priceSource: "jupiter", usd: 2 },
-      { assetId: AAPLX_ID, symbol: AAPLX_ID, raw: "0", multiplier: 1, qty: 0, price: null, priceSource: "none", usd: 0 },
+      { assetId: TSLAX_ID, symbol: "TSLAx", source: "xstocks", raw: "1", multiplier: 1, qty: 1, price: 2, priceSource: "jupiter", usd: 2 },
+      { assetId: AAPLX_ID, symbol: AAPLX_ID, source: "xstocks", raw: "0", multiplier: 1, qty: 0, price: null, priceSource: "none", usd: 0 },
     ]);
     expect(toHoldings(null)).toEqual([]);
     expect(toHoldings({ not: "an array" })).toEqual([]);
+  });
+
+  // Rows written before holdings carried a source are all xStocks, so the default is exact.
+  // A row that names its own source keeps it, which is what scopes quests to one issuer.
+  it("defaults a source-less row to xstocks and preserves an explicit source", () => {
+    const [legacy, tagged] = toHoldings([
+      { assetId: TSLAX_ID, symbol: "TSLAx", raw: "1", multiplier: 1, qty: 1, price: 2, priceSource: "jupiter", usd: 2 },
+      { assetId: AAPLX_ID, symbol: "AAPLx", source: " other ", raw: "1", multiplier: 1, qty: 1, price: 2, priceSource: "jupiter", usd: 2 },
+    ]);
+    expect(legacy.source).toBe("xstocks");
+    expect(tagged.source).toBe("other");
+    expect(toHoldings([{ assetId: TSLAX_ID, source: "   " }])[0].source).toBe("xstocks");
   });
 
   it("merges every wallet's latest row per 5-minute bucket, ascending", () => {

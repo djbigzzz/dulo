@@ -19,10 +19,19 @@ export interface PriceQuote {
   marketOpen: boolean;
 }
 
+/**
+ * The AssetSource a holding is assumed to come from when it carries no source of its own.
+ * Snapshot rows written before holdings were source-tagged are all xStocks, so reading them
+ * back with this default is exact rather than a guess.
+ */
+export const DEFAULT_ASSET_SOURCE = "xstocks";
+
 /** One normalised holding inside a wallet Snapshot. Stored as JSON. */
 export interface Holding {
   assetId: AssetId;
   symbol: string;
+  /** AssetSource that resolved this holding, e.g. "xstocks". Scopes which quests can see it. */
+  source: string;
   /** Raw token amount as a decimal string (base units, pre-multiplier). */
   raw: string;
   /** Token-2022 ScaledUiAmount multiplier (1 when not applicable). */

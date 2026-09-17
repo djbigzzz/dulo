@@ -117,6 +117,7 @@ export async function readWalletHoldings(address: string, chainId: ChainId = SOL
     return {
       assetId,
       symbol: asset?.symbol ?? balance.mint,
+      source: xstocks.name,
       raw: balance.amountRaw,
       multiplier,
       qty,
