@@ -139,7 +139,23 @@ Then open the site and walk the judge path:
 Do all of this in an incognito window with Phantom, on desktop and on a phone, before recording
 anything.
 
-## 7. Then submit
+## 7. Correct the docs that say it is not deployed
+
+The repo currently states, in several places, that nothing is deployed. Those lines are true today
+and false the moment step 3 finishes, and a judge reads the README. Update exactly these:
+
+- `README.md:9` — the bold "Not deployed yet" line. Replace with the live URL.
+- `README.md:82` — "nothing is deployed, so every count reads zero" inside the judging table.
+- `README.md:347` — the traction section, "The app is not deployed".
+- `README.md:457` — the limitations list, "Not deployed."
+- `CLAUDE.md:5` — the Status line.
+- `docs/HANDOFF.md:81`, `:410`, `:473` — the end-to-end row, the video shoot note and the checklist.
+
+Keep the rest of the honesty intact: after a deploy there is still no partner signed, no billing and
+no minted badge until a funded server wallet exists, and the player count is whatever it actually
+is. Replacing "not deployed" with a live URL is the only claim that changes.
+
+## 8. Then submit
 
 `docs/SUBMISSION.md` holds the paste-ready form copy and the bounty-track plan. Press **Submit
 Project** with the main track and no bounty ticks as soon as the URL is live, then add each tick
