@@ -436,7 +436,9 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 ## Deploy
 
-1. **Vercel Pro.** `vercel.json` pins functions to `iad1` and schedules `/api/cron/tick` every 5 minutes (Hobby crons run at most once a day). Vercel Cron sends `CRON_SECRET` as the Bearer header. The tick route allows up to 300 seconds.
+**[docs/DEPLOY.md](docs/DEPLOY.md) is the short version: a free Vercel + Neon deploy in about twenty minutes, with one command for the database.** What follows is the paid, long-term setup.
+
+1. **Vercel Pro.** `vercel.json` pins functions to `iad1` and schedules `/api/cron/tick` every 5 minutes (Hobby crons run at most once a day). Vercel Cron sends `CRON_SECRET` as the Bearer header. The tick route allows up to 300 seconds. On Hobby, `.github/workflows/tick.yml` keeps the same 5-minute cadence for free once `TICK_PINGER_ENABLED` is set.
 2. **Supabase in us-east-1**, next to `iad1`:
    - `DATABASE_URL` is the transaction pooler: `postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&connect_timeout=5`
    - `DIRECT_URL` is the session pooler on port 5432 of the same host, not `db.<ref>.supabase.co`.

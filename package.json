@@ -22,7 +22,8 @@
     "stats": "tsx scripts/traction-stats.ts",
     "tick:local": "tsx --env-file=.env.local scripts/local-tick.mts",
     "catalogue:build": "tsx scripts/build-xstocks-catalogue.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:setup": "tsx scripts/deploy-db.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
