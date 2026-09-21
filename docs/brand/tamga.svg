@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" role="img" aria-label="The Dulo tamga">
+  <defs>
+    <linearGradient id="tamga" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f0d9a4"/>
+      <stop offset="45%" stop-color="#d8b46a"/>
+      <stop offset="100%" stop-color="#ff6a2a"/>
+    </linearGradient>
+  </defs>
+  <g stroke="url(#tamga)" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M7 10h12M13 10v44M7 54h12"/>
+    <path d="M32 54V33M32 33L21 10M32 33L43 10"/>
+    <path d="M45 10h12M51 10v44M45 54h12"/>
+  </g>
+</svg>

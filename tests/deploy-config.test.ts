@@ -356,10 +356,13 @@ describe(".gitignore and .env.example", () => {
 });
 
 describe("GitHub Actions", () => {
-  it("ci.yml runs lint, typecheck (after next typegen), tests and the build on Node 22 with a dummy env", () => {
+  it("ci.yml runs lint, typecheck (after next typegen), tests and the build on Node 24 with a dummy env", () => {
     const ci = read(".github/workflows/ci.yml");
-    expect(ci).toContain("node-version: 22");
-    expect(ci).toContain("run: npm ci");
+    expect(ci).toContain("node-version: 24");
+    // npm ci, not npm install, so a lockfile that disagrees with package.json fails the build
+    // instead of being silently reconciled. The step wraps it to copy npm's error into the job
+    // summary on failure, so the exact formatting is not pinned.
+    expect(ci).toMatch(/\bnpm ci\b/);
     expect(ci).toContain("run: npm run lint");
     expect(ci).toMatch(/npx next typegen \|\|/);
     expect(ci).toContain("run: npm run typecheck");

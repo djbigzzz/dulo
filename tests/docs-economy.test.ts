@@ -335,7 +335,12 @@ describe("docs economy — honest claims across every doc", () => {
       for (const line of lines) expect(line, `${rel}: ${line.slice(0, 120)}`).toMatch(/\bplan\b|\bwould\b/i);
       expect(text, rel).toMatch(/onboarding, not churn/i);
     }
-    expect(README).toContain("Not deployed yet: there is no public URL, no players and no minted badge.");
+    // The wording moved into a GitHub note callout on 21 Sep; what must survive any redesign is
+    // that the README says it is not deployed and denies each of the three things a judge counts.
+    expect(README).toMatch(/\*\*Not deployed yet\*\*/);
+    for (const denial of [/no public URL/i, /no players/i, /no minted badge/i]) {
+      expect(README, String(denial)).toMatch(denial);
+    }
     expect(README).toContain("A plan, not revenue: nothing is billed today");
     expect(pasteBlock("Full Description").body).toContain("Nothing is charged today: a plan, not revenue.");
     expect(HANDOFF).toContain("no live URL, no users, no partners, no minted Badge, no billing");

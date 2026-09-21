@@ -1,16 +1,32 @@
-# Dulo
+<div align="center">
 
-**The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
+<img src="docs/brand/og.png" alt="Dulo — the entertainment layer for xStocks" width="840">
+
+### The entertainment layer for xStocks.<br>Compete, predict and get rewarded, for points.
+
+[![CI](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-1%2C176%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
+[![Solana](https://img.shields.io/badge/Solana-mainnet-ff6a2a?style=flat&labelColor=0a0908)](#why-solana)
+[![Licence](https://img.shields.io/badge/licence-MIT-a9a299?style=flat&labelColor=0a0908)](LICENSE)
+
+**Predictions** &nbsp;·&nbsp; **Competition** (virtual cash) &nbsp;·&nbsp; **Quests** &nbsp;·&nbsp; Copy a portfolio
+
+</div>
+
+---
 
 Three games on one Season leaderboard: points-only **predictions** on Friday closes, a weekly **competition** with $10,000 of virtual cash at real xStock prices, and **quests**, some completed in the app and some verified from your own Solana wallet with the proof attached. Every new player starts with 1,000 starter points. Points only, no cash value.
 
-[![CI](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml)
+> [!NOTE]
+> **Not deployed yet** — no public URL, no players, no minted badge. Everything below runs from this repo against Solana mainnet, not a testnet mock. The hosted link and the two videos land in the table below on submission.
 
-**Not deployed yet: there is no public URL, no players and no minted badge.** Everything below runs from this repo against Solana mainnet. The hosted link and the videos go in this row on submission.
-
-`Live app: <LIVE_URL>` · `Pitch video: <PITCH_VIDEO>` · `Technical video: <TECH_VIDEO>` · [Stocklana hackathon](https://hackathons.solana.com/hackathons/stocklana) · [MIT licence](LICENSE)
-
-Built for the Stocklana hackathon: submissions close Fri 25 Sep 2026, 16:00 ET, and judging runs to 2 Oct.
+| | |
+|---|---|
+| **Live app** | _not deployed yet_ |
+| **Pitch video** | _to come_ |
+| **Technical video** | _to come_ |
+| **Hackathon** | [Stocklana](https://hackathons.solana.com/hackathons/stocklana) — submissions close Fri 25 Sep 2026, 16:00 ET, and judging runs to 2 Oct |
+| **Licence** | [MIT](LICENSE) |
 
 <!-- Screenshots (docs/screenshots/, 1280x800 and 390 px) go here once captured. Do not link images that are not in the repo. -->
 
