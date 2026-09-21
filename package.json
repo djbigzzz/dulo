@@ -23,7 +23,8 @@
     "tick:local": "tsx --env-file=.env.local scripts/local-tick.mts",
     "catalogue:build": "tsx scripts/build-xstocks-catalogue.ts",
     "postinstall": "prisma generate",
-    "db:setup": "tsx scripts/deploy-db.mts"
+    "db:setup": "tsx scripts/deploy-db.mts",
+    "db:neon": "tsx scripts/neon-env.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
