@@ -82,7 +82,7 @@ Dulo is independent and not affiliated with xStocks. Backed Finance owns that br
 | **Real user and problem** | 800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Holders need a reason to keep holding after the first buy, and apps need a way to reach them. On-chain quests pay points for holding, diversifying, buying steadily and holding through earnings, never for trading volume. Newcomers who hold nothing still get a full game: starter points for predictions and virtual cash for the competition. A listed project's on-chain quests are JSON rows on its campaign, and its page shows the verified completions it drove. Season 0 partners are seeded by hand, no project has signed up yet, and nothing is deployed, so every count reads zero. |
 | **Working end-to-end demo** | Reads Solana mainnet. Anyone can check any wallet without signing in. A SIWS sign-in grants starter points and starts scoring. In-platform quests complete in the same request as the trade or prediction. On-chain quests are verified at sign-in and by a 5-minute cron. The weekly competition and the weekly points-only predictions both settle and roll over on their own. Copying a portfolio hands off to prefilled Jupiter swaps, and quests that carry a badge queue a soulbound Token-2022 badge mint (see [Proof on mainnet](#proof-on-mainnet)). It keeps working with US markets closed. |
 | **Why Solana** | Holdings are public state, so an on-chain quest is checked from RPC, not claimed by a broker. Token-2022 ScaledUiAmount gives multiplier-correct holdings. Jupiter quotes and swaps the xStock mint itself. Badges are NonTransferable Token-2022 mints. See [Why Solana](#why-solana). |
-| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,164 tests across 54 files pass today (`npx vitest run`, 16 Sep 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
+| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,176 tests across 56 files pass today (`npx vitest run`, 21 Sep 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
 
 ## How points work
 
@@ -404,7 +404,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/
 Checks:
 
 ```bash
-npx vitest run      # 1,164 tests across 54 files on 16 Sep 2026; no database needed
+npx vitest run      # 1,176 tests across 56 files on 21 Sep 2026; no database needed
 npx next typegen    # once on a fresh clone: next-env.d.ts and .next/types are gitignored, and tsc needs the route types
 npm run typecheck
 npm run lint
