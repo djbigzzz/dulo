@@ -335,16 +335,23 @@ describe("docs economy — honest claims across every doc", () => {
       for (const line of lines) expect(line, `${rel}: ${line.slice(0, 120)}`).toMatch(/\bplan\b|\bwould\b/i);
       expect(text, rel).toMatch(/onboarding, not churn/i);
     }
-    // The wording moved into a GitHub note callout on 21 Sep; what must survive any redesign is
-    // that the README says it is not deployed and denies each of the three things a judge counts.
-    expect(README).toMatch(/\*\*Not deployed yet\*\*/);
-    for (const denial of [/no public URL/i, /no players/i, /no minted badge/i]) {
-      expect(README, String(denial)).toMatch(denial);
+    // 21 Sep: deployed. "Not deployed" is no longer the honest claim, but everything else it used
+    // to deny still holds, and going live is exactly when a doc starts quietly implying traction.
+    // So each doc must name the live URL AND keep denying players, partners, badges and billing.
+    const LIVE_URL = "https://dulo-iota.vercel.app";
+    for (const [rel, text] of [
+      ["README.md", README],
+      ["CLAUDE.md", BRIEF],
+      ["docs/HANDOFF.md", HANDOFF],
+    ] as const) {
+      expect(text, `${rel} must name the live URL`).toContain(LIVE_URL);
+      expect(text, `${rel} must not still say it is not deployed`).not.toMatch(/not deployed yet|no live URL|nothing is deployed/i);
+      for (const denial of [/no players|no users/i, /no partner|no partners/i, /no badge has been minted|no minted [Bb]adge/i, /no billing|nothing is billed/i]) {
+        expect(text, `${rel} must still deny: ${denial}`).toMatch(denial);
+      }
     }
     expect(README).toContain("A plan, not revenue: nothing is billed today");
     expect(pasteBlock("Full Description").body).toContain("Nothing is charged today: a plan, not revenue.");
-    expect(HANDOFF).toContain("no live URL, no users, no partners, no minted Badge, no billing");
-    expect(BRIEF).toContain("not deployed. No public URL, no players, no partner has signed anything, no badge has been minted, no billing.");
   });
 
   it("the deadline and the vision stay in step", () => {

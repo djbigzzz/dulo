@@ -16,11 +16,12 @@
 Three games on one Season leaderboard: points-only **predictions** on Friday closes, a weekly **competition** with $10,000 of virtual cash at real xStock prices, and **quests**, some completed in the app and some verified from your own Solana wallet with the proof attached. Every new player starts with 1,000 starter points. Points only, no cash value.
 
 > [!NOTE]
-> **Not deployed yet** — no public URL, no players, no minted badge. Everything below runs from this repo against Solana mainnet, not a testnet mock. The hosted link and the two videos land in the table below on submission.
+> [!NOTE]
+> **Live at https://dulo-iota.vercel.app**, reading Solana mainnet, not a testnet mock. It is deployed but brand new: no players yet, no project has signed up, no badge has been minted and nothing is billed. Every count below reads zero because it is zero.
 
 | | |
 |---|---|
-| **Live app** | _not deployed yet_ |
+| **Live app** | **https://dulo-iota.vercel.app** |
 | **Pitch video** | _to come_ |
 | **Technical video** | _to come_ |
 | **Hackathon** | [Stocklana](https://hackathons.solana.com/hackathons/stocklana) — submissions close Fri 25 Sep 2026, 16:00 ET, and judging runs to 2 Oct |
@@ -32,7 +33,7 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 
 ## Judge quick path (5 minutes to run it, then 90 seconds of clicking)
 
-**There is no hosted demo yet, so run it locally first: [Run locally](#run-locally), about 5 minutes.** Every chain read goes to Solana mainnet, so nothing here is a testnet mock. You do not need to hold an xStock: starter points and virtual cash cover everything except the on-chain quests.
+**Open https://dulo-iota.vercel.app — nothing to install.** Or run it yourself in about 5 minutes: [Run locally](#run-locally). Every chain read goes to Solana mainnet, so nothing here is a testnet mock. You do not need to hold an xStock: starter points and virtual cash cover everything except the on-chain quests.
 
 The landing opens on this week's live prediction cards, the three game tiles (Predictions, Competition, On-chain quests) and the welcome offer, with Connect wallet first and Check a wallet second.
 
@@ -93,7 +94,7 @@ Dulo is independent and not affiliated with xStocks. Backed Finance owns that br
 
 | Criterion | What Dulo shows |
 |---|---|
-| **Real user and problem** | 800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Holders need a reason to keep holding after the first buy, and apps need a way to reach them. On-chain quests pay points for holding, diversifying, buying steadily and holding through earnings, never for trading volume. Newcomers who hold nothing still get a full game: starter points for predictions and virtual cash for the competition. A listed project's on-chain quests are JSON rows on its campaign, and its page shows the verified completions it drove. Season 0 partners are seeded by hand, no project has signed up yet, and nothing is deployed, so every count reads zero. |
+| **Real user and problem** | 800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Holders need a reason to keep holding after the first buy, and apps need a way to reach them. On-chain quests pay points for holding, diversifying, buying steadily and holding through earnings, never for trading volume. Newcomers who hold nothing still get a full game: starter points for predictions and virtual cash for the competition. A listed project's on-chain quests are JSON rows on its campaign, and its page shows the verified completions it drove. Season 0 partners are seeded by hand and no project has signed up yet, so every count reads zero. |
 | **Working end-to-end demo** | Reads Solana mainnet. Anyone can check any wallet without signing in. A SIWS sign-in grants starter points and starts scoring. In-platform quests complete in the same request as the trade or prediction. On-chain quests are verified at sign-in and by a 5-minute cron. The weekly competition and the weekly points-only predictions both settle and roll over on their own. Copying a portfolio hands off to prefilled Jupiter swaps, and quests that carry a badge queue a soulbound Token-2022 badge mint (see [Proof on mainnet](#proof-on-mainnet)). It keeps working with US markets closed. |
 | **Why Solana** | Holdings are public state, so an on-chain quest is checked from RPC, not claimed by a broker. Token-2022 ScaledUiAmount gives multiplier-correct holdings. Jupiter quotes and swaps the xStock mint itself. Badges are NonTransferable Token-2022 mints. See [Why Solana](#why-solana). |
 | **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,176 tests across 56 files pass today (`npx vitest run`, 21 Sep 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
@@ -358,7 +359,7 @@ Players are free, forever. The plan is that partners list on-chain quests and pa
 
 ## Numbers so far
 
-None. The app is not deployed, so there are no players, no completed quests and no minted badges to report. The table below stays empty until a deployment has real users.
+None yet. The app went live on 21 Sep 2026 and has had no players since, so there are no completed quests and no minted badges to report. The table below stays empty until it does. Read any number off `npm run -s stats` on the day, never from memory.
 
 <!-- Fill every <N> from the same day's run. If usersWithCompletedPlay is under 10, replace this table with one line: "<N> early players so far." Never round up, never count bots or the founder's wallets. -->
 

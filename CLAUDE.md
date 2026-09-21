@@ -2,7 +2,7 @@
 
 We are building the entertainment layer for xStocks: a distribution network where projects list Plays (verified on-chain actions), users complete them from their real wallet activity, and everyone competes in games and predictions for points. Think Arkada/Galxe, but the first vertical is tokenized stocks (xStocks) and the entry is the Stocklana hackathon.
 
-Status (16 Sep 2026): not deployed. No public URL, no players, no partner has signed anything, no badge has been minted, no billing. Never claim otherwise in any doc or copy.
+Status (21 Sep 2026): deployed at https://dulo-iota.vercel.app (Vercel Hobby, team mystartup-team; Neon Postgres in us-east-1, schema pushed and seeded). Still true, and never claim otherwise: no players, no partner has signed anything, no badge has been minted, no billing. dulo.fun is not registered, so the Vercel URL is the public origin.
 
 Deadline (confirmed 17 Sep 2026 from the hackathon page countdown, its header and press coverage): submissions close Fri 25 Sep 2026, 16:00 ET (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct. The page timeline paragraph still says 18 Sep and is stale. README.md, docs/SUBMISSION.md and docs/HANDOFF.md all say this; keep them in step.
 
