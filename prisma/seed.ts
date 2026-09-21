@@ -25,7 +25,12 @@ import { PlayRuleSchema } from "../src/lib/plays/rules";
 import { seedLeague } from "./seed-league";
 import { seedCalls } from "./seed-calls";
 
-const prisma = new PrismaClient({ log: ["warn", "error"] });
+// Same bounds as src/lib/server/db.ts, and for the same reason: seeding a remote pooled Postgres
+// that scales to zero blows straight through Prisma's 5s default on the bot writes.
+const prisma = new PrismaClient({
+  log: ["warn", "error"],
+  transactionOptions: { timeout: 20_000, maxWait: 10_000 },
+});
 
 /** Strip `undefined` so an optional rule field never reaches the JSON column. */
 function toJson<T>(value: T): Prisma.InputJsonValue {
