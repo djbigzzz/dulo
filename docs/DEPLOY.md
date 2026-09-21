@@ -112,8 +112,9 @@ Then run it once by hand: **Actions → Cron tick (Hobby fallback) → Run workf
 the whole backend works end to end. GitHub schedules can run five to thirty minutes late under load,
 which is fine for snapshots and quest evaluation.
 
-On Vercel Pro instead, `vercel.json` already schedules the same route every five minutes and none of
-this is needed.
+`vercel.json` also schedules one daily run at 20:10 UTC, which is five minutes after the Friday
+settle: if the pinger is ever off, the week still settles. On Vercel Pro you can raise that schedule
+to `*/5 * * * *` and skip the pinger entirely.
 
 ## 6. Check it
 

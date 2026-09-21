@@ -42,9 +42,16 @@ const read = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8");
 const lines = (rel: string) => read(rel).split(/\r?\n/);
 
 describe("vercel.json", () => {
-  it("schedules the tick every 5 minutes on the Pro plan (Hobby fallback is the Actions pinger)", () => {
+  /**
+   * The deployment is on Hobby, which refuses any cron that runs more than once a day, so Vercel
+   * keeps a single daily tick and .github/workflows/tick.yml carries the 5-minute cadence.
+   *
+   * 20:10 UTC is not arbitrary: Friday's markets settle at 20:05 UTC, so the daily run lands five
+   * minutes after that, inside the void window, and settles the week even if the pinger is down.
+   */
+  it("keeps one daily tick that lands just after the Friday settle (Hobby: the Actions pinger runs every 5 min)", () => {
     const cfg = JSON.parse(read("vercel.json")) as { crons: { path: string; schedule: string }[] };
-    expect(cfg.crons).toEqual([{ path: "/api/cron/tick", schedule: "*/5 * * * *" }]);
+    expect(cfg.crons).toEqual([{ path: "/api/cron/tick", schedule: "10 20 * * *" }]);
   });
 
   it("pins functions to iad1, next to the us-east-1 Supabase", () => {
