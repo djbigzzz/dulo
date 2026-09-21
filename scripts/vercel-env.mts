@@ -45,9 +45,19 @@ if (!databaseUrl.includes("-pooler.")) {
   throw new Error("DATABASE_URL is not the pooled host. Run npm run db:neon, which sorts the two URLs out.");
 }
 
-// env() requires >= 32 and >= 16 characters respectively; these are comfortably past both.
-const jwtSecret = randomBytes(48).toString("base64");
-const cronSecret = randomBytes(16).toString("hex");
+/**
+ * Secrets are generated ONCE and then reused. Re-running this after the values are live in Vercel
+ * used to mint new ones, which silently desynced three places at a time: the deployment kept the
+ * old CRON_SECRET so the tick answered 401, the Actions pinger would have been given a third
+ * value, and a rotated JWT_SECRET signs out every session. Regenerating on purpose means deleting
+ * the file, and the printout below says so.
+ *
+ * env() requires >= 32 and >= 16 characters respectively; these are comfortably past both.
+ */
+const previous = existsSync(TARGET) ? parse(readFileSync(TARGET, "utf8")) : {};
+const jwtSecret = previous.JWT_SECRET || randomBytes(48).toString("base64");
+const cronSecret = previous.CRON_SECRET || randomBytes(16).toString("hex");
+const reused = Boolean(previous.JWT_SECRET && previous.CRON_SECRET);
 
 const block = [
   `DATABASE_URL="${databaseUrl}"`,
@@ -64,8 +74,8 @@ writeFileSync(TARGET, block);
 console.log(`Wrote ${TARGET}`);
 console.log("  DATABASE_URL          (pooled Neon)");
 console.log("  DIRECT_URL            (direct Neon)");
-console.log("  JWT_SECRET            (generated, 48 random bytes)");
-console.log("  CRON_SECRET           (generated, 16 random bytes)");
+console.log(reused ? "  JWT_SECRET            (kept from the existing file)" : "  JWT_SECRET            (generated, 48 random bytes)");
+console.log(reused ? "  CRON_SECRET           (kept from the existing file)" : "  CRON_SECRET           (generated, 16 random bytes)");
 console.log(`  NEXT_PUBLIC_APP_URL   ${appUrl}`);
 console.log("  NEXT_PUBLIC_APP_NAME  Dulo");
 console.log("\nOpen it, select all, paste into Vercel's Environment Variables panel.");
