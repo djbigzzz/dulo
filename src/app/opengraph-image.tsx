@@ -15,8 +15,8 @@ const GOLD = "#d8b46a";
 
 const WORDMARK = "Dulo";
 const TAGLINE = "The entertainment layer for xStocks.";
-const EYEBROW = "Stocks Season · Season 0";
-const FOOTER = "Predictions · Competition (virtual cash) · Quests · Copy a portfolio. Points only.";
+const EYEBROW = "Season 0 · Solana mainnet";
+const FOOTER = "Predictions · Competition (virtual cash) · Quests · Points only";
 
 /** Unique characters of the strings, for Google Fonts' `text=` subsetting (plus upper case for text-transform). */
 function glyphs(...parts: string[]): string {

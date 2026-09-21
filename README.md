@@ -2,14 +2,12 @@
 
 <img src="docs/brand/og.png" alt="Dulo — the entertainment layer for xStocks" width="840">
 
-### The entertainment layer for xStocks.<br>Compete, predict and get rewarded, for points.
+**The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
 
 [![CI](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-1%2C176%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
 [![Solana](https://img.shields.io/badge/Solana-mainnet-ff6a2a?style=flat&labelColor=0a0908)](#why-solana)
 [![Licence](https://img.shields.io/badge/licence-MIT-a9a299?style=flat&labelColor=0a0908)](LICENSE)
-
-**Predictions** &nbsp;·&nbsp; **Competition** (virtual cash) &nbsp;·&nbsp; **Quests** &nbsp;·&nbsp; Copy a portfolio
 
 </div>
 
