@@ -44,4 +44,4 @@ Rules of the codebase:
 
 Deadline discipline: press Submit Project on Thu 17 Sep as a hedge (Save Draft is not a submission), then keep editing until the close at Fri 25 Sep 2026, 16:00 ET. Mirror ships as "view allocation + open Jupiter with a prefilled swap per leg" by decision (14 Sep): that is the product, not a fallback; in-app swap execution stays on the cut list.
 
-Product name: Dulo (dulo.fun), after the House of Dulo, the founding Bulgar dynasty. Repo package name: dulo.
+Product name: Dulo, after the House of Dulo, the founding Bulgar dynasty. Repo package name: dulo. dulo.fun is the intended domain and is NOT registered, and no mailbox on it exists. Nothing public may present it as the app's address or as a contact, and no commit may be authored from it. The public origin is the Vercel URL, and the repo is github.com/djbigzzz/dulo.

@@ -185,7 +185,21 @@ describe("public docs — sourced claims, private planning, video scripts", () =
     expect(handoff).not.toMatch(/unregistered|`dulofun` free|@dulofun` free/);
     expect(handoff).not.toMatch(/600\+ unit tests/);
     expect(handoff).toContain("The keypair file must live outside the repo");
-    expect(repoFile("docs/SUBMISSION.md")).toContain("dulo.fun, the `dulofun` GitHub org and `@dulofun` on X are registered");
+    // 21 Sep: dulo.fun is NOT registered and hello@dulo.fun is not a mailbox. The repo is public
+    // at github.com/djbigzzz/dulo and the app is served from Vercel, so no public file may present
+    // dulo.fun as an address that resolves. Mentions are allowed only as "until/when it resolves".
+    const submission = repoFile("docs/SUBMISSION.md");
+    expect(submission).toContain("None is registered as of 21 Sep 2026");
+    for (const [file, text] of [
+      ["README.md", readme],
+      ["docs/SUBMISSION.md", submission],
+      ["CLAUDE.md", repoFile("CLAUDE.md")],
+    ] as const) {
+      expect(text, `${file} must not present dulo.fun as a live address`).not.toMatch(
+        /(?:live|hosted|visit|available|deployed|app)\s+(?:at\s+)?(?:https?:\/\/)?dulo\.fun|https?:\/\/dulo\.fun\/?(?=[\s.,)]|$)(?![^\n]*resolv)/i,
+      );
+      expect(text, `${file} must not advertise a dulo.fun mailbox`).not.toMatch(/@dulo\.fun/);
+    }
   });
 
   /**

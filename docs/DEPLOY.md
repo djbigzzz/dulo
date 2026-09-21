@@ -157,9 +157,8 @@ is. Replacing "not deployed" with a live URL is the only claim that changes.
 
 ## 8. Then submit
 
-`docs/SUBMISSION.md` holds the paste-ready form copy and the bounty-track plan. Press **Submit
-Project** with the main track and no bounty ticks as soon as the URL is live, then add each tick
-only once its build is real. The form stays editable until the close.
+`docs/SUBMISSION.md` holds the paste-ready form copy. Press **Submit Project** with the main track
+as soon as the URL is live. The form stays editable until the close.
 
 ---
 
