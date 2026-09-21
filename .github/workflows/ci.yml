@@ -28,13 +28,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 24 is what the project is developed and verified on (npm 11). Pinning CI to it keeps
+      # the lockfile reader identical here and locally; engines only requires >= 20.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
+      # Actions logs need a sign-in to read, so on failure the npm error is copied into the job
+      # summary, which is public on a public repo. Without this a red badge is undiagnosable.
       - name: Install (npm ci runs postinstall = prisma generate)
-        run: npm ci
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee /tmp/npm-ci.log || {
+            {
+              echo "### npm ci failed"
+              echo '```'
+              tail -n 60 /tmp/npm-ci.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
 
       - name: Lint
         run: npm run lint
