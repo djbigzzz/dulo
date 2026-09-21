@@ -24,7 +24,8 @@
     "catalogue:build": "tsx scripts/build-xstocks-catalogue.ts",
     "postinstall": "prisma generate",
     "db:setup": "tsx scripts/deploy-db.mts",
-    "db:neon": "tsx scripts/neon-env.mts"
+    "db:neon": "tsx scripts/neon-env.mts",
+    "env:vercel": "tsx scripts/vercel-env.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

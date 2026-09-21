@@ -54,3 +54,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated env block for pasting into Vercel: secrets, never commit
+vercel.env.txt
