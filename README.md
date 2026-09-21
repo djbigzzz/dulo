@@ -4,7 +4,7 @@
 
 Three games on one Season leaderboard: points-only **predictions** on Friday closes, a weekly **competition** with $10,000 of virtual cash at real xStock prices, and **quests**, some completed in the app and some verified from your own Solana wallet with the proof attached. Every new player starts with 1,000 starter points. Points only, no cash value.
 
-<!-- CI badge goes here once github.com/dulofun/dulo is public: [![CI](https://github.com/dulofun/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/dulofun/dulo/actions/workflows/ci.yml) -->
+[![CI](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml)
 
 **Not deployed yet: there is no public URL, no players and no minted badge.** Everything below runs from this repo against Solana mainnet. The hosted link and the videos go in this row on submission.
 
@@ -379,7 +379,7 @@ Nothing has been minted yet: no server wallet has run in production, so there is
 You need Node 20+ (CI uses 22), npm, and a Postgres database you can reach. xStocks and Jupiter exist only on mainnet, so local development reads mainnet. The public RPC is fine for light use; set `HELIUS_API_KEY` for anything more.
 
 ```bash
-git clone https://github.com/dulofun/dulo.git
+git clone https://github.com/djbigzzz/dulo.git
 cd dulo
 cp .env.example .env.local   # set DATABASE_URL, DIRECT_URL, JWT_SECRET (32+ chars), CRON_SECRET (16+ chars)
 npm i                        # postinstall runs prisma generate

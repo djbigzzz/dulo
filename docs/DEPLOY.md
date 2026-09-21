@@ -19,11 +19,11 @@ git status --ignored --short | grep "docs/private"
 ```
 
 That must print `!! docs/private/` — it is the only directory holding private notes, and it has to
-stay out of a public repo. Then create an empty **public** repo (`dulofun/dulo` is the planned
-name, and the X and GitHub handles were free at the last check) and push:
+stay out of a public repo. The repo is `github.com/djbigzzz/dulo`, pushed public on 21 Sep 2026.
+To recreate it elsewhere, make an empty public repo with no README, .gitignore or licence, then:
 
 ```bash
-git remote add origin https://github.com/<owner>/<repo>.git
+git remote add origin https://github.com/djbigzzz/dulo.git
 git push -u origin main
 ```
 

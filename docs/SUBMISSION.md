@@ -98,7 +98,7 @@ The order things become linkable:
 
 | Field | What goes in, and when |
 |---|---|
-| GitHub | `https://github.com/dulofun/dulo` once the `dulofun` org exists and the repo is public. |
+| GitHub | `https://github.com/djbigzzz/dulo` — public, pushed 21 Sep 2026. |
 | Demo URL | The production origin. The Vercel `https://<project>.vercel.app` URL until dulo.fun resolves. |
 | Pitch Video | Unlisted YouTube, 3:00 or shorter. Script: `docs/HANDOFF.md` section 6. |
 | Technical Video | Unlisted YouTube, 5:00 or shorter. Script: `docs/HANDOFF.md` section 6b. |
