@@ -3,22 +3,23 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Copy, SearchX, Wallet } from "lucide-react";
+import { ArrowLeft, Copy, SearchX } from "lucide-react";
 import { cn } from "cn";
-import { previewApi, type PreviewPlayView, type PreviewResponse } from "@/lib/api-client";
+import { previewApi, type PreviewPlayView } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddressChip } from "@/components/common/AddressChip";
+import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { PageHeader } from "@/components/common/PageHeader";
-import { PriceChip } from "@/components/common/PriceChip";
 import { StatStrip, type Stat } from "@/components/common/StatStrip";
-import { ageSeconds, formatAge, formatPoints, formatUsd } from "@/components/common/format";
+import { formatPoints, formatUsd } from "@/components/common/format";
 import { useApiQuery } from "@/components/common/useApiQuery";
 import { CheckWalletBox } from "@/components/landing/CheckWalletBox";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
-import { CONNECT_CTA_TITLE, checkErrorCopy, decidablePlays, formatMultiplier, formatQty } from "@/app/check/_components/check-format";
+import { CONNECT_CTA_TITLE, checkErrorCopy, decidablePlays, hasPreIpoHolding, hasPreIpoQuest, positionsHint } from "@/app/check/_components/check-format";
+import { HoldingsList } from "@/app/check/_components/HoldingsList";
 import { PreviewPlayCard, PreviewProofSheet } from "@/app/check/_components/PreviewPlayCard";
 
 const ENTER = "animate-in fade-in-0 slide-in-from-bottom-2 duration-500 motion-reduce:animate-none";
@@ -38,50 +39,6 @@ function BackLink() {
       <ArrowLeft data-icon="inline-start" aria-hidden />
       Check another wallet
     </Link>
-  );
-}
-
-function Holdings({ data }: { data: PreviewResponse }) {
-  return (
-    <section className="flex min-w-0 flex-col gap-3" aria-labelledby="check-holdings">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 id="check-holdings" className="text-lg font-semibold tracking-tight">
-          Holdings
-        </h2>
-        {/* Client clock: a CDN-cached answer can be a few minutes old, and the label must say so. */}
-        <span className="text-sm text-muted-foreground">Read {formatAge(ageSeconds(data.readAt))} from Solana</span>
-      </div>
-      {data.holdings.length === 0 ? (
-        <EmptyState
-          icon={<Wallet aria-hidden />}
-          title="No xStocks in this wallet."
-          description="On-chain quests need an xStock worth $5 or more. Try one of the real holders instead."
-        />
-      ) : (
-        <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
-          {data.holdings.map((h) => {
-            const mult = formatMultiplier(h.multiplier);
-            return (
-              <li key={h.assetId} className="flex flex-col gap-2 px-4 py-3 sm:px-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="font-mono text-sm font-semibold">{h.symbol}</span>
-                    <span className="text-sm text-muted-foreground tabular-nums">{formatQty(h.qty)} shares</span>
-                    {mult ? (
-                      <span className="text-xs text-muted-foreground" title="Token-2022 multiplier applied to the raw balance (splits and dividends)">
-                        {mult} multiplier
-                      </span>
-                    ) : null}
-                  </div>
-                  <span className="shrink-0 text-base font-semibold tracking-tight tabular-nums">{formatUsd(h.usd)}</span>
-                </div>
-                <PriceChip quote={h.quote} className="self-start" />
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
   );
 }
 
@@ -169,8 +126,11 @@ export default function CheckWalletPage() {
   }
 
   const decidable = decidablePlays(data);
+  // A pre-IPO token in the wallet changes the nouns: "Holdings value" over N positions, and the header names both issuers.
+  const preIpo = hasPreIpoHolding(data);
+  const preIpoQuest = hasPreIpoQuest(data);
   const stats: Stat[] = [
-    { label: "xStocks value", value: formatUsd(data.totalUsd), hint: `${data.holdings.length} ${data.holdings.length === 1 ? "stock" : "stocks"}` },
+    { label: preIpo ? "Holdings value" : "xStocks value", value: formatUsd(data.totalUsd), hint: positionsHint(data) },
     { label: "Verified now", value: `${data.qualifying} of ${decidable}`, tone: data.qualifying > 0 ? "ember" : "default", hint: "on-chain quests" },
     { label: "Would score", value: `+${formatPoints(data.qualifyingPoints)}`, tone: "gold", hint: "pts once connected" },
     { label: "Quests listed", value: formatPoints(data.plays.length), hint: "active this Season" },
@@ -189,8 +149,12 @@ export default function CheckWalletPage() {
         }
         description={
           data.label
-            ? "A public wallet on Solana: not a Dulo player, never scored. Its xStocks were read live, and every quest was checked by the same engine the Season uses."
-            : "Its xStocks were read live from Token-2022 balances, and every quest was checked by the same engine the Season uses. Nothing was stored."
+            ? preIpo
+              ? "A public wallet on Solana: not a Dulo player, never scored. Its xStocks and pre-IPO tokens were read live, and every quest was checked by the same engine the Season uses."
+              : "A public wallet on Solana: not a Dulo player, never scored. Its xStocks were read live, and every quest was checked by the same engine the Season uses."
+            : preIpo
+              ? "Its xStocks and pre-IPO tokens were read live from Token-2022 balances, and every quest was checked by the same engine the Season uses. Nothing was stored."
+              : "Its xStocks were read live from Token-2022 balances, and every quest was checked by the same engine the Season uses. Nothing was stored."
         }
         actions={<AddressChip address={data.address} chainId={data.chainId} explorer />}
         stats={<StatStrip stats={stats} />}
@@ -198,7 +162,7 @@ export default function CheckWalletPage() {
 
       <div className={cn("mt-4 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]", ENTER)}>
         <div className="flex min-w-0 flex-col gap-8">
-          <Holdings data={data} />
+          <HoldingsList data={data} />
 
           <section className="flex min-w-0 flex-col gap-3" aria-labelledby="check-plays">
             <h2 id="check-plays" className="text-lg font-semibold tracking-tight">
@@ -211,6 +175,15 @@ export default function CheckWalletPage() {
                 </li>
               ))}
             </ul>
+            {/* A pre-IPO quest card on screen carries the pre-IPO line next to the standard one, as the quests board does. */}
+            {preIpoQuest && !data.holdings.some((h) => h.source === "prestocks") ? (
+              <div className="flex flex-col gap-1">
+                <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p>
+                <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
+                  {PRE_IPO_COMPLIANCE_LINE}
+                </p>
+              </div>
+            ) : null}
           </section>
         </div>
 

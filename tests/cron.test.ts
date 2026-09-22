@@ -10,6 +10,9 @@ const TSLAX = "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB";
 const AAPLX = "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp";
 const TSLAX_ID = `${SOL}/token:${TSLAX}` as AssetId;
 const AAPLX_ID = `${SOL}/token:${AAPLX}` as AssetId;
+/** The one PreStocks mint the mocked second issuer knows (see the prestocks mock below). */
+const SPACEX = "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh";
+const SPACEX_ID = `${SOL}/token:${SPACEX}` as AssetId;
 const OWNER = "7C4jsdZxVDxbATGQeTNwyoDF5YkpHgqZUwKMoSHPHhNz";
 const NOW = new Date("2026-09-14T12:00:00.000Z");
 const USER = "user_1";
@@ -95,6 +98,26 @@ vi.mock("@/lib/assets/xstocks", () => {
       normaliseQty,
     },
     refreshXstocksCatalogue: vi.fn(async () => true),
+    normaliseQty,
+  };
+});
+
+// The second issuer (lib/assets/registry): one pre-IPO token, 9 decimals, no sector, no Pyth feed.
+// The registry unions its mint set with xStocks' and tags its holdings "prestocks".
+vi.mock("@/lib/assets/prestocks", () => {
+  const SOL = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+  const SPACEX = "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh";
+  const spacex = { assetId: `${SOL}/token:${SPACEX}`, chainId: SOL, symbol: "SPACEX", underlying: "SPACEX", name: "SpaceX PreStocks", decimals: 9, sector: null, logoUrl: null, pythFeedId: null, multiplier: 1 };
+  const normaliseQty = (raw: string, decimals: number, multiplier: number) => (Number(raw) / 10 ** decimals) * multiplier;
+  return {
+    prestocks: {
+      name: "prestocks",
+      listAssets: async () => [spacex],
+      getAsset: async (id: string) => (id === spacex.assetId ? spacex : null),
+      getAssetBySymbol: async (s: string) => (s.toUpperCase() === "SPACEX" ? spacex : null),
+      mintSet: async () => new Set([SPACEX]),
+      normaliseQty,
+    },
     normaliseQty,
   };
 });
@@ -190,10 +213,10 @@ describe("snapshotWallet", () => {
 
     const snap = await snapshotWallet({ id: "w1", address: OWNER, chainId: SOL }, { takenAt: NOW });
 
-    // Balances are read through the adapter, filtered to the xStocks mint set.
+    // Balances are read through the adapter, filtered to the union of every source's mint set.
     expect(mocks.getTokenBalances).toHaveBeenCalledTimes(1);
     expect(mocks.getTokenBalances.mock.calls[0][0]).toBe(OWNER);
-    expect(mocks.getTokenBalances.mock.calls[0][1]).toEqual(new Set([TSLAX, AAPLX]));
+    expect(mocks.getTokenBalances.mock.calls[0][1]).toEqual(new Set([TSLAX, AAPLX, SPACEX]));
 
     // One price call for the whole wallet, CAIP-19 ids only.
     expect(mocks.getPrices).toHaveBeenCalledTimes(1);
@@ -249,7 +272,7 @@ describe("readWalletHoldings", () => {
       { assetId: AAPLX_ID, symbol: "AAPLx", source: "xstocks", raw: "50000000", multiplier: 1, qty: 0.5, price: null, priceSource: "none", usd: 0 },
     ]);
     expect(read.quotes.get(TSLAX_ID)).toBe(tsla);
-    expect(mocks.getTokenBalances.mock.calls[0][1]).toEqual(new Set([TSLAX, AAPLX]));
+    expect(mocks.getTokenBalances.mock.calls[0][1]).toEqual(new Set([TSLAX, AAPLX, SPACEX]));
     expect(mocks.getPrices).toHaveBeenCalledTimes(1);
     // Read-only: the preview route relies on this.
     expect(mocks.db.snapshot.create).not.toHaveBeenCalled();
@@ -259,6 +282,26 @@ describe("readWalletHoldings", () => {
   it("refuses a non-Solana chain before touching the adapter", async () => {
     await expect(readWalletHoldings(OWNER, "eip155:1")).rejects.toThrow(/not a Solana chain/);
     expect(mocks.getTokenBalances).not.toHaveBeenCalled();
+  });
+
+  // The second issuer through the same read path: its holding carries ITS source (the engine's
+  // fence), 9 decimals and the chain's ScaledUiAmount multiplier, and is priced in the same batch.
+  it("tags a pre-IPO holding with its own source, normalises it with 9 decimals and the chain multiplier, and prices it in the one batched call", async () => {
+    mocks.getTokenBalances.mockResolvedValue([
+      balance(TSLAX, "150000000", 2),
+      { chainId: SOL, mint: SPACEX, account: "acct_Pre", amountRaw: "1000000000", decimals: 9, program: "token-2022", multiplier: 5 },
+    ]);
+    mocks.getPrices.mockResolvedValue(new Map([[TSLAX_ID, quote(TSLAX_ID, 200, "pyth")], [SPACEX_ID, { ...quote(SPACEX_ID, 100, "jupiter"), symbol: "SPACEX" }]]));
+
+    const read = await readWalletHoldings(OWNER);
+
+    expect(mocks.getTokenBalances.mock.calls[0][1]).toEqual(new Set([TSLAX, AAPLX, SPACEX]));
+    expect(mocks.getPrices).toHaveBeenCalledWith([TSLAX_ID, SPACEX_ID]);
+    expect(read.holdings).toEqual([
+      { assetId: TSLAX_ID, symbol: "TSLAx", source: "xstocks", raw: "150000000", multiplier: 2, qty: 3, price: 200, priceSource: "pyth", usd: 600 },
+      // 1e9 raw / 1e9 * 5 (the chain's multiplier, never the catalogue's 1) = 5 tokens at the DEX price.
+      { assetId: SPACEX_ID, symbol: "SPACEX", source: "prestocks", raw: "1000000000", multiplier: 5, qty: 5, price: 100, priceSource: "jupiter", usd: 500 },
+    ]);
   });
 });
 

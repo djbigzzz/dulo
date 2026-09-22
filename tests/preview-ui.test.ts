@@ -214,6 +214,7 @@ describe("/check/[address] formatting", () => {
     key,
     title: key,
     desc: "",
+    assetSource: "xstocks",
     points: 100,
     badgeKey: null,
     rule: { type: "hold_any", minUsd: 5 },

@@ -1,4 +1,5 @@
 import type { PlayRule } from "@/lib/plays/rules";
+import { assetNounFor, type IssuerNoun } from "@/components/common/issuer";
 
 /**
  * One-line hints for quest rules, shown under quest titles and in the proof drawer.
@@ -6,6 +7,10 @@ import type { PlayRule } from "@/lib/plays/rules";
  * phrased as the wallet state that completes them, never as an instruction: none of them
  * says to buy, add to or top up anything. In-platform rules (virtual cash, points) stay
  * second-person.
+ *
+ * The asset noun follows the quest's issuer fence (Play.assetSource): "xStock" for the Season 0
+ * default, "pre-IPO token" for a quest fenced to PreStocks ("Any pre-IPO token worth $5+ in your
+ * wallet"). Competition hints stay xStocks: the competition is xStocks-only.
  *
  *   hold_any            -> "Any xStock worth $5+ in your wallet"
  *   diversified         -> "3+ xStocks across 2+ sectors in your wallet"
@@ -37,15 +42,20 @@ function cap(text: string): string {
   return text ? `${text[0].toUpperCase()}${text.slice(1)}` : text;
 }
 
-/** "any xStock" | "NVDAx" | "NVDAx or TSLAx" | "a selected xStock" | "a partner position". */
-function scopeLabel(rule: PlayRule): string {
+/** cap(), except a camel-cased brand noun opening the sentence keeps its spelling ("xStocks", never "XStocks"). */
+function lead(text: string): string {
+  return /^[a-z][A-Z]/.test(text) ? text : cap(text);
+}
+
+/** "any xStock" | "NVDAx" | "NVDAx or TSLAx" | "a selected xStock" | "a partner position" (or the pre-IPO noun). */
+function scopeLabel(rule: PlayRule, noun: IssuerNoun): string {
   if (Array.isArray(rule.partnerAssetIds)) return "a partner position";
   const syms = rule.assetSymbols ?? [];
   if (syms.length === 0) {
     // Scoped by CAIP-19 assetIds without display symbols: name the count, not the id.
     const n = Array.isArray(rule.assetIds) ? rule.assetIds.length : 0;
-    if (n === 0) return "any xStock";
-    return n === 1 ? "a selected xStock" : `one of ${n} selected xStocks`;
+    if (n === 0) return `any ${noun.singular}`;
+    return n === 1 ? `a selected ${noun.singular}` : `one of ${n} selected ${noun.plural}`;
   }
   if (syms.length === 1) return syms[0];
   if (syms.length === 2) return `${syms[0]} or ${syms[1]}`;
@@ -98,18 +108,23 @@ export function eventHint(event: string, count: number, distinctBy?: DistinctBy)
   }
 }
 
-export function ruleToHint(rule: PlayRule): string {
+/**
+ * The one-line hint for a rule. `assetSource` is the quest's issuer fence (Play.assetSource):
+ * omitted or unknown reads as xStocks, "prestocks" swaps in the pre-IPO noun on every on-chain sentence.
+ */
+export function ruleToHint(rule: PlayRule, assetSource?: string | null): string {
+  const noun = assetNounFor(assetSource);
   switch (rule.type) {
     case "hold_any":
-      return `${cap(scopeLabel(rule))}${worth(rule)} in your wallet`;
+      return `${cap(scopeLabel(rule, noun))}${worth(rule)} in your wallet`;
     case "diversified":
-      return `${rule.minAssets}+ xStocks across ${rule.minSectors}+ ${rule.minSectors === 1 ? "sector" : "sectors"}${worth(rule) ? ` (each${worth(rule)})` : ""} in your wallet`;
+      return `${rule.minAssets}+ ${noun.plural} across ${rule.minSectors}+ ${rule.minSectors === 1 ? "sector" : "sectors"}${worth(rule) ? ` (each${worth(rule)})` : ""} in your wallet`;
     case "hold_consecutive": {
-      const what = rule.assetSymbols?.length === 1 ? rule.assetSymbols[0] : "The same xStock";
+      const what = rule.assetSymbols?.length === 1 ? rule.assetSymbols[0] : `The same ${noun.singular}`;
       return `${what}${worth(rule)} held for ${plural(rule.days, "daily snapshot")} in a row`;
     }
     case "net_increase_days":
-      return `xStocks balance up on ${plural(rule.count, "separate day")} in any ${rule.window}-day window`;
+      return `${lead(noun.plural)} balance up on ${plural(rule.count, "separate day")} in any ${rule.window}-day window`;
     case "hold_through_date": {
       const calendar = rule.calendarKey === "earnings" ? "an earnings date" : `a ${rule.calendarKey} date`;
       const what = rule.assetSymbols?.length === 1 ? `${rule.assetSymbols[0]} held` : "Held";

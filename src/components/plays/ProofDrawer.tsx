@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PointsChip } from "@/components/common/PointsChip";
 import { formatDateTime } from "@/components/common/format";
+import { questAssetSource } from "@/components/common/issuer";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { playStatusChip } from "@/components/plays/PlayCard";
 import { ruleToHint } from "@/components/plays/rule-hint";
@@ -70,7 +71,9 @@ export interface ProofDrawerProps {
  * stored on PlayProgress, rendered as a key/value list. Full-width on phones.
  */
 export function ProofDrawer({ play, open, onOpenChange }: ProofDrawerProps) {
-  const entries = React.useMemo(() => (play ? flattenProof(play.proof) : []), [play]);
+  // The quest's issuer fence picks the nouns: a pre-IPO quest's evidence never reads "Stock".
+  const assetSource = play ? questAssetSource(play) : null;
+  const entries = React.useMemo(() => (play ? flattenProof(play.proof, { assetSource }) : []), [play, assetSource]);
   const chip = play ? playStatusChip(play) : null;
   const ChipIcon = chip?.icon;
 
@@ -79,7 +82,7 @@ export function ProofDrawer({ play, open, onOpenChange }: ProofDrawerProps) {
       <SheetContent side="right" className="w-full gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-md">
         <SheetHeader className="border-b border-white/[0.06] pr-12">
           <SheetTitle className="truncate">{play ? play.title : "Proof"}</SheetTitle>
-          <SheetDescription className="truncate">{play ? ruleToHint(play.rule) : "Evidence behind this quest"}</SheetDescription>
+          <SheetDescription className="truncate">{play ? ruleToHint(play.rule, assetSource) : "Evidence behind this quest"}</SheetDescription>
           {play && chip && ChipIcon ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className={cn("h-6 gap-1 px-2.5", chip.className)}>

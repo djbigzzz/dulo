@@ -463,7 +463,7 @@ describe("play-meta", () => {
     expect(questKind({ ...scout, comingSoon: true })).toBe("partner-coming-soon");
     const kinds = catalogue.map(questKind);
     expect(kinds.filter((k) => k === "in-platform")).toHaveLength(8);
-    expect(kinds.filter((k) => k === "on-chain")).toHaveLength(9);
+    expect(kinds.filter((k) => k === "on-chain")).toHaveLength(10);
     expect(kinds.filter((k) => k === "partner-coming-soon")).toHaveLength(2);
   });
 
@@ -485,9 +485,9 @@ describe("play-meta", () => {
     expect(matchesFilter(soon, "in_platform")).toBe(false);
   });
 
-  it("counts the catalogue per filter: 19 = 8 in-platform + 11 on-chain (9 live, 2 coming soon), 4 badges", () => {
+  it("counts the catalogue per filter: 20 = 8 in-platform + 12 on-chain (10 live, 2 coming soon), 4 badges", () => {
     const counts = Object.fromEntries(PLAY_FILTERS.map((f) => [f.value, catalogue.filter((p) => matchesFilter(p, f.value)).length]));
-    expect(counts).toEqual({ all: 19, in_platform: 8, on_chain: 11, badges: 4 });
+    expect(counts).toEqual({ all: 20, in_platform: 8, on_chain: 12, badges: 4 });
     expect(counts.in_platform + counts.on_chain).toBe(counts.all);
   });
 
@@ -766,9 +766,9 @@ describe("play-meta", () => {
     expect(cardProgress(null)).toBeNull();
     expect(progressUnitLabel("constructor")).toBe("constructor");
     const card = readFileSync(path.join(process.cwd(), "src/components/plays/PlayCard.tsx"), "utf8");
-    expect(card).toContain("cardProgress(proofProgress(play.proof))");
+    expect(card).toContain("cardProgress(proofProgress(play.proof), assetSource)");
     const preview = readFileSync(path.join(process.cwd(), "src/app/check/_components/PreviewPlayCard.tsx"), "utf8");
-    expect(preview).toContain("cardProgress(play.progress)");
+    expect(preview).toContain("cardProgress(play.progress, play.assetSource)");
     expect(preview).not.toContain('unit === "usd"');
   });
 
@@ -776,7 +776,7 @@ describe("play-meta", () => {
     const t = boardTotals([hold, scout, mirror, soon, { ...hold, status: "complete" }]);
     expect(t).toEqual({ livePlays: 4, livePoints: 750, badges: 1, completed: 1 });
     const season = boardTotals(catalogue);
-    expect(season).toMatchObject({ livePlays: 17, livePoints: 3550, badges: 4, completed: 0 });
+    expect(season).toMatchObject({ livePlays: 18, livePoints: 3650, badges: 4, completed: 0 });
   });
 
   it("labels Partners honestly from live quests only (never 'Listed on Dulo')", () => {

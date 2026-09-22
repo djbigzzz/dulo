@@ -122,9 +122,10 @@ describe("docs economy — starter points, virtual cash, points only", () => {
     ]) {
       expect(how, needle).toContain(needle);
     }
-    // The approved totals, so a catalogue change is a deliberate docs change too.
+    // The approved totals, so a catalogue change is a deliberate docs change too (22 Sep: +100 for
+    // Pre-IPO Position, the one PreStocks quest).
     expect(total(inPlatform)).toBe(850);
-    expect(total(onChain)).toBe(2700);
+    expect(total(onChain)).toBe(2800);
     expect(total(comingSoon)).toBe(500);
     const economy = pasteBlock("Full Description").body;
     expect(economy).toContain(`In-platform quests are worth ${fmt(total(inPlatform))} points and on-chain quests ${fmt(total(onChain))}`);
@@ -201,9 +202,9 @@ describe("docs economy — the HANDOFF catalogue, economy and known limits", () 
       });
   }
 
-  it("§3.1 is the 19-row catalogue, row for row", () => {
+  it("§3.1 is the 20-row catalogue, row for row", () => {
     const rows = catalogueRows();
-    expect(SEASON0_PLAYS).toHaveLength(19);
+    expect(SEASON0_PLAYS).toHaveLength(20);
     expect(rows.map((r) => r.key).sort()).toEqual(SEASON0_PLAYS.map((p) => p.key).sort());
     for (const play of SEASON0_PLAYS) {
       const row = rows.find((r) => r.key === play.key)!;

@@ -8,8 +8,9 @@ import type { PartnerGroup, PartnerSummary, PlayView } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PartnerLogo } from "@/components/common/PartnerLogo";
-import { COMPLIANCE_LINE } from "@/components/common/compliance";
+import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
 import { formatPoints } from "@/components/common/format";
+import { isPreIpoQuest } from "@/components/common/issuer";
 import { PlayCard, PlayCardSkeleton } from "@/components/plays/PlayCard";
 import { matchesFilter, partnerPageHref, questKind, type PlayFilter } from "@/components/plays/play-meta";
 
@@ -150,8 +151,14 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
               </li>
             ))}
           </ul>
-          {/* On-chain quests read xStocks held in the wallet: the compliance line prints once for the group. */}
+          {/* On-chain quests read xStocks held in the wallet: the compliance line prints once for the group,
+              and the pre-IPO line beside it whenever the group shows a quest fenced to PreStocks. */}
           {group.compliance ? <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p> : null}
+          {group.compliance && group.plays.some(isPreIpoQuest) ? (
+            <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
+              {PRE_IPO_COMPLIANCE_LINE}
+            </p>
+          ) : null}
         </section>
       ))}
 

@@ -1,0 +1,145 @@
+{
+  "_note": "Recorded Jupiter Price v3 response for the eight PreStocks pre-IPO token mints, fetched once on 22 Sep 2026 while tests/prestocks-multiplier.test.ts was written. Never refetched inside a test. Only SPACEX and OPENAI carried a scaledUiConfig block that day (multiplier 1 with an already-effective newMultiplier of 5 and 1.4861347); the other six had none. stockData.price is the issuer SPV mark, usdPrice the DEX price: two different numbers, never a discount.",
+  "source": "https://api.jup.ag/price/v3?ids=PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB,Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw,PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd,PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua,PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S,PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF,Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP,PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+  "fetchedAt": "2026-09-22T09:18:45Z",
+  "mints": {
+    "ANDURIL": "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
+    "ANTHROPIC": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+    "FIGUREAI": "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd",
+    "KALSHI": "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
+    "NEURALINK": "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
+    "OPENAI": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+    "POLYMARKET": "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP",
+    "SPACEX": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh"
+  },
+  "response": {
+    "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP": {
+      "createdAt": "2026-02-04T01:09:09Z",
+      "liquidity": 149782.5386636532,
+      "usdPrice": 142.4654177165723,
+      "blockId": 449335749,
+      "decimals": 9,
+      "priceChange24h": -2.5059152775257623,
+      "stockData": {
+        "id": "prestocks",
+        "price": 144.21290482,
+        "mcap": 14223107839,
+        "updatedAt": "2026-09-22T09:15:13.092Z"
+      }
+    },
+    "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh": {
+      "createdAt": "2025-09-13T15:47:09Z",
+      "liquidity": 110688.8154435426,
+      "usdPrice": 117.8315078353692,
+      "blockId": 449333160,
+      "decimals": 9,
+      "priceChange24h": 0.619865950108524,
+      "stockData": {
+        "id": "prestocks",
+        "price": 152.74187124925533,
+        "mcap": 2002615645268,
+        "updatedAt": "2026-09-22T09:15:13.092Z"
+      },
+      "scaledUiConfig": {
+        "multiplier": 1,
+        "newMultiplier": 5,
+        "newMultiplierEffectiveAt": "2026-06-10T04:30:00Z",
+        "circSupplyPrescaled": 8742.506666474,
+        "totalSupplyPrescaled": 8742.506666474,
+        "usdPricePrescaled": 589.157539176846
+      }
+    },
+    "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua": {
+      "createdAt": "2026-01-21T23:27:06Z",
+      "liquidity": 112311.97313599395,
+      "usdPrice": 886.888189407177,
+      "blockId": 449335271,
+      "decimals": 9,
+      "priceChange24h": -0.444059867394615,
+      "stockData": {
+        "id": "prestocks",
+        "price": 888.77540834,
+        "mcap": 32326586290,
+        "updatedAt": "2026-09-22T09:15:13.092Z"
+      }
+    },
+    "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd": {
+      "createdAt": "2026-09-02T17:24:40Z",
+      "liquidity": 108928.60662372332,
+      "usdPrice": 173.45949656253285,
+      "blockId": 449332745,
+      "decimals": 9,
+      "priceChange24h": -3.9835229991620245,
+      "stockData": {
+        "id": "prestocks",
+        "price": 182.05737252,
+        "mcap": 39693419854,
+        "updatedAt": "2026-09-22T09:15:13.092Z"
+      }
+    },
+    "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S": {
+      "createdAt": "2026-04-15T17:51:59Z",
+      "liquidity": 279617.3094585666,
+      "usdPrice": 439.42040941202765,
+      "blockId": 449334965,
+      "decimals": 9,
+      "priceChange24h": 1.7615842957762176,
+      "stockData": {
+        "id": "prestocks",
+        "price": 337.47515451,
+        "mcap": 64287346265,
+        "updatedAt": "2026-09-22T09:15:13.092Z"
+      }
+    },
+    "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw": {
+      "createdAt": "2025-09-13T15:40:13Z",
+      "liquidity": 702279.2009003991,
+      "usdPrice": 1039.5749962666391,
+      "blockId": 449335700,
+      "decimals": 9,
+      "priceChange24h": -0.37118336376007216,
+      "stockData": {
+        "id": "prestocks",
+        "price": 1051.40451072,
+        "mcap": 1722560487674,
+        "updatedAt": "2026-09-22T09:15:13.092Z"
+      }
+    },
+    "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB": {
+      "createdAt": "2025-09-13T15:37:46Z",
+      "liquidity": 378178.8929681057,
+      "usdPrice": 153.37248080100025,
+      "blockId": 449331484,
+      "decimals": 9,
+      "priceChange24h": -2.771735167310969,
+      "stockData": {
+        "id": "prestocks",
+        "price": 153.14115779,
+        "mcap": 135483837929,
+        "updatedAt": "2026-09-22T09:15:13.092Z"
+      }
+    },
+    "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF": {
+      "createdAt": "2025-09-13T15:42:46Z",
+      "liquidity": 796393.7949544727,
+      "usdPrice": 1149.8977538530448,
+      "blockId": 449335727,
+      "decimals": 9,
+      "priceChange24h": 2.0027332555950395,
+      "stockData": {
+        "id": "prestocks",
+        "price": 1000.5542012847153,
+        "mcap": 1239616914610,
+        "updatedAt": "2026-09-22T09:15:13.092Z"
+      },
+      "scaledUiConfig": {
+        "multiplier": 1,
+        "newMultiplier": 1.4861347,
+        "newMultiplierEffectiveAt": "2026-07-17T16:30:00Z",
+        "circSupplyPrescaled": 1901.858204773,
+        "totalSupplyPrescaled": 1901.858204773,
+        "usdPricePrescaled": 1708.9029534530687
+      }
+    }
+  }
+}

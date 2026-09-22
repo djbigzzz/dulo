@@ -159,8 +159,8 @@ describe("RuleDisclosure is mounted beside every reward's proof", () => {
     expect(card).toContain('import { RuleDisclosure } from "@/components/plays/RuleDisclosure"');
     expect(card).toContain("<RuleDisclosure");
     expect(card).toContain("showHint={false}");
-    // The card still prints the sentence itself, under the title.
-    expect(card).toContain("{ruleToHint(play.rule)}");
+    // The card still prints the sentence itself, under the title (in the quest issuer's noun).
+    expect(card).toContain("{ruleToHint(play.rule, assetSource)}");
     // 16 Sep: quest cards link to no buy, so the card carries no swap button and no swap note
     // (the compliance line prints once under the on-chain group instead; plays.test.ts).
     expect(card).not.toContain("START_IN_JUPITER_NOTE");
@@ -180,7 +180,7 @@ describe("RuleDisclosure is mounted beside every reward's proof", () => {
     const card = repoFile("src/app/check/_components/PreviewPlayCard.tsx");
     expect(card).toContain('import { RuleDisclosure } from "@/components/plays/RuleDisclosure"');
     expect(card).toContain("<RuleDisclosure rule={play.rule} showHint={false} />");
-    expect(card).toContain("{ruleToHint(play.rule)}");
+    expect(card).toContain("{ruleToHint(play.rule, play.assetSource)}");
     // Unchanged pins from tests/preview-ui.test.ts.
     expect(card).toContain('import { ProofList } from "@/components/plays/ProofDrawer"');
     expect(card).toContain("<ProofList entries={entries} />");

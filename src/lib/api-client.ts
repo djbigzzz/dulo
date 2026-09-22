@@ -162,6 +162,11 @@ export interface PlayView {
    * The engine never evaluates it and the UI renders it as "coming soon"; status is "locked".
    */
   comingSoon: boolean;
+  /**
+   * Play.assetSource, the issuer this quest is fenced to ("xstocks", "prestocks"), when the route
+   * sends it. Absent means the UI falls back to the quest key (components/common/issuer questAssetSource).
+   */
+  assetSource?: string | null;
 }
 
 export interface CampaignGroup {
@@ -220,6 +225,8 @@ export interface PartnerPlayView {
   completions: number;
   /** See PlayView.comingSoon. */
   comingSoon: boolean;
+  /** See PlayView.assetSource. */
+  assetSource?: string | null;
 }
 
 export interface PartnerCampaignView {
@@ -800,9 +807,23 @@ export const badgesApi = {
  */
 export type PreviewPlayStatus = "qualifies" | "not_yet" | "needs_history" | "needs_activity";
 
+/**
+ * An issuer's own valuation of a pre-IPO token's underlying (PreStocks "markPrice"), with its own
+ * age. An explanation beside the DEX quote, never a signal: the UI prints both numbers and no
+ * difference, percentage or sort key.
+ */
+export interface IssuerMarkView {
+  price: number;
+  /** When the issuer payload was fetched, ISO. */
+  publishedAt: string | null;
+  ageSeconds: number | null;
+}
+
 export interface PreviewHoldingView {
   assetId: string;
   symbol: string;
+  /** Holding.source: the issuer that resolved this position ("xstocks", "prestocks"). */
+  source: string;
   /** Multiplier-correct quantity. */
   qty: number;
   /** Token-2022 ScaledUiAmount multiplier applied to the raw balance (1 when none). */
@@ -811,6 +832,8 @@ export interface PreviewHoldingView {
   usd: number;
   /** The quote behind `usd` (source / age / stale for the PriceChip). */
   quote: PriceQuoteView;
+  /** PreStocks only: the issuer mark when the issuer API has answered; null otherwise (the UI omits the line). */
+  issuerMark: IssuerMarkView | null;
 }
 
 export interface PreviewPlayView {
@@ -820,6 +843,8 @@ export interface PreviewPlayView {
   points: number;
   badgeKey: string | null;
   rule: PlayRule;
+  /** The issuer this quest was evaluated against (Play.assetSource); null when unfenced. */
+  assetSource: string | null;
   status: PreviewPlayStatus;
   /** One line explaining the status, e.g. "Needs daily snapshots — connect to start the clock". */
   note: string;
@@ -838,7 +863,7 @@ export interface PreviewResponse {
   readAt: string;
   /** Neutral label when the address is a curated public holder ("Public holder A"), else null. */
   label: string | null;
-  /** Value of the xStocks held (cents). */
+  /** Value of every position held, xStocks and pre-IPO tokens (cents). */
   totalUsd: number;
   /** Positions with qty > 0, largest first. */
   holdings: PreviewHoldingView[];

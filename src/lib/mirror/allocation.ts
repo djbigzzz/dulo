@@ -7,16 +7,27 @@
  * imports, no clock reads), so the /mirror page can compute the plan in the browser and
  * the API can compute the target on the server from the same code.
  *
- *   allocationFromSnapshot(snapshot)   usd-weighted legs of a HoldingsSnapshot, weight desc
+ *   allocationFromSnapshot(snapshot)   usd-weighted legs of a HoldingsSnapshot, weight desc,
+ *                                      xStocks holdings only (COPY_ASSET_SOURCE, see below)
  *   allocationFromLegs(legs)           the same over already-valued { assetId, symbol, usd } rows
  *   pnlBetween(older, newer)           change in total position value between two allocations
  *   mirrorPlan({ target, budgetUsd })  per-leg USDC amounts for a budget (cents, legs < $1 dropped)
  *   jupiterSwapUrl({ inputMint, outputMint, amountUi })   https://jup.ag/swap?sell=<in>&buy=<out>&inAmount=<ui>
  */
-import type { HoldingsSnapshot } from "@/lib/core/types";
+import { DEFAULT_ASSET_SOURCE, type HoldingsSnapshot } from "@/lib/core/types";
 
 /** USDC on Solana mainnet (the Mirror input mint). */
 export const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+
+/**
+ * The one AssetSource a copy is built from. The Portfolio Match quest (mirror_match) is fenced
+ * to SEASON0_ASSET_SOURCE ("xstocks", lib/plays/catalogue), and the engine never fences the
+ * copied TARGET: a leg from another issuer (a pre-IPO token) would be a target leg the copier's
+ * fenced holdings can never match, so the quest could never complete. Holdings of every other
+ * source are therefore left out of the allocation here, before a target is ever shown or
+ * recorded. Rows without a source are legacy xStocks rows (DEFAULT_ASSET_SOURCE).
+ */
+export const COPY_ASSET_SOURCE = "xstocks";
 
 /** Positions worth less than this are dust and never become a leg. */
 export const MIN_LEG_USD = 1;
@@ -101,16 +112,24 @@ export function allocationFromLegs(positions: readonly ValuedPosition[]): Alloca
   return { totalUsd: round2(total), legs };
 }
 
+/** The source a snapshot row (or Holding) belongs to: its own `source`, else the legacy default. */
+export function sourceOfRow(o: { source?: unknown }): string {
+  return typeof o.source === "string" && o.source.trim().length > 0 ? o.source.trim() : DEFAULT_ASSET_SOURCE;
+}
+
 /**
  * Allocation of a wallet snapshot. Holdings are read tolerantly (the Snapshot.holdings
- * JSON column may be handed in as-is): qty <= 0 rows and rows without a usable usd are skipped.
+ * JSON column may be handed in as-is): qty <= 0 rows, rows without a usable usd and rows of
+ * any AssetSource other than `source` (COPY_ASSET_SOURCE: pre-IPO positions are never part of
+ * a copy) are skipped.
  */
-export function allocationFromSnapshot(snapshot: Pick<HoldingsSnapshot, "holdings"> | { holdings: unknown }): Allocation {
+export function allocationFromSnapshot(snapshot: Pick<HoldingsSnapshot, "holdings"> | { holdings: unknown }, source: string = COPY_ASSET_SOURCE): Allocation {
   const raw = snapshot && typeof snapshot === "object" ? (snapshot as { holdings?: unknown }).holdings : null;
   const rows: ValuedPosition[] = [];
   for (const h of Array.isArray(raw) ? raw : []) {
     if (!h || typeof h !== "object") continue;
     const o = h as Record<string, unknown>;
+    if (sourceOfRow(o) !== source) continue;
     const qty = num(o.qty);
     if (qty !== null && qty <= 0) continue;
     const usd = num(o.usd);

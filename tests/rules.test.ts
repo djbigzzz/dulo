@@ -15,7 +15,7 @@ import {
   safeParsePlayRule,
   type PlayRule,
 } from "@/lib/plays/rules";
-import { SEASON0_ASSET_SOURCE, SEASON0_BADGE_KEYS, SEASON0_PLAYS, activePlays, playByKey } from "@/lib/plays/catalogue";
+import { SEASON0_ASSET_SOURCE, SEASON0_BADGE_KEYS, SEASON0_PLAYS, activePlays, playAssetSource, playByKey } from "@/lib/plays/catalogue";
 import { evaluatePlay, type EvalContext } from "@/lib/plays/engine";
 import {
   HIDDEN_PARTNER_SLUGS,
@@ -114,6 +114,7 @@ describe("PlayRuleSchema — catalogue", () => {
       "thousand_club",
       "index_holder",
       "sector_spread",
+      "pre_ipo_position",
       "oracle",
       "scout",
       "three_predictions",
@@ -125,18 +126,24 @@ describe("PlayRuleSchema — catalogue", () => {
     ]);
   });
 
-  it("is the 19-row quest catalogue: 8 in-platform, 9 on-chain, 2 partner quests coming soon", () => {
-    expect(SEASON0_PLAYS).toHaveLength(19);
+  it("is the 20-row quest catalogue: 8 in-platform, 10 on-chain (9 xStocks + 1 PreStocks), 2 partner quests coming soon", () => {
+    expect(SEASON0_PLAYS).toHaveLength(20);
     const live = activePlays();
     const inPlatform = live.filter((p) => p.rule.type === "internal_event");
     const onChain = live.filter((p) => p.rule.type !== "internal_event");
     expect(inPlatform).toHaveLength(8);
-    expect(onChain).toHaveLength(9);
+    expect(onChain).toHaveLength(10);
     expect(inPlatform.reduce((n, p) => n + p.points, 0)).toBe(850);
-    expect(onChain.reduce((n, p) => n + p.points, 0)).toBe(2700);
-    // Every in-platform quest files under the hidden house Partner; every live on-chain quest under xStocks.
+    expect(onChain.reduce((n, p) => n + p.points, 0)).toBe(2800);
+    // Every in-platform quest files under the hidden house Partner; every live on-chain quest under an
+    // issuer Partner, and its fence (Play.assetSource) is that issuer's AssetSource name.
     for (const p of inPlatform) expect(p.partnerSlug, p.key).toBe(HOUSE_PARTNER_SLUG);
-    for (const p of onChain) expect(p.partnerSlug, p.key).toBe("xstocks");
+    for (const p of onChain) {
+      expect(["xstocks", "prestocks"], p.key).toContain(p.partnerSlug);
+      expect(playAssetSource(p), p.key).toBe(p.partnerSlug);
+    }
+    expect(onChain.filter((p) => p.partnerSlug === "xstocks")).toHaveLength(9);
+    expect(onChain.filter((p) => p.partnerSlug === "prestocks").map((p) => p.key)).toEqual(["pre_ipo_position"]);
     // Every internal_event the catalogue reads is a known event name.
     for (const p of SEASON0_PLAYS) {
       if (p.rule.type === "internal_event") expect(INTERNAL_EVENT_TYPES as readonly string[], p.key).toContain(p.rule.event);
@@ -461,9 +468,9 @@ describe("Season 0 partners", () => {
     expect(new Date(SEASON0.endsAt).toISOString()).toBe("2026-12-31T23:59:59.000Z");
   });
 
-  it("seeds three listed partners plus the hidden house partner, one campaign each, no placeholders", () => {
-    expect(SEASON0_PARTNERS.map((p) => p.slug)).toEqual(["xstocks", "jupiter", "kamino", "dulo"]);
-    expect(SEASON0_PARTNERS.filter((p) => isListedPartnerSlug(p.slug)).map((p) => p.slug)).toEqual(["xstocks", "jupiter", "kamino"]);
+  it("seeds four listed partners (PreStocks since 22 Sep) plus the hidden house partner, one campaign each, no placeholders", () => {
+    expect(SEASON0_PARTNERS.map((p) => p.slug)).toEqual(["xstocks", "prestocks", "jupiter", "kamino", "dulo"]);
+    expect(SEASON0_PARTNERS.filter((p) => isListedPartnerSlug(p.slug)).map((p) => p.slug)).toEqual(["xstocks", "prestocks", "jupiter", "kamino"]);
     expect(new Set(SEASON0_PARTNERS.map((p) => p.sortOrder)).size).toBe(SEASON0_PARTNERS.length);
     for (const p of SEASON0_PARTNERS) {
       expect(`${p.name} ${p.blurb} ${p.campaign.title}`).not.toMatch(/stocklana builder|listing pending/i);

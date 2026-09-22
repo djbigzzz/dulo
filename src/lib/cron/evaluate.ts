@@ -26,7 +26,7 @@
  * Server-only.
  */
 import type { Prisma } from "@prisma/client";
-import { xstocks } from "@/lib/assets/xstocks";
+import { listAllAssets } from "@/lib/assets/registry";
 import { DEFAULT_ASSET_SOURCE, type AssetInfo, type Holding, type HoldingsSnapshot, type InternalEvent, type PriceSourceName } from "@/lib/core";
 import { mirrorEventsForUser } from "@/lib/mirror/events";
 import { evaluatePlay, mergeSnapshots, type EvalContext, type EvalResult } from "@/lib/plays/engine";
@@ -199,7 +199,7 @@ export function bucketSnapshots(rows: readonly SnapshotRowInput[], bucketMs = SN
     .map((key) => mergeSnapshots([...(buckets.get(key) as Map<string, HoldingsSnapshot>).values()], new Date(key)));
 }
 
-/** Sector / underlying lookups over the xStocks catalogue, built once per run. */
+/** Sector / underlying lookups over every registered catalogue, built once per run. */
 export function catalogueIndexFrom(assets: readonly AssetInfo[]): CatalogueIndex {
   const byId = new Map<string, AssetInfo>();
   for (const a of assets) byId.set(a.assetId, a);
@@ -209,8 +209,9 @@ export function catalogueIndexFrom(assets: readonly AssetInfo[]): CatalogueIndex
   };
 }
 
+/** The index over every AssetSource in lib/assets/registry (a pre-IPO token has sector null, so it never counts towards Sector Spread). */
 export async function buildCatalogueIndex(): Promise<CatalogueIndex> {
-  return catalogueIndexFrom(await xstocks.listAssets());
+  return catalogueIndexFrom(await listAllAssets());
 }
 
 /** The earnings calendar keyed by underlying ticker ("_note" / "asOf" already stripped by rules.ts). */

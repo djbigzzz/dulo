@@ -96,8 +96,8 @@ Dulo is independent and not affiliated with xStocks. Backed Finance owns that br
 |---|---|
 | **Real user and problem** | 800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Holders need a reason to keep holding after the first buy, and apps need a way to reach them. On-chain quests pay points for holding, diversifying, buying steadily and holding through earnings, never for trading volume. Newcomers who hold nothing still get a full game: starter points for predictions and virtual cash for the competition. A listed project's on-chain quests are JSON rows on its campaign, and its page shows the verified completions it drove. Season 0 partners are seeded by hand and no project has signed up yet, so every count reads zero. |
 | **Working end-to-end demo** | Reads Solana mainnet. Anyone can check any wallet without signing in. A SIWS sign-in grants starter points and starts scoring. In-platform quests complete in the same request as the trade or prediction. On-chain quests are verified at sign-in and by a 5-minute cron. The weekly competition and the weekly points-only predictions both settle and roll over on their own. Copying a portfolio hands off to prefilled Jupiter swaps, and quests that carry a badge queue a soulbound Token-2022 badge mint (see [Proof on mainnet](#proof-on-mainnet)). It keeps working with US markets closed. |
-| **Why Solana** | Holdings are public state, so an on-chain quest is checked from RPC, not claimed by a broker. Token-2022 ScaledUiAmount gives multiplier-correct holdings. Jupiter quotes and swaps the xStock mint itself. Badges are NonTransferable Token-2022 mints. See [Why Solana](#why-solana). |
-| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,176 tests across 56 files pass today (`npx vitest run`, 21 Sep 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
+| **Why Solana** | Holdings are public state, so an on-chain quest is checked from RPC, not claimed by a broker. Token-2022 ScaledUiAmount gives multiplier-correct holdings. Jupiter quotes and swaps the xStock mint itself. Badges are NonTransferable Token-2022 mints. A second Token-2022 issuer, PreStocks pre-IPO tokens, is read, priced and scored through the same interfaces with zero extra RPC calls. See [Why Solana](#why-solana). |
+| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,297 tests across 62 files pass today (`npx vitest run`, 22 Sep 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
 
 ## How points work
 
@@ -108,7 +108,7 @@ Points only, no cash value. Points live in an append-only `PointsEvent` ledger w
 - **$10,000 of virtual cash per competition week.** It is neither real money nor points. Your competition account opens with your first paper trade, and the app never adds cash and points into one number.
 - **Season points = quests + weekly finishes (top 10 with 3+ trades) + settled prediction results.** Starter points, house seed rows and points in open predictions are left out. A prediction counts once it settles: the points back if it settles your way, minus the points you put in if it does not, and zero on a refund.
 - **Weekly finishes.** Ranks 1 to 10 by virtual portfolio value earn 1,000 / 700 / 500 / 300 / 200 / 100 / 100 / 100 / 100 / 100 points. Only real accounts with at least 3 trades that week are paid, so a place held by a house bot pays nobody.
-- **Quests.** The 8 in-platform quests are worth 850 points and use virtual cash and points. The 9 on-chain quests are worth 2,700 points and are verified from your wallet. Each on-chain quest describes a wallet state and never tells anyone to buy anything. Partner quests (Kamino Collateral, Jupiter Recurring) are listed as coming soon and cannot be verified yet.
+- **Quests.** The 8 in-platform quests are worth 850 points and use virtual cash and points. The 10 on-chain quests are worth 2,800 points and are verified from your wallet: nine read xStocks and one, Pre-IPO Position, reads PreStocks pre-IPO tokens. Each on-chain quest describes a wallet state and never tells anyone to buy anything. Partner quests (Kamino Collateral, Jupiter Recurring) are listed as coming soon and cannot be verified yet.
 - **Points balance and Season points.** Your points balance is what you can put into predictions: your Season points, plus your starter points, minus the points in your open predictions. The leaderboard ranks Season points. A player with 0 Season points or fewer reads "Not ranked yet".
 - **Points cannot be bought, cashed out or sent to another player.** Points only move between players through a shared prediction pool.
 - **What partners would pay for.** The plan is that partners list on-chain quests and pay per verified completion. It is only a plan: nothing is billed, no partner has signed and there is no billing code.
@@ -171,7 +171,7 @@ A quest is a JSON rule on a database row, validated by a zod schema with seven r
 | Three Game Days | `game_action` × 3, one per UTC day | A paper trade or a new prediction on three different days | 150 |
 | Five Predictions | `call_placed` × 5, one per question | Predictions on five different questions, over several weeks | 150 |
 
-**On-chain quests, verified from your wallet** (2,700 points).
+**On-chain quests, verified from your wallet** (2,800 points: nine fenced to xStocks, one to PreStocks pre-IPO tokens).
 
 | Quest | Rule `type` | The wallet state that completes it | Points | Badge |
 |---|---|---|---|---|
@@ -184,6 +184,7 @@ A quest is a JSON rule on a database row, validated by a zod schema with seven r
 | Earnings Holder | `hold_through_date` | An xStock held through its company's earnings date | 400 | yes |
 | Sector Spread | `diversified` | 5+ xStocks across 4+ sectors in the same snapshot | 400 | |
 | Portfolio Match | `mirror_match` | An allocation within 20% of a portfolio you chose to copy | 500 | yes |
+| Pre-IPO Position | `hold_any` | Any PreStocks pre-IPO token, whatever the amount, counted by the token and not by a price (fenced to the `prestocks` source) | 100 | |
 
 **Coming soon from partners.** These are seeded inactive and never evaluated. No partner has signed.
 
@@ -329,7 +330,7 @@ Rules the codebase keeps:
 
 **How Dulo relates to xPoints.** They are complementary: an issuer's own points reward activity in its own venues, while Dulo scores verified behaviour across apps and issuers and routes holders to the apps that list a quest.
 
-**Issuer scope.** Season 0 reads xStocks. Every asset read goes through `AssetSource`, so another issuer, such as Backpack Securities later, is another implementation behind the same interface, not a rewrite.
+**Issuer scope.** Season 0 scores xStocks, and since 22 Sep it also reads a second issuer. PreStocks pre-IPO tokens are eight more Token-2022 mints (`src/lib/assets/prestocks.ts`), registered beside xStocks in `src/lib/assets/registry.ts`. The snapshot reads the union of both mint sets in the same batched RPC calls it already made, so the second issuer costs zero extra RPC calls; each holding is tagged with the source that resolved it; the price layer sends only xStocks symbols to Pyth, so a pre-IPO token is Jupiter-priced and never a Hermes call; and the engine fences every quest to the issuer on its `Play.assetSource`. One quest, Pre-IPO Position, is fenced to `prestocks`; the nine xStocks quests evaluate identically with or without pre-IPO tokens in the wallet (`tests/second-issuer-regression.test.ts`). Another issuer later is another implementation behind the same interface, not a rewrite.
 
 ## Points only
 
@@ -346,6 +347,7 @@ Points only, no cash value. Points are not tokens and are not on-chain. On-chain
 | Partner | Label | What is listed |
 |---|---|---|
 | xStocks | Quests live | Nine on-chain quests verified from xStocks holdings |
+| PreStocks | Quests live | One on-chain quest, Pre-IPO Position, verified from PreStocks pre-IPO token holdings |
 | Jupiter | Coming soon | A Recurring-order quest (the copy tool's swap links already open jup.ag) |
 | Kamino | Coming soon | A collateral quest, to be read from Kamino's public API |
 
@@ -419,7 +421,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/
 Checks:
 
 ```bash
-npx vitest run      # 1,176 tests across 56 files on 21 Sep 2026; no database needed
+npx vitest run      # 1,297 tests across 62 files on 22 Sep 2026; no database needed
 npx next typegen    # once on a fresh clone: next-env.d.ts and .next/types are gitignored, and tsc needs the route types
 npm run typecheck
 npm run lint
@@ -479,6 +481,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 - **The `bigint: Failed to load bindings, pure JS will be used` warning is expected.** A transitive Solana dependency prints it during tests and builds, and it is harmless.
 - **Check any wallet is one live read.** On-chain quests that need daily history (Diamond Hands, Steady Buyer, Earnings Holder) show "Needs daily snapshots". The per-IP and per-instance rate limits live in memory.
 - **The Jupiter Recurring and Kamino quests are coming soon.** They are listed but cannot be verified yet.
+- **PreStocks pre-IPO tokens trade on thin pools and are Jupiter-only priced.** None of the eight has a Pyth feed, so a pre-IPO price is always Jupiter's quote from a thin Meteora pool, with its source and age shown. The issuer's mark (`markPrice` from the PreStocks API) is a separate number and not a tradeable quote; the app never presents the gap between the two as a discount. Pre-IPO Position is therefore count-based, and the competition and the copy tool stay xStocks-only.
 - **More in the handoff.** The full list, with a planned fix for each, is in `docs/HANDOFF.md` §3.9.
 
 ## Disclosure

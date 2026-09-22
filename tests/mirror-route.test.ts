@@ -24,7 +24,7 @@ vi.mock("@/lib/adapters/solana", async (importOriginal) => ({
 }));
 vi.mock("@/lib/assets/xstocks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/assets/xstocks")>();
-  return { ...actual, xstocks: { mintSet: mocks.mintSet, getAsset: mocks.getAsset, normaliseQty: actual.normaliseQty } };
+  return { ...actual, xstocks: { name: actual.xstocks.name, mintSet: mocks.mintSet, getAsset: mocks.getAsset, normaliseQty: actual.normaliseQty } };
 });
 
 import { PublicKey } from "@solana/web3.js";

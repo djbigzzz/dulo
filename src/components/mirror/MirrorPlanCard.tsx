@@ -26,6 +26,9 @@ export interface MirrorPlanCardProps {
 
 const QUICK_AMOUNTS = [50, 100, 250] as const;
 
+/** A copy is built from the wallet's xStocks only (lib/mirror/allocation COPY_ASSET_SOURCE); pre-IPO tokens are left out. */
+export const COPY_SCOPE_NOTE = "Pre-IPO tokens are not part of a copy: the plan covers this wallet's xStocks only.";
+
 /** Inset well (DESIGN.md): inputs and leg rows inside the plan card. */
 const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]";
 
@@ -209,6 +212,7 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
                 Skipped because they would be under $1: {plan.dropped.map((d) => `${d.symbol} (${formatWeight(d.weight)})`).join(", ")}. Your wallet can still match without them.
               </p>
             ) : null}
+            <p className="text-xs leading-relaxed text-muted-foreground/80">{COPY_SCOPE_NOTE}</p>
             <p className="text-xs leading-relaxed text-muted-foreground/80">{MIRROR_COMPLIANCE_LINE}</p>
           </Step>
 

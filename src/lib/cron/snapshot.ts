@@ -1,12 +1,14 @@
 /**
- * Cron step 1 — snapshot every wallet's xStocks holdings (docs/HANDOFF.md §4.2).
+ * Cron step 1 — snapshot every wallet's holdings across every registered AssetSource
+ * (docs/HANDOFF.md §4.2; lib/assets/registry: xStocks and PreStocks in Season 0).
  *
  * Per wallet (readWalletHoldings, read-only and shared with the public preview): token
- * balances through the Solana ChainAdapter filtered to the xStocks mint set, multiplier from
- * the chain (Token-2022 ScaledUiAmount) with the catalogue's value as fallback, quantity
- * through AssetSource.normaliseQty, price through lib/price (one batched call per wallet).
- * snapshotWallet then writes one Snapshot row. An empty wallet still gets a row:
- * "sold everything" is a fact the Plays engine needs to see.
+ * balances through the Solana ChainAdapter filtered to the union of every source's mint set,
+ * multiplier from the chain (Token-2022 ScaledUiAmount) with the catalogue's value as fallback,
+ * quantity through the resolving source's normaliseQty, price through lib/price (one batched
+ * call per wallet). Every Holding is tagged with the name of the source that resolved it, so
+ * the Plays engine can fence a quest to its issuer. snapshotWallet then writes one Snapshot
+ * row. An empty wallet still gets a row: "sold everything" is a fact the Plays engine needs to see.
  *
  * Bot wallets (users with a LeagueAccount.isBot) are never snapshotted: they are unfunded
  * deterministic keypairs, so the row would always be empty, and a snapshot is the first
@@ -18,8 +20,9 @@
  */
 import type { Prisma } from "@prisma/client";
 import { solana } from "@/lib/adapters/solana";
-import { xstocks } from "@/lib/assets/xstocks";
+import { listAllAssets, normaliseQtyFor, resolveAssetAnySource, sourceOfMint, unionMintSet } from "@/lib/assets/registry";
 import {
+  DEFAULT_ASSET_SOURCE,
   SOLANA_MAINNET,
   isSolanaChain,
   solanaTokenAssetId,
@@ -84,24 +87,31 @@ export interface WalletHoldingsRead {
 }
 
 /**
- * Read one wallet's xStocks holdings and price them. Read-only: nothing is written, so the
- * public preview (GET /api/v1/preview/[address]) and the cron share one read path.
- * Throws on adapter / price failure.
+ * Read one wallet's holdings across every registered AssetSource and price them. Read-only:
+ * nothing is written, so the public preview (GET /api/v1/preview/[address]) and the cron share
+ * one read path. Throws on adapter / price failure.
  */
 export async function readWalletHoldings(address: string, chainId: ChainId = SOLANA_MAINNET): Promise<WalletHoldingsRead> {
   if (!isSolanaChain(chainId)) throw new Error(`${chainId} is not a Solana chain; only Solana wallets can be read`);
 
-  const mints = await xstocks.mintSet();
+  const mints = await unionMintSet();
   const balances = await solana.getTokenBalances(address, mints);
   const readAt = new Date();
 
-  // Resolve every balance to its catalogue entry (in-memory after the first call).
+  // Resolve every balance to its catalogue entry and the source that owns it (in-memory after
+  // the first call). A mint that is in a source's mint set but not in its catalogue keeps the
+  // source's name (the mint set proves ownership) and stays unpriced; a mint no source claims at
+  // all (a source failed between the two reads) falls back to the same default legacy rows carry.
   const resolved = await Promise.all(
     balances.map(async (balance) => {
       const assetId = solanaTokenAssetId(balance.mint, chainId);
-      const asset = await xstocks.getAsset(assetId);
-      if (!asset) console.warn(`${LOG_PREFIX} ${balance.mint} is in the mint set but not in the catalogue; keeping it unpriced`);
-      return { balance, assetId, asset };
+      const hit = await resolveAssetAnySource(assetId);
+      let source = hit?.source ?? null;
+      if (!hit) {
+        source = await sourceOfMint(balance.mint);
+        console.warn(`${LOG_PREFIX} ${balance.mint} is in the mint set but not in the catalogue (${source ?? "no source claims it"}); keeping it unpriced`);
+      }
+      return { balance, assetId, asset: hit?.info ?? null, source: source ?? DEFAULT_ASSET_SOURCE };
     }),
   );
 
@@ -109,15 +119,15 @@ export async function readWalletHoldings(address: string, chainId: ChainId = SOL
   const ids: AssetId[] = resolved.map((r) => r.assetId);
   const quotes = ids.length > 0 ? await getPrices(ids) : new Map();
 
-  const holdings: Holding[] = resolved.map(({ balance, assetId, asset }) => {
+  const holdings: Holding[] = resolved.map(({ balance, assetId, asset, source }) => {
     const multiplier = balance.multiplier ?? asset?.multiplier ?? 1;
-    const qty = xstocks.normaliseQty(balance.amountRaw, balance.decimals, multiplier);
+    const qty = normaliseQtyFor(source, balance.amountRaw, balance.decimals, multiplier);
     const quote = quotes.get(assetId);
     const price = quote?.price ?? null;
     return {
       assetId,
       symbol: asset?.symbol ?? balance.mint,
-      source: xstocks.name,
+      source,
       raw: balance.amountRaw,
       multiplier,
       qty,
@@ -131,7 +141,7 @@ export async function readWalletHoldings(address: string, chainId: ChainId = SOL
 }
 
 /**
- * Read one wallet's xStocks holdings (readWalletHoldings), persist a Snapshot row and return it.
+ * Read one wallet's holdings (readWalletHoldings), persist a Snapshot row and return it.
  * Throws on adapter / database failure; the caller (snapshotAllWallets) isolates that.
  */
 export async function snapshotWallet(wallet: SnapshotWalletInput, opts: SnapshotWalletOptions = {}): Promise<HoldingsSnapshot> {
@@ -154,15 +164,15 @@ export async function snapshotWallet(wallet: SnapshotWalletInput, opts: Snapshot
 
 /**
  * Snapshot every real user's Wallet (or the given ids, bot wallets still excluded). One
- * wallet's failure is logged and skipped; the run always resolves. The xStocks catalogue
+ * wallet's failure is logged and skipped; the run always resolves. Every source's catalogue
  * is warmed once up front so the cold load is paid a single time, not once per wallet.
  */
 export async function snapshotAllWallets(opts: SnapshotAllOptions = {}): Promise<SnapshotAllResult> {
   const started = Date.now();
   const concurrency = Math.max(1, Math.floor(opts.concurrency ?? 4));
 
-  // Warm the catalogue (1h cache, stale-while-revalidate) before the wallets fan out.
-  await xstocks.listAssets();
+  // Warm every catalogue (1h caches, stale-while-revalidate) before the wallets fan out.
+  await listAllAssets();
 
   const wallets = await db.wallet.findMany({
     where: { ...(opts.walletIds ? { id: { in: opts.walletIds } } : {}), user: REAL_USER_WHERE },

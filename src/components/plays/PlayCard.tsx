@@ -20,6 +20,8 @@ import { badgeInfo } from "@/lib/badges/keys";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatPoints } from "@/components/common/format";
+import { isPreIpoSource, questAssetSource } from "@/components/common/issuer";
+import { IssuerPill } from "@/components/common/IssuerPill";
 import { ruleToHint } from "@/components/plays/rule-hint";
 import { RuleDisclosure } from "@/components/plays/RuleDisclosure";
 import { isEmptyProof } from "@/components/plays/proof";
@@ -46,6 +48,8 @@ export interface PlayCardPlay {
   status?: PlayStatus;
   completedAt?: string | null;
   proof?: unknown;
+  /** Play.assetSource when the route sends it; the card also reads the key (questAssetSource). */
+  assetSource?: string | null;
 }
 
 export interface PlayCardProps<P extends PlayCardPlay = PlayCardPlay> {
@@ -192,8 +196,11 @@ export function PlayCard<P extends PlayCardPlay>({
 }: PlayCardProps<P>) {
   const status = play.status ?? "locked";
   const complete = status === "complete";
+  // The issuer the quest is fenced to: picks the noun in the hint and the unit, and the pill on a pre-IPO quest.
+  const assetSource = questAssetSource(play);
+  const preIpo = isPreIpoSource(assetSource);
   // No bar for a dollar target (it would read as "buy more"); units are labelled for people.
-  const progress = status === "in_progress" ? cardProgress(proofProgress(play.proof)) : null;
+  const progress = status === "in_progress" ? cardProgress(proofProgress(play.proof), assetSource) : null;
   // In-platform quests (and Portfolio Match) link to where they happen inside Dulo; on-chain quests carry no action.
   const where = visibleStartAction({ ...play, status });
   const hasProof = !isEmptyProof(play.proof);
@@ -268,9 +275,13 @@ export function PlayCard<P extends PlayCardPlay>({
       </div>
 
       <div className="min-w-0">
-        <h3 className="text-base leading-snug font-semibold tracking-tight">
-          {play.title}
-        </h3>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 className="text-base leading-snug font-semibold tracking-tight">
+            {play.title}
+          </h3>
+          {/* Only a pre-IPO quest names its issuer: every other quest is an xStocks quest, the Season 0 default. */}
+          {preIpo ? <IssuerPill source={assetSource} /> : null}
+        </div>
         <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
           {play.desc}
         </p>
@@ -281,7 +292,7 @@ export function PlayCard<P extends PlayCardPlay>({
           className="mt-0.5 size-4 shrink-0 text-gold/70"
           aria-hidden
         />
-        <span>{ruleToHint(play.rule)}</span>
+        <span>{ruleToHint(play.rule, assetSource)}</span>
       </p>
 
       {progress ? (

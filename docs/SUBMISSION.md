@@ -28,7 +28,7 @@ The entertainment layer for xStocks, live on Solana mainnet. Predict Friday clos
 
 ## Step 2: Description
 
-### Full Description (Markdown, 5,000 max): 3,984 measured
+### Full Description (Markdown, 5,000 max): 4,135 measured
 
 ````markdown
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
@@ -59,7 +59,7 @@ Nobody hits a dead end. On first sign-in every player gets 1,000 starter points 
 
 ## How points work
 
-Points only, no cash value, kept in an append-only ledger with a unique ref on every row. Season points = quests + weekly competition finishes + settled prediction results. The 1,000 starter points can go into predictions but never count toward rank, and points in an open prediction count only once it settles. In-platform quests are worth 850 points and on-chain quests 2,700. No quest tells anyone to buy a security: an on-chain quest describes a wallet state, and the proof shows the wallet reached it. Points cannot be bought, cashed out or sent to another player. Onboarding, not churn.
+Points only, no cash value, kept in an append-only ledger with a unique ref on every row. Season points = quests + weekly competition finishes + settled prediction results. The 1,000 starter points can go into predictions but never count toward rank, and points in an open prediction count only once it settles. In-platform quests are worth 850 points and on-chain quests 2,800. No quest tells anyone to buy a security: an on-chain quest describes a wallet state, and the proof shows the wallet reached it. Points cannot be bought, cashed out or sent to another player. Onboarding, not churn.
 
 ## Why Solana
 
@@ -73,7 +73,7 @@ Next, the entertainment layer for tokenized assets.
 
 Then, any app or issuer runs competitions, predictions and rewards for its own holders on Dulo's API, and a player carries one score across them.
 
-Quests are JSON rules behind one asset interface, so a second issuer is an implementation, not a rewrite.
+Quests are JSON rules behind one asset interface, so a second issuer is an implementation, not a rewrite: PreStocks pre-IPO tokens are already the second issuer, read, priced and scored through the same interfaces as xStocks, with one quest fenced to them.
 
 ## The model, as a plan
 
@@ -81,7 +81,7 @@ Players are free. Partners would list on-chain quests and pay per verified compl
 
 ## Team
 
-Built solo. Live since 21 Sep 2026 on Vercel and Neon: no players yet, no partner signed and no badge minted, and every count on the site reads zero because it is zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,176 tests, CI on every push.
+Built solo. Live since 21 Sep 2026 on Vercel and Neon: no players yet, no partner signed and no badge minted, and every count on the site reads zero because it is zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,297 tests, CI on every push.
 
 Points only, no cash value. Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions. Dulo is independent and not affiliated with xStocks (Backed Finance owns that brand). Original work, written for this hackathon.
 ````
@@ -135,7 +135,7 @@ A judge with no xStocks can do all of this except the on-chain quests, and can s
 | Season points | Quests + weekly finishes (top 10 with 3+ trades) + settled prediction results. |
 | Predictions | 10 to 5,000 points per placement, 100 by default. The side that settles right shares the whole pool; a void market or an empty side refunds. |
 | Weekly finishes | 1,000 / 700 / 500 / 300 / 200, then 100 for places 6 to 10, paid only to real accounts with 3+ trades that week. |
-| Quests | In-platform quests (850 points) and on-chain quests verified from the wallet (2,700 points), 50 to 500 each. Kamino and Jupiter Recurring partner quests are coming soon. |
+| Quests | In-platform quests (850 points) and on-chain quests verified from the wallet (2,800 points: nine xStocks quests and one PreStocks pre-IPO token quest), 50 to 500 each. Kamino and Jupiter Recurring partner quests are coming soon. |
 | Partners | The plan is that partners pay per verified completion. Nothing is billed and no partner has signed. |
 | Not built | Spot On-style settlement quests are not built, and neither are Top 10 Finish or Green Week quests. |
 
@@ -162,7 +162,7 @@ Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), confir
 - [ ] `git status --ignored` shows `!! docs/private/`, and `git ls-files docs/private` prints nothing. No tracked file cites a path inside it.
 - [ ] Secret grep over tracked files is clean: `git grep -nIE "(-----BEGIN|api[_-]?key[\"' ]*[:=]|api-key=|postgres(ql)?://[^ ]*:[^ @]*@)" -- ':!*.example' ':!docs/*'` returns only variable names, never a value.
 - [ ] No keypair, `.env` or wallet file is tracked.
-- [ ] CI is green on the default branch. `npx vitest run` printed **1,176** on 21 Sep; re-read it on the day and make the Full Description and the README say the same number.
+- [ ] CI is green on the default branch. `npx vitest run` printed **1,297** on 22 Sep; re-read it on the day and make the Full Description and the README say the same number.
 - [ ] The repo is public, MIT, with the README's disclosure section intact.
 
 ### Badge names (gate: do this before a badge can ever mint)

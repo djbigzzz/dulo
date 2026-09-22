@@ -5,7 +5,8 @@ import { ArrowLeft, ArrowRight, SearchX } from "lucide-react";
 import { cn } from "cn";
 import { apiGet, type PartnerDetail } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
-import { COMPLIANCE_LINE } from "@/components/common/compliance";
+import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE, PRE_IPO_TOKEN_2022_NOTE } from "@/components/common/compliance";
+import { isPreIpoQuest, PRESTOCKS_PARTNER_SLUG } from "@/components/common/issuer";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { StatStrip } from "@/components/common/StatStrip";
@@ -66,6 +67,11 @@ export function PartnerView({ slug }: PartnerViewProps) {
   );
 }
 
+/** The PreStocks Partner page, or any Partner page that lists a quest fenced to pre-IPO tokens. */
+export function isPreIpoPartner(slug: string, plays: ReadonlyArray<{ key: string; assetSource?: string | null }>): boolean {
+  return slug === PRESTOCKS_PARTNER_SLUG || plays.some(isPreIpoQuest);
+}
+
 /** Exported for tests. */
 export function PartnerBody({ detail }: { detail: PartnerDetail }) {
   const plays = detail.campaigns.flatMap((c) => c.plays);
@@ -74,10 +80,13 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
   const campaigns = detail.campaigns.filter((c) => c.plays.length > 0);
   // Partner quests are on-chain quests (live or coming soon): the compliance line prints once when the page lists any.
   const listsOnChain = plays.some((play) => questKind(play) !== "in-platform");
+  // The PreStocks page (or any page listing a pre-IPO quest) carries the pre-IPO line too, and its
+  // outbound links lead to a pre-IPO swap, so the Token-2022 authority note sits under them.
+  const preIpo = isPreIpoPartner(detail.partner.slug, plays);
 
   return (
     <>
-      <PartnerHeader partner={detail.partner} livePlays={live.length} />
+      <PartnerHeader partner={detail.partner} livePlays={live.length} notice={preIpo ? PRE_IPO_TOKEN_2022_NOTE : null} />
 
       {live.length > 0 ? (
         <StatStrip
@@ -129,8 +138,13 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
             </div>
           ))
         )}
-        {/* One compliance line for the section, as the on-chain group on /quests prints it. */}
-        {listsOnChain ? <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p> : null}
+        {/* One compliance line for the section, as the on-chain group on /quests prints it; the pre-IPO line beside it on the PreStocks page. */}
+        {listsOnChain || preIpo ? <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p> : null}
+        {preIpo ? (
+          <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
+            {PRE_IPO_COMPLIANCE_LINE}
+          </p>
+        ) : null}
       </section>
 
       <p className="text-xs leading-relaxed text-muted-foreground">{PARTNER_MARKS_NOTICE}</p>

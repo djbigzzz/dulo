@@ -86,6 +86,24 @@ export const SEASON0_PARTNERS: readonly SeasonPartner[] = [
     campaign: { id: campaignIdFor("xstocks"), title: "xStocks · Stocks Season" },
   },
   {
+    // Second issuer (22 Sep 2026): pre-IPO tokens, read through the same AssetSource interface as
+    // xStocks. Its one quest is fenced to the "prestocks" source (Play.assetSource), so no xStocks
+    // quest can be completed by a pre-IPO token and this one can never be completed by an xStock.
+    slug: "prestocks",
+    name: "PreStocks",
+    kind: "issuer",
+    logoUrl: null,
+    blurb:
+      "Tokenized pre-IPO exposure on Solana. Each PreStocks pre-IPO token is a Token-2022 mint in your own wallet, read the same way as an xStock. They trade around the clock on thin pools, and the issuer's mark and the pool price are two different numbers.",
+    links: {
+      website: "https://www.prestocks.com",
+      x: "https://x.com/PreStocks",
+    },
+    chainIds: [SOLANA_MAINNET],
+    sortOrder: 1,
+    campaign: { id: campaignIdFor("prestocks"), title: "Pre-IPO on Dulo · Stocks Season" },
+  },
+  {
     slug: "jupiter",
     name: "Jupiter",
     kind: "dex",
@@ -98,7 +116,7 @@ export const SEASON0_PARTNERS: readonly SeasonPartner[] = [
       docs: "https://dev.jup.ag",
     },
     chainIds: [SOLANA_MAINNET],
-    sortOrder: 1,
+    sortOrder: 2,
     campaign: { id: campaignIdFor("jupiter"), title: "Jupiter · Stocks Season" },
   },
   {
@@ -113,7 +131,7 @@ export const SEASON0_PARTNERS: readonly SeasonPartner[] = [
       x: "https://x.com/KaminoFinance",
     },
     chainIds: [SOLANA_MAINNET],
-    sortOrder: 2,
+    sortOrder: 3,
     campaign: { id: campaignIdFor("kamino"), title: "Kamino · Stocks Season" },
   },
   {
@@ -126,7 +144,7 @@ export const SEASON0_PARTNERS: readonly SeasonPartner[] = [
       "Dulo's own games: a weekly competition with virtual cash, and predictions for points only. No xStocks needed and no real money involved.",
     links: {},
     chainIds: [SOLANA_MAINNET],
-    sortOrder: 3,
+    sortOrder: 4,
     campaign: { id: campaignIdFor(HOUSE_PARTNER_SLUG), title: "Dulo games · Stocks Season" },
     hidden: true,
   },

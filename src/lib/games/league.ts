@@ -15,7 +15,8 @@
  *               exempt, otherwise a sub-$10 remainder could never be sold.
  * Accounts      one LeagueAccount per (league, user), created on the first trade with
  *               STARTING_CASH_USD and positions {} keyed by CAIP-19 asset id.
- * Trades        placeTrade quotes through lib/price (getPriceBySymbol), fills at the quote
+ * Trades        placeTrade quotes through lib/price (getPriceBySymbol, fenced to xStocks:
+ *               LEAGUE_ASSET_SOURCE; a pre-IPO token is refused), fills at the quote
  *               +/- SPREAD (0.1%) and applies cash / position / LeagueTrade writes in ONE
  *               interactive transaction that locks and re-reads the account row
  *               (SELECT ... FOR UPDATE), so two concurrent trades can never both spend the
@@ -70,6 +71,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import type { AssetId, GameModule, PriceQuote } from "@/lib/core";
 import { SOLANA_MAINNET, isAssetId, solanaTokenAssetId } from "@/lib/core";
 import { XSTOCKS_FALLBACK } from "@/lib/assets/xstocks";
+import { SEASON0_ASSET_SOURCE } from "@/lib/plays/catalogue";
 import { UnknownAssetError, getPriceBySymbol, getPrices, getPricesBySymbols } from "@/lib/price";
 import { ApiError } from "@/lib/server/api";
 import { db } from "@/lib/server/db";
@@ -99,7 +101,13 @@ export const RECENT_TRADES_LIMIT = 20;
 export const QTY_DECIMALS = 6;
 /** GET /api/v1/league recomputes equity when the last recompute is older than this. */
 export const RECOMPUTE_MIN_INTERVAL_MS = 60_000;
-/** The fixed tradable list (bots trade these; users can also trade any xStock lib/price knows). */
+/**
+ * The only AssetSource the competition trades. lib/price resolves symbols across every
+ * registered issuer (xStocks and PreStocks), so placeTrade fences its quote to this source and a
+ * pre-IPO token is refused as an unknown xStock: a paper trade never holds, values or scores one.
+ */
+export const LEAGUE_ASSET_SOURCE = SEASON0_ASSET_SOURCE;
+/** The fixed tradable list (bots trade these; users can also trade any xStock lib/price knows, and only an xStock: LEAGUE_ASSET_SOURCE). */
 export const TRADABLE_SYMBOLS: readonly string[] = Object.freeze([
   "TSLAx",
   "NVDAx",
@@ -506,9 +514,10 @@ export async function placeTrade(input: PlaceTradeInput, now: Date = new Date(),
   const league = await ensureLeague(seasonId, now, client);
   assertTradingOpen(league, now);
 
+  // Fenced to LEAGUE_ASSET_SOURCE: a symbol only another issuer knows (a pre-IPO token) is unknown here.
   let quote: PriceQuote;
   try {
-    quote = await getPriceBySymbol(symbol);
+    quote = await getPriceBySymbol(symbol, { source: LEAGUE_ASSET_SOURCE });
   } catch (e) {
     if (e instanceof UnknownAssetError) throw new ApiError(`Unknown xStock: ${symbol}`, 400);
     throw e;

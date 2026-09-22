@@ -1,5 +1,6 @@
 import { isListedPartnerSlug } from "@/lib/plays/partners";
 import type { PlayRule } from "@/lib/plays/rules";
+import { assetNounFor, isPreIpoSource } from "@/components/common/issuer";
 
 /**
  * Presentation helpers for the quests board: quest kinds, filter categories, where a quest
@@ -112,19 +113,20 @@ const PROGRESS_UNIT_LABELS: Readonly<Record<string, string>> = Object.freeze({
   assets: "xStocks",
 });
 
-/** "legs" -> "holdings matched", "events" -> "done"; anything else unchanged. */
-export function progressUnitLabel(unit: string): string {
+/** "legs" -> "holdings matched", "events" -> "done", "assets" -> the issuer's plural noun; anything else unchanged. */
+export function progressUnitLabel(unit: string, assetSource?: string | null): string {
+  if (unit === "assets" && isPreIpoSource(assetSource)) return assetNounFor(assetSource).plural;
   return Object.prototype.hasOwnProperty.call(PROGRESS_UNIT_LABELS, unit) ? PROGRESS_UNIT_LABELS[unit] : unit;
 }
 
 /**
  * The progress a quest card may show, unit already labelled, or null. A dollar target
  * ("300 of 1,000 usd") reads as "buy $700 more of a stock", so a card never shows one; the
- * proof drawer still lists the snapshot.
+ * proof drawer still lists the snapshot. `assetSource` picks the noun for an "assets" unit.
  */
-export function cardProgress(progress: PlayProgressView | null | undefined): PlayProgressView | null {
+export function cardProgress(progress: PlayProgressView | null | undefined, assetSource?: string | null): PlayProgressView | null {
   if (!progress || progress.unit.trim().toLowerCase() === "usd") return null;
-  return { ...progress, unit: progressUnitLabel(progress.unit) };
+  return { ...progress, unit: progressUnitLabel(progress.unit, assetSource) };
 }
 
 export interface BoardTotals {

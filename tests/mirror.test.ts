@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AssetId, HoldingsSnapshot } from "@/lib/core";
+import type { AssetId, Holding, HoldingsSnapshot } from "@/lib/core";
 
 // events.ts and queries.ts import Prisma for the DB-backed functions; the pure helpers
 // never touch it. The Mirror target / index queries get a mocked client and lib/price.
@@ -29,7 +29,25 @@ vi.mock("@/lib/adapters/solana", async (importOriginal) => ({
 }));
 vi.mock("@/lib/assets/xstocks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/assets/xstocks")>();
-  return { ...actual, xstocks: { mintSet: mocks.mintSet, getAsset: mocks.getAsset, normaliseQty: actual.normaliseQty } };
+  return { ...actual, xstocks: { name: actual.xstocks.name, mintSet: mocks.mintSet, getAsset: mocks.getAsset, normaliseQty: actual.normaliseQty } };
+});
+// The second issuer (lib/assets/registry): one pre-IPO token. A public read sees it; a copy never does.
+vi.mock("@/lib/assets/prestocks", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/assets/prestocks")>();
+  const SOL = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+  const SPACEX = "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh";
+  const spacex = { assetId: `${SOL}/token:${SPACEX}`, chainId: SOL, symbol: "SPACEX", underlying: "SPACEX", name: "SpaceX PreStocks", decimals: 9, sector: null, logoUrl: null, pythFeedId: null, multiplier: 1 };
+  return {
+    ...actual,
+    prestocks: {
+      name: actual.prestocks.name,
+      listAssets: async () => [spacex],
+      getAsset: async (id: string) => (id === spacex.assetId ? spacex : null),
+      getAssetBySymbol: async (s: string) => (s.toUpperCase() === "SPACEX" ? spacex : null),
+      mintSet: async () => new Set([SPACEX]),
+      normaliseQty: actual.normaliseQty,
+    },
+  };
 });
 
 import { PublicKey } from "@solana/web3.js";
@@ -40,6 +58,7 @@ import {
   PUBLIC_UNCACHED_READS_PER_MINUTE,
   PublicWalletReadError,
   getPublicMirrorTarget,
+  holdingsFullyPriced,
   listPublicMirrorRows,
   readPublicWallet,
   resetPublicReadCache,
@@ -50,7 +69,9 @@ import { ApiError } from "@/lib/server/api";
 import { MIRROR_COMPLIANCE_LINE, parseWalletInput, toleranceCopy } from "@/components/mirror/mirror-format";
 import { COMPLIANCE_LINE } from "@/components/common/compliance";
 import { emptyAllocationCopy, sourceChip, targetStats } from "@/components/mirror/target-stats";
+import { SEASON0_ASSET_SOURCE } from "@/lib/plays/catalogue";
 import {
+  COPY_ASSET_SOURCE,
   DEFAULT_BUDGET_USD,
   MIN_LEG_USD,
   USDC_MINT,
@@ -74,6 +95,9 @@ const NVDA_MINT = "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh";
 const TSLA = `${SOL}/token:${TSLA_MINT}` as AssetId;
 const AAPL = `${SOL}/token:${AAPL_MINT}` as AssetId;
 const NVDA = `${SOL}/token:${NVDA_MINT}` as AssetId;
+/** The one PreStocks mint the mocked second issuer knows (see the prestocks mock above). */
+const SPACEX_MINT = "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh";
+const SPACEX = `${SOL}/token:${SPACEX_MINT}` as AssetId;
 
 function holding(assetId: AssetId, symbol: string, usd: number, qty = 1) {
   return { assetId, symbol, source: "xstocks", raw: "1", multiplier: 1, qty, price: qty > 0 ? usd / qty : null, priceSource: "jupiter" as const, usd };
@@ -123,6 +147,28 @@ describe("allocationFromSnapshot", () => {
     expect(a.legs).toEqual([{ assetId: TSLA, symbol: "TSLAx", usd: 100, weight: 1 }]);
     expect(allocationFromSnapshot({ holdings: null }).legs).toEqual([]);
     expect(allocationFromSnapshot({ holdings: [] })).toEqual({ totalUsd: 0, legs: [] });
+  });
+
+  // Portfolio Match (mirror_match) is fenced to SEASON0_ASSET_SOURCE, and the engine never fences
+  // the copied TARGET: a pre-IPO leg would be one the copier's fenced holdings can never match
+  // (tests/second-issuer-regression.test.ts). So a copy is built from xStocks holdings only.
+  it("leaves pre-IPO positions out of a copy: only COPY_ASSET_SOURCE rows become legs, legacy rows without a source count as xStocks", () => {
+    expect(COPY_ASSET_SOURCE).toBe(SEASON0_ASSET_SOURCE);
+    const a = allocationFromSnapshot({
+      holdings: [
+        holding(TSLA, "TSLAx", 600),
+        { ...holding(SPACEX, "SPACEX", 5_000), source: "prestocks" },
+        { ...holding(AAPL, "AAPLx", 400), source: undefined },
+      ],
+    });
+    expect(a.totalUsd).toBe(1000);
+    expect(a.legs.map((l) => [l.symbol, l.usd, l.weight])).toEqual([
+      ["TSLAx", 600, 0.6],
+      ["AAPLx", 400, 0.4],
+    ]);
+    expect(JSON.stringify(a)).not.toContain("SPACEX");
+    // The source is a parameter, so another caller could build the other issuer's allocation on purpose.
+    expect(allocationFromSnapshot({ holdings: [{ ...holding(SPACEX, "SPACEX", 5_000), source: "prestocks" }] }, "prestocks").legs.map((l) => l.symbol)).toEqual(["SPACEX"]);
   });
 
   it("MIN_LEG_USD is applied after summing duplicates", () => {
@@ -516,7 +562,8 @@ describe("getMirrorTarget", () => {
       ["TSLAx", 600, 0.6],
       ["AAPLx", 400, 0.4],
     ]);
-    expect(mocks.getTokenBalances).toHaveBeenCalledWith(PUBLIC_ADDR, new Set([TSLA_MINT, AAPL_MINT]));
+    // The read is scoped to the union of every source's mint set (the pre-IPO mint included).
+    expect(mocks.getTokenBalances).toHaveBeenCalledWith(PUBLIC_ADDR, new Set([TSLA_MINT, AAPL_MINT, SPACEX_MINT]));
     // Never scored, never stored: no snapshot, League or points reads or writes for a public wallet.
     expect(mocks.db.snapshot.findFirst).not.toHaveBeenCalled();
     expect(mocks.db.leagueAccount.findMany).not.toHaveBeenCalled();
@@ -916,5 +963,112 @@ describe("Mirror copy helpers", () => {
     expect(pub.map((s) => s.label)).toEqual(["Portfolio value", "Dulo player"]);
     expect(sourceChip("public").label).toContain("Public wallet");
     expect(emptyAllocationCopy("public")).toContain("public wallet");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The second issuer in a public read: seen by the wallet read, never by a copy
+// ---------------------------------------------------------------------------
+
+describe("a public wallet holding a pre-IPO token", () => {
+  it("is read across both issuers but its copy target carries xStocks legs only", async () => {
+    resetPublicReadCache();
+    mocks.mintSet.mockResolvedValue(new Set([TSLA_MINT, AAPL_MINT]));
+    mocks.getAsset.mockImplementation(async (assetId: string) => (assetId === TSLA ? { assetId: TSLA, symbol: "TSLAx", multiplier: 1 } : null));
+    mocks.getTokenBalances.mockResolvedValue([
+      { chainId: SOL, mint: TSLA_MINT, account: "a1", amountRaw: "300000000", decimals: 8, program: "token-2022", multiplier: 1 },
+      { chainId: SOL, mint: SPACEX_MINT, account: "a2", amountRaw: "1000000000", decimals: 9, program: "token-2022", multiplier: 5 },
+    ]);
+    mocks.getPrices.mockResolvedValue(new Map([[TSLA, priceQuote(TSLA, "TSLAx", 200)], [SPACEX, priceQuote(SPACEX, "SPACEX", 100)]]));
+
+    const read = await readPublicWallet(PUBLIC_ADDR, { now: () => NOW.getTime() });
+
+    expect(mocks.getTokenBalances).toHaveBeenCalledWith(PUBLIC_ADDR, new Set([TSLA_MINT, AAPL_MINT, SPACEX_MINT]));
+    // The read itself knows both positions, each tagged with the source that resolved it and priced.
+    expect(read.holdings.map((h) => [h.symbol, h.source, h.qty, h.usd])).toEqual([
+      ["TSLAx", "xstocks", 3, 600],
+      ["SPACEX", "prestocks", 5, 500],
+    ]);
+    expect(read.priced).toBe(true);
+    // The copy target is xStocks only: $600 across one leg, the $500 pre-IPO position left out.
+    expect(read.allocation).toEqual({ totalUsd: 600, legs: [{ assetId: TSLA, symbol: "TSLAx", usd: 600, weight: 1 }] });
+    const target = await getPublicMirrorTarget(PUBLIC_ADDR, { now: () => NOW.getTime() });
+    expect(target).toMatchObject({ source: "public", totalUsd: 600 });
+    expect(target?.legs.map((l) => l.symbol)).toEqual(["TSLAx"]);
+  });
+
+  function stubBothIssuers() {
+    mocks.mintSet.mockResolvedValue(new Set([TSLA_MINT, AAPL_MINT]));
+    mocks.getAsset.mockImplementation(async (assetId: string) => (assetId === TSLA ? { assetId: TSLA, symbol: "TSLAx", multiplier: 1 } : null));
+    mocks.getTokenBalances.mockResolvedValue([
+      { chainId: SOL, mint: TSLA_MINT, account: "a1", amountRaw: "300000000", decimals: 8, program: "token-2022", multiplier: 1 },
+      { chainId: SOL, mint: SPACEX_MINT, account: "a2", amountRaw: "1000000000", decimals: 9, program: "token-2022", multiplier: 5 },
+    ]);
+  }
+
+  it("an unpriced pre-IPO token (thin pool, no quote) leaves a fully priced xStocks copy target priced, cached for the full 10 minutes", async () => {
+    resetPublicReadCache();
+    stubBothIssuers();
+    mocks.getPrices.mockResolvedValue(new Map([[TSLA, priceQuote(TSLA, "TSLAx", 200)], [SPACEX, priceQuote(SPACEX, "SPACEX", null)]]));
+    let t = NOW.getTime();
+    const now = () => t;
+
+    const read = await readPublicWallet(PUBLIC_ADDR, { now });
+    expect(read.holdings.map((h) => [h.symbol, h.source, h.price])).toEqual([
+      ["TSLAx", "xstocks", 200],
+      ["SPACEX", "prestocks", null],
+    ]);
+    // The copy is built from the xStocks rows only, and every one of those has a price.
+    expect(read.priced).toBe(true);
+    expect(read.allocation).toEqual({ totalUsd: 600, legs: [{ assetId: TSLA, symbol: "TSLAx", usd: 600, weight: 1 }] });
+
+    // Not a failed read: it keeps the full cache life, not the 30-second failure window.
+    t += PUBLIC_READ_FAILURE_TTL_MS + 1;
+    expect(await readPublicWallet(PUBLIC_ADDR, { now })).toBe(read);
+    expect(mocks.getTokenBalances).toHaveBeenCalledTimes(1);
+
+    // The index and the target show its value, not "unknown".
+    const target = await getPublicMirrorTarget(PUBLIC_ADDR, { now });
+    expect(target).toMatchObject({ source: "public", totalUsd: 600 });
+    expect(target?.legs.map((l) => l.symbol)).toEqual(["TSLAx"]);
+  });
+
+  it("an unpriced xStock still marks the read unpriced, even when the pre-IPO token is priced", async () => {
+    resetPublicReadCache();
+    stubBothIssuers();
+    mocks.getPrices.mockResolvedValue(new Map([[TSLA, priceQuote(TSLA, "TSLAx", null)], [SPACEX, priceQuote(SPACEX, "SPACEX", 100)]]));
+    let t = NOW.getTime();
+    const now = () => t;
+
+    const read = await readPublicWallet(PUBLIC_ADDR, { now });
+    expect(read.priced).toBe(false);
+    expect(read.allocation).toEqual({ totalUsd: 0, legs: [] });
+
+    // Kept only for the failure window so the next call re-prices it.
+    t += PUBLIC_READ_FAILURE_TTL_MS + 1;
+    await readPublicWallet(PUBLIC_ADDR, { now });
+    expect(mocks.getTokenBalances).toHaveBeenCalledTimes(2);
+  });
+
+  it("holdingsFullyPriced judges the copy-source rows only", () => {
+    const row = (symbol: string, source: string, price: number | null, qty = 1): Holding => ({
+      assetId: symbol === "TSLAx" ? TSLA : SPACEX,
+      symbol,
+      source,
+      raw: "1",
+      multiplier: 1,
+      qty,
+      price,
+      priceSource: price === null ? "none" : "jupiter",
+      usd: price === null ? 0 : price * qty,
+    });
+    expect(holdingsFullyPriced([row("TSLAx", "xstocks", 200), row("SPACEX", "prestocks", null)])).toBe(true);
+    expect(holdingsFullyPriced([row("TSLAx", "xstocks", null), row("SPACEX", "prestocks", 100)])).toBe(false);
+    // A zero-quantity xStock without a price is not a position.
+    expect(holdingsFullyPriced([row("TSLAx", "xstocks", null, 0)])).toBe(true);
+    // A legacy row without a source is an xStocks row.
+    expect(holdingsFullyPriced([{ ...row("TSLAx", "xstocks", null), source: "" }])).toBe(false);
+    // The fence follows the source asked for.
+    expect(holdingsFullyPriced([row("TSLAx", "xstocks", 200), row("SPACEX", "prestocks", null)], "prestocks")).toBe(false);
   });
 });

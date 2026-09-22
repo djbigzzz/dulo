@@ -25,17 +25,18 @@
  */
 import { z } from "zod";
 import { isValidSolanaAddress } from "@/lib/adapters/solana";
-import { xstocks } from "@/lib/assets/xstocks";
+import { getPreStocksMarks, PRESTOCKS_SOURCE_NAME, preStocksCatalogueOrigin, waitForPreStocksRefresh, type PreStocksMark } from "@/lib/assets/prestocks";
+import { assetNoun, listAllAssets } from "@/lib/assets/registry";
 import { SOLANA_MAINNET, type Holding, type HoldingsSnapshot, type PriceQuote } from "@/lib/core";
 import { catalogueIndexFrom, earningsCalendar, findCurrentSeason, type CatalogueIndex } from "@/lib/cron/evaluate";
 import { readWalletHoldings, type WalletHoldingsRead } from "@/lib/cron/snapshot";
 import { publicWalletLabel } from "@/lib/mirror/public-wallets";
-import { activePlays, SEASON0_ASSET_SOURCE } from "@/lib/plays/catalogue";
+import { activePlays, playAssetSource, SEASON0_ASSET_SOURCE } from "@/lib/plays/catalogue";
 import { evaluatePlay, type EvalContext, type EvalResult } from "@/lib/plays/engine";
 import { safeParsePlayRule, type PlayRule } from "@/lib/plays/rules";
 import { db } from "@/lib/server/db";
 import { createRateLimiter } from "@/lib/server/rate-limit";
-import type { PreviewHoldingView, PreviewPlayStatus, PreviewPlayView, PreviewResponse, PriceQuoteView } from "@/lib/api-client";
+import type { IssuerMarkView, PreviewHoldingView, PreviewPlayStatus, PreviewPlayView, PreviewResponse, PriceQuoteView } from "@/lib/api-client";
 
 const LOG_PREFIX = "[api/preview]";
 
@@ -102,15 +103,17 @@ function activityNote(rule: PlayRule): string {
   return "Earned inside Dulo. Connect to take part";
 }
 
-function notYetNote(proof: Record<string, unknown>): string {
+/** The note names the issuer the quest is fenced to ("xStock" / "pre-IPO token"), never another. */
+function notYetNote(proof: Record<string, unknown>, assetSource: string | null): string {
+  const noun = assetNoun(assetSource);
   switch (proof.reason) {
     case "no_in_scope_holding":
     case "no_qualifying_holding":
-      return "No qualifying xStock in this wallet right now";
+      return `No qualifying ${noun.singular} in this wallet right now`;
     case "below_min_usd":
       return `Largest position is ${usd(proof.usd)}; needs ${usd(proof.minUsd)} or more`;
     case "too_few_assets":
-      return `Holds ${proof.assetCount ?? 0} of ${proof.minAssets ?? "?"} xStocks needed (each ${usd(proof.minUsd)}+)`;
+      return `Holds ${proof.assetCount ?? 0} of ${proof.minAssets ?? "?"} ${noun.plural} needed (each ${usd(proof.minUsd)}+)`;
     case "too_few_sectors":
       return `Covers ${proof.sectorCount ?? 0} of ${proof.minSectors ?? "?"} sectors needed`;
     case "partner_pending":
@@ -120,13 +123,13 @@ function notYetNote(proof: Record<string, unknown>): string {
   }
 }
 
-/** Status + one-line note for a Play evaluated on a single live read. */
-export function previewStatus(rule: PlayRule, result: EvalResult): { status: PreviewPlayStatus; note: string } {
+/** Status + one-line note for a Play evaluated on a single live read. `assetSource` is the Play's issuer fence (Season 0 default when omitted). */
+export function previewStatus(rule: PlayRule, result: EvalResult, assetSource: string | null = SEASON0_ASSET_SOURCE): { status: PreviewPlayStatus; note: string } {
   const kind = previewKind(rule);
   if (kind === "history") return { status: "needs_history", note: NEEDS_HISTORY_NOTE };
   if (kind === "activity") return { status: "needs_activity", note: activityNote(rule) };
   if (result.complete) return { status: "qualifies", note: QUALIFIES_NOTE };
-  return { status: "not_yet", note: notYetNote(result.proof ?? {}) };
+  return { status: "not_yet", note: notYetNote(result.proof ?? {}, assetSource) };
 }
 
 const KIND_ORDER: Record<PreviewKind, number> = { snapshot: 0, history: 1, activity: 2 };
@@ -145,6 +148,17 @@ export interface PreviewPlayRow {
   badgeKey: string | null;
   /** Play.rule JSON; rows whose rule fails PlayRuleSchema are skipped. */
   rule: unknown;
+  /**
+   * Play.assetSource: the issuer this quest is fenced to, passed to the engine exactly as the
+   * cron passes it (null = unfenced). Omitted (a row built before the column existed) means
+   * the Season 0 default.
+   */
+  assetSource?: string | null;
+}
+
+/** The issuer fence a preview row is evaluated with. */
+export function previewAssetSource(row: Pick<PreviewPlayRow, "assetSource">): string | null {
+  return row.assetSource === undefined ? SEASON0_ASSET_SOURCE : row.assetSource;
 }
 
 export interface BuildPreviewInput {
@@ -153,10 +167,32 @@ export interface BuildPreviewInput {
   catalogue: CatalogueIndex;
   earnings: Record<string, string[]>;
   now: Date;
+  /**
+   * PreStocks issuer marks by symbol (getPreStocksMarks), for the pre-IPO positions only. Omitted
+   * or empty means no mark line on any holding: the UI omits the line rather than printing a dash.
+   */
+  marks?: ReadonlyMap<string, PreStocksMark>;
 }
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/**
+ * The issuer mark for a pre-IPO holding: PreStocks' own valuation of the underlying with the age
+ * of the payload it came from. Null for any other issuer, for a symbol the payload does not carry,
+ * or for a mark that is not a positive number. Two numbers side by side, never a difference.
+ */
+export function issuerMarkView(h: Pick<Holding, "source" | "symbol">, marks: ReadonlyMap<string, PreStocksMark> | undefined, now: Date): IssuerMarkView | null {
+  if (!marks || h.source !== PRESTOCKS_SOURCE_NAME) return null;
+  const mark = marks.get(h.symbol) ?? marks.get(h.symbol.trim().toUpperCase());
+  if (!mark || typeof mark.markPrice !== "number" || !Number.isFinite(mark.markPrice) || mark.markPrice <= 0) return null;
+  const fetched = mark.fetchedAt instanceof Date && Number.isFinite(mark.fetchedAt.getTime()) ? mark.fetchedAt : null;
+  return {
+    price: mark.markPrice,
+    publishedAt: fetched ? fetched.toISOString() : null,
+    ageSeconds: fetched ? Math.max(0, Math.floor((now.getTime() - fetched.getTime()) / 1000)) : null,
+  };
 }
 
 function quoteView(h: Holding, q: PriceQuote | undefined): PriceQuoteView {
@@ -176,7 +212,7 @@ function quoteView(h: Holding, q: PriceQuote | undefined): PriceQuoteView {
 }
 
 /** The preview for one live read: holdings (largest first) and every Play's status. No I/O. */
-export function buildPreview({ read, plays, catalogue, earnings, now }: BuildPreviewInput): PreviewResponse {
+export function buildPreview({ read, plays, catalogue, earnings, now, marks }: BuildPreviewInput): PreviewResponse {
   const held = read.holdings.filter((h) => Number.isFinite(h.qty) && h.qty > 0).sort((a, b) => b.usd - a.usd || (a.symbol < b.symbol ? -1 : 1));
   const snapshot: HoldingsSnapshot = { walletId: `preview:${read.address}`, takenAt: read.readAt, holdings: held };
   const ctx: EvalContext = {
@@ -192,8 +228,10 @@ export function buildPreview({ read, plays, catalogue, earnings, now }: BuildPre
   plays.forEach((row, index) => {
     const rule = safeParsePlayRule(row.rule);
     if (!rule) return;
-    const result = evaluatePlay(rule, ctx, SEASON0_ASSET_SOURCE);
-    const { status, note } = previewStatus(rule, result);
+    // Each Play is fenced to ITS OWN issuer, as in the cron: a pre-IPO quest sees pre-IPO holdings only.
+    const assetSource = previewAssetSource(row);
+    const result = evaluatePlay(rule, ctx, assetSource);
+    const { status, note } = previewStatus(rule, result, assetSource);
     const kind = previewKind(rule);
     let proof: Record<string, unknown>;
     if (kind === "snapshot") {
@@ -212,6 +250,7 @@ export function buildPreview({ read, plays, catalogue, earnings, now }: BuildPre
         points: row.points,
         badgeKey: row.badgeKey,
         rule,
+        assetSource,
         status,
         note,
         proof,
@@ -224,10 +263,12 @@ export function buildPreview({ read, plays, catalogue, earnings, now }: BuildPre
   const holdings: PreviewHoldingView[] = held.map((h) => ({
     assetId: h.assetId,
     symbol: h.symbol,
+    source: h.source,
     qty: h.qty,
     multiplier: h.multiplier,
     usd: round2(h.usd),
     quote: quoteView(h, read.quotes.get(h.assetId)),
+    issuerMark: issuerMarkView(h, marks, now),
   }));
   const qualifying = views.filter((v) => v.status === "qualifies");
 
@@ -259,7 +300,7 @@ export async function loadPreviewPlays(now: Date): Promise<PreviewPlayRow[]> {
     if (season) {
       const rows = await db.play.findMany({
         where: { isActive: true, campaign: { seasonId: season.id } },
-        select: { key: true, title: true, desc: true, points: true, badgeKey: true, rule: true },
+        select: { key: true, title: true, desc: true, points: true, badgeKey: true, rule: true, assetSource: true },
         orderBy: [{ sortOrder: "asc" }, { key: "asc" }],
       });
       if (rows.length > 0) return rows;
@@ -270,16 +311,37 @@ export async function loadPreviewPlays(now: Date): Promise<PreviewPlayRow[]> {
   return activePlays()
     .slice()
     .sort((a, b) => a.sortOrder - b.sortOrder || (a.key < b.key ? -1 : 1))
-    .map((p) => ({ key: p.key, title: p.title, desc: p.desc, points: p.points, badgeKey: p.badgeKey ?? null, rule: p.rule }));
+    .map((p) => ({ key: p.key, title: p.title, desc: p.desc, points: p.points, badgeKey: p.badgeKey ?? null, rule: p.rule, assetSource: playAssetSource(p) }));
+}
+
+/**
+ * PreStocks issuer marks for a read that holds a pre-IPO token, from the payload the catalogue
+ * already cached: listAllAssets() above started (or served) the PreStocks refresh, so this waits
+ * for it and then reads the marks only when a live payload has ever arrived. A wallet without a
+ * pre-IPO position never touches the issuer API; an issuer API that has never answered yields no
+ * marks, and the page omits the line.
+ */
+async function marksFor(read: WalletHoldingsRead): Promise<ReadonlyMap<string, PreStocksMark> | undefined> {
+  if (!read.holdings.some((h) => h.source === PRESTOCKS_SOURCE_NAME && h.qty > 0)) return undefined;
+  try {
+    await waitForPreStocksRefresh();
+    const origin = preStocksCatalogueOrigin();
+    if (origin !== "api" && origin !== "fallback") return undefined;
+    return await getPreStocksMarks();
+  } catch (e) {
+    console.warn(`${LOG_PREFIX} issuer marks unavailable: ${e instanceof Error ? e.message : String(e)}`);
+    return undefined;
+  }
 }
 
 /** Read `address` live and preview every Play. Throws when the chain, catalogue or price read fails. */
 export async function getPreview(address: string, now: Date = new Date()): Promise<PreviewResponse> {
   const [{ read, assets }, plays] = await Promise.all([
-    readWalletHoldings(address, SOLANA_MAINNET).then(async (read) => ({ read, assets: await xstocks.listAssets() })),
+    readWalletHoldings(address, SOLANA_MAINNET).then(async (read) => ({ read, assets: await listAllAssets() })),
     loadPreviewPlays(now),
   ]);
-  return buildPreview({ read, plays, catalogue: catalogueIndexFrom(assets), earnings: earningsCalendar(), now });
+  const marks = await marksFor(read);
+  return buildPreview({ read, plays, catalogue: catalogueIndexFrom(assets), earnings: earningsCalendar(), now, marks });
 }
 
 // ---------------------------------------------------------------------------

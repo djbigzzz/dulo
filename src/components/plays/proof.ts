@@ -1,5 +1,6 @@
 import type { PriceSourceName } from "@/lib/core";
 import { formatDateTime, formatUsd } from "@/components/common/format";
+import { isPreIpoSource } from "@/components/common/issuer";
 import { priceSourceLabel } from "@/components/common/PriceChip";
 
 /**
@@ -127,6 +128,24 @@ const DISTINCT_BY_NAMES: Record<string, string> = {
   day: "day",
 };
 
+/**
+ * Label and unit overrides for a proof written by a quest fenced to PreStocks: a pre-IPO token is
+ * never a "stock" (components/common/issuer). Every other key keeps the LABELS wording.
+ */
+const PRE_IPO_LABELS: Record<string, string> = {
+  symbol: "Pre-IPO token",
+  minAssets: "Minimum pre-IPO tokens",
+  assetCount: "Pre-IPO tokens held",
+  assets: "Pre-IPO tokens",
+  nextEarningsSymbol: "Next earnings token",
+};
+const PRE_IPO_UNIT_WORDS: Record<string, string> = { assets: "pre-IPO tokens", asset: "pre-IPO token" };
+
+export interface FlattenProofOptions {
+  /** The quest's issuer fence (Play.assetSource): "prestocks" swaps the stock labels for pre-IPO ones. */
+  assetSource?: string | null;
+}
+
 const ACRONYMS: Record<string, string> = { usd: "USD", id: "ID", ids: "IDs", url: "URL", api: "API" };
 /** Item fields that read without a label prefix ("NVDAx · Technology · $12.00"). */
 const BARE_KEYS = new Set(["symbol", "sector", "usd", "day", "date", "underlying", "name", "title", "label"]);
@@ -226,8 +245,8 @@ function isDynamicKey(k: string): boolean {
  * Human label for a proof key: the label map, else split camelCase / snake_case and capitalise.
  * A key that is data (a date, address, ticker) keeps its exact spelling; an asset id is shortened.
  */
-export function humaniseKey(key: string): string {
-  const known = own(LABELS, key);
+export function humaniseKey(key: string, assetSource?: string | null): string {
+  const known = (isPreIpoSource(assetSource) ? own(PRE_IPO_LABELS, key) : undefined) ?? own(LABELS, key);
   if (known !== undefined) return known;
   if (CAIP19_RE.test(key)) return shortAssetId(key);
   if (isDynamicKey(key)) return key;
@@ -320,7 +339,7 @@ function joinPrimitives(arr: readonly unknown[], name: string): { value: string;
 }
 
 /** { current, target, unit } as "2 of 3 days" / "$4.00 of $5.00"; null when it is not that shape. */
-function progressText(o: Record<string, unknown>): string | null {
+function progressText(o: Record<string, unknown>, units: Record<string, string> = UNIT_WORDS): string | null {
   const keys = Object.keys(o);
   if (!keys.every((k) => k === "current" || k === "target" || k === "unit")) return null;
   const current = numeric(o.current);
@@ -328,7 +347,7 @@ function progressText(o: Record<string, unknown>): string | null {
   if (current === null || target === null) return null;
   const unit = typeof o.unit === "string" ? o.unit.trim() : "";
   if (unit.toLowerCase() === "usd") return `${formatUsd(current)} of ${formatUsd(target)}`;
-  const word = own(UNIT_WORDS, unit) ?? unit;
+  const word = own(units, unit) ?? unit;
   return `${qtyFmt.format(current)} of ${qtyFmt.format(target)}${word ? ` ${word}` : ""}`;
 }
 
@@ -367,14 +386,14 @@ function isFlatAssetMap(v: unknown): v is Record<string, unknown> {
  * inside the item join with spaces ("before 2026-07-29 $12.00"). A null field reads
  * "after —" rather than vanishing: in an earnings check the null is the reason it failed.
  */
-function summarise(item: unknown, parentName: string, depth: number, sep = " · "): string {
+function summarise(item: unknown, parentName: string, depth: number, sep = " · ", units: Record<string, string> = UNIT_WORDS): string {
   if (isPrimitive(item)) return formatProofValue(item, parentName).value;
   if (Array.isArray(item)) {
     return item.every(isPrimitive) ? short(joinPrimitives(item, parentName).value) || "—" : short(safeJson(item));
   }
   if (!isPlainObject(item) || depth >= MAX_DEPTH) return short(safeJson(item));
   const o = item;
-  const progress = progressText(o);
+  const progress = progressText(o, units);
   if (progress !== null) return progress;
 
   const symbol = tickerOf(o);
@@ -404,13 +423,15 @@ function summarise(item: unknown, parentName: string, depth: number, sep = " · 
       else parts.push(`${inlineLabel(k)}: ${v ? "yes" : "no"}`);
       continue;
     }
-    const shown = isPrimitive(v) ? formatProofValue(v, k).value : summarise(v, k, depth + 1, " ");
+    const shown = isPrimitive(v) ? formatProofValue(v, k).value : summarise(v, k, depth + 1, " ", units);
     parts.push(BARE_KEYS.has(k) || k === "assetId" ? shown : `${inlineLabel(k)} ${shown}`);
   }
   return parts.length > 0 ? parts.join(sep) : "—";
 }
 
-export function flattenProof(proof: unknown): ProofEntry[] {
+export function flattenProof(proof: unknown, opts: FlattenProofOptions = {}): ProofEntry[] {
+  const assetSource = opts.assetSource ?? null;
+  const units = isPreIpoSource(assetSource) ? PRE_IPO_UNIT_WORDS : UNIT_WORDS;
   const out: ProofEntry[] = [];
   let budget = MAX_ENTRIES;
   /** Something was left out for the row budget (or an unexpected throw): say so in a last row. */
@@ -459,7 +480,7 @@ export function flattenProof(proof: unknown): ProofEntry[] {
         return add({ key, label, value: joined.value, raw, mono: v.every(isMono) });
       }
       const items = v.slice(0, MAX_ITEMS).map((item) => {
-        const value = summarise(item, name, depth + 1);
+        const value = summarise(item, name, depth + 1, " · ", units);
         const raw = isPrimitive(item) ? formatProofValue(item, name).raw : safeJson(item);
         return raw !== undefined && raw !== value ? { value, raw } : { value };
       });
@@ -472,7 +493,7 @@ export function flattenProof(proof: unknown): ProofEntry[] {
     const keys = Object.keys(v);
     if (keys.length === 0) return add({ key, label, value: "None", raw: "{}" });
 
-    const progress = progressText(v);
+    const progress = progressText(v, units);
     if (progress !== null) return add({ key, label, value: progress, raw: safeJson(v) });
 
     if (keys.every((k) => isPrimitive(v[k]))) {
@@ -484,7 +505,7 @@ export function flattenProof(proof: unknown): ProofEntry[] {
         const valueName = mapValueName(name);
         const items = keys.slice(0, MAX_ITEMS).map((k) => {
           const ticker = symbols && typeof symbols[k] === "string" ? (symbols[k] as string) : null;
-          const head = ticker ?? (isDynamicKey(k) ? formatProofValue(k).value : humaniseKey(k));
+          const head = ticker ?? (isDynamicKey(k) ? formatProofValue(k).value : humaniseKey(k, assetSource));
           const cell = formatProofValue(v[k], valueName);
           return { value: `${head} · ${cell.value}`, raw: safeJson({ [k]: v[k] }) };
         });
@@ -510,7 +531,7 @@ export function flattenProof(proof: unknown): ProofEntry[] {
       }
       const v = obj[k];
       const nextPath = [...path, k];
-      const nextLabels = [...labels, humaniseKey(k)];
+      const nextLabels = [...labels, humaniseKey(k, assetSource)];
       // The ticker is shown on the Asset row; a `symbols` map is shown through the asset map it labels.
       if (k === "symbol" && (foldSymbol || symbolRepeatsId(obj))) continue;
       if (k === "symbols" && symbolsShownElsewhere) continue;

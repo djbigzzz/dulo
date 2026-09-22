@@ -8,6 +8,10 @@ const AAPLX_MINT = "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp";
 const TSLAX_ID = `${SOL}/token:${TSLAX_MINT}` as AssetId;
 const AAPLX_ID = `${SOL}/token:${AAPLX_MINT}` as AssetId;
 const UNKNOWN_ID = `${SOL}/token:Xs1111111111111111111111111111111111111111` as AssetId;
+// A PreStocks pre-IPO token. @/lib/assets/prestocks is NOT mocked: the registry resolves this
+// symbol and id from the module's inlined static list, which never makes a request.
+const SPACEX_MINT = "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh";
+const SPACEX_ID = `${SOL}/token:${SPACEX_MINT}` as AssetId;
 
 // Tue 10 Mar 2026 10:00 ET (EDT) -> session open. Sat 14 Mar 2026 -> closed.
 const OPEN_NOW = new Date("2026-03-10T14:00:00Z");
@@ -481,5 +485,71 @@ describe("symbols", () => {
     const r = await getPricesBySymbols(["TSLAx", "NOPEx", "AAPLx", "TSLAx"]);
     expect(r.unknown).toEqual(["NOPEx"]);
     expect(r.quotes.map((q) => q.symbol)).toEqual(["TSLAx", "AAPLx"]);
+  });
+
+  it("resolves a pre-IPO token symbol through the second registered source (from its static list, no request)", async () => {
+    vi.setSystemTime(CLOSED_NOW);
+    jupGet.mockResolvedValue(quotes([[SPACEX_ID, 310.5, CLOSED_NOW]]));
+    const q = await getPriceBySymbol("spacex");
+    expect(q).toMatchObject({ assetId: SPACEX_ID, symbol: "SPACEX", price: 310.5, source: "jupiter" });
+  });
+
+  it("a source fence makes a symbol another source knows unknown: SPACEX is refused by an xstocks-only lookup", async () => {
+    vi.setSystemTime(CLOSED_NOW);
+    jupGet.mockResolvedValue(
+      quotes([
+        [TSLAX_ID, 249.9, CLOSED_NOW],
+        [SPACEX_ID, 310.5, CLOSED_NOW],
+      ]),
+    );
+    await expect(getPriceBySymbol("SPACEX", { source: "xstocks" })).rejects.toBeInstanceOf(UnknownAssetError);
+    await expect(getPriceBySymbol("spacex", { source: "xstocks" })).rejects.toBeInstanceOf(UnknownAssetError);
+    // The fenced source still quotes its own symbols, case-insensitively.
+    expect((await getPriceBySymbol("tslax", { source: "xstocks" })).symbol).toBe("TSLAx");
+
+    const r = await getPricesBySymbols(["TSLAx", "SPACEX", "NOPEx"], { source: "xstocks" });
+    expect([...r.unknown].sort()).toEqual(["NOPEx", "SPACEX"]);
+    expect(r.quotes.map((q) => q.symbol)).toEqual(["TSLAx"]);
+
+    // The fence is symmetric, and a blank source means no fence.
+    const p = await getPricesBySymbols(["TSLAx", "SPACEX"], { source: "prestocks" });
+    expect(p.unknown).toEqual(["TSLAx"]);
+    expect(p.quotes.map((q) => q.symbol)).toEqual(["SPACEX"]);
+    const open = await getPricesBySymbols(["TSLAx", "SPACEX"], { source: " " });
+    expect(open.unknown).toEqual([]);
+    expect(open.quotes.map((q) => q.symbol)).toEqual(["TSLAx", "SPACEX"]);
+  });
+});
+
+describe("a pre-IPO token never reaches Pyth", () => {
+  it("market open: only the xStock is sent to Hermes; the pre-IPO token quotes from Jupiter in the same batch", async () => {
+    vi.setSystemTime(OPEN_NOW);
+    pythGet.mockResolvedValue(quotes([[TSLAX_ID, 251.1, new Date(OPEN_NOW.getTime() - 5_000)]]));
+    jupGet.mockResolvedValue(
+      quotes([
+        [TSLAX_ID, 249.9, OPEN_NOW],
+        [SPACEX_ID, 310.5, OPEN_NOW],
+      ]),
+    );
+
+    const m = await getPrices([SPACEX_ID, TSLAX_ID]);
+
+    expect(pythGet).toHaveBeenCalledTimes(1);
+    const sentToPyth = pythGet.mock.calls[0][0] as AssetInfo[];
+    expect(sentToPyth.map((a) => a.assetId)).toEqual([TSLAX_ID]);
+    expect(sentToPyth[0]).toMatchObject({ symbol: "TSLAx", underlying: "TSLA" });
+    expect(jupGet).toHaveBeenCalledTimes(1);
+    expect((jupGet.mock.calls[0][0] as AssetInfo[]).map((a) => a.assetId).sort()).toEqual([SPACEX_ID, TSLAX_ID].sort());
+
+    expect(m.get(SPACEX_ID)).toMatchObject({ symbol: "SPACEX", price: 310.5, source: "jupiter", marketOpen: true });
+    expect(m.get(TSLAX_ID)).toMatchObject({ symbol: "TSLAx", price: 251.1, source: "pyth" });
+  });
+
+  it("market open, only pre-IPO tokens requested: Hermes is not called at all", async () => {
+    vi.setSystemTime(OPEN_NOW);
+    jupGet.mockResolvedValue(quotes([[SPACEX_ID, 310.5, OPEN_NOW]]));
+    const q = await getPrice(SPACEX_ID);
+    expect(pythGet).not.toHaveBeenCalled();
+    expect(q).toMatchObject({ symbol: "SPACEX", price: 310.5, source: "jupiter" });
   });
 });

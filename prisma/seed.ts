@@ -20,7 +20,7 @@
  */
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { SEASON0, SEASON0_PARTNERS } from "../src/lib/plays/partners";
-import { SEASON0_ASSET_SOURCE, SEASON0_PLAYS } from "../src/lib/plays/catalogue";
+import { playAssetSource, SEASON0_PLAYS } from "../src/lib/plays/catalogue";
 import { PlayRuleSchema } from "../src/lib/plays/rules";
 import { seedLeague } from "./seed-league";
 import { seedCalls } from "./seed-calls";
@@ -201,7 +201,7 @@ async function main() {
     const isActive = !play.comingSoon; // comingSoon -> isActive=false (see header comment)
     const playData = {
       campaignId,
-      assetSource: SEASON0_ASSET_SOURCE,
+      assetSource: playAssetSource(play),
       title: play.title,
       desc: play.desc,
       points: play.points,

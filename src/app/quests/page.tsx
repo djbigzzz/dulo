@@ -132,7 +132,7 @@ export default function QuestsPage() {
             </p>
             <p>
               On-chain quests are verified from your own wallet. Connect one or more wallets and sign a message once; every 5 minutes Dulo takes a
-              snapshot of the xStocks in each connected wallet and checks it against every live on-chain quest. Each one describes a wallet state,
+              snapshot of the xStocks and pre-IPO tokens in each connected wallet and checks it against every live on-chain quest. Each one describes a wallet state,
               and its proof shows the snapshot that reached it. Nothing to submit and no transaction to sign.
             </p>
             <p>

@@ -4,10 +4,11 @@ import { HOUSE_PARTNER_SLUG, SEASON0_PARTNERS, partnerBySlug } from "./partners"
 /**
  * Season 0 quest catalogue (docs/HANDOFF.md §3.1). Code name: Play.
  *
- * 19 rows: 8 in-platform quests (internal_event rules, completed with starter points and
- * virtual cash), 9 on-chain quests (verified from the user's wallet snapshots; each description
- * is the wallet state to reach, never an instruction to buy) and 2 partner quests marked
- * coming soon. Live totals: 850 in-platform points, 2,700 on-chain points.
+ * 20 rows: 8 in-platform quests (internal_event rules, completed with starter points and
+ * virtual cash), 10 on-chain quests (verified from the user's wallet snapshots; each description
+ * is the wallet state to reach, never an instruction to buy: 9 fenced to xStocks and, since
+ * 22 Sep, 1 fenced to PreStocks pre-IPO tokens) and 2 partner quests marked coming soon.
+ * Live totals: 850 in-platform points, 2,800 on-chain points.
  *
  * This is the source of truth the seed writes to the Play table. Rules are pure JSON
  * (PlayRuleSchema); presentation flags such as `comingSoon` live on the catalogue entry,
@@ -39,6 +40,17 @@ export interface CataloguePlay {
   sortOrder: number;
   /** Listed but not yet verifiable (partner integration pending). Seeded as isActive=false. */
   comingSoon?: true;
+  /**
+   * The AssetSource this quest is fenced to (Play.assetSource; lib/assets/registry names).
+   * Omitted means SEASON0_ASSET_SOURCE. The seed and the public preview both read it, so a
+   * quest written for another issuer carries its own fence from the catalogue onwards.
+   */
+  assetSource?: string;
+}
+
+/** Play.assetSource for a catalogue entry: its own, else the Season 0 default. */
+export function playAssetSource(play: Pick<CataloguePlay, "assetSource">): string {
+  return play.assetSource ?? SEASON0_ASSET_SOURCE;
 }
 
 function campaignTitleFor(slug: string): string {
@@ -48,6 +60,9 @@ function campaignTitleFor(slug: string): string {
 }
 
 const XSTOCKS = campaignTitleFor("xstocks");
+const PRESTOCKS = campaignTitleFor("prestocks");
+/** The AssetSource name of the second issuer (lib/assets/registry); its quest is fenced to it. */
+export const PRESTOCKS_ASSET_SOURCE = "prestocks";
 /** In-platform quests (competition, predictions) sit under the hidden house Partner, not under a listed one. */
 const DULO_GAMES = campaignTitleFor(HOUSE_PARTNER_SLUG);
 
@@ -149,6 +164,24 @@ export const SEASON0_PLAYS: readonly CataloguePlay[] = [
     points: 400,
     rule: { type: "diversified", minAssets: 5, minSectors: 4 },
     sortOrder: 8,
+  },
+
+  // --- On-chain quest: PreStocks (second issuer, added 22 Sep 2026) ----------
+  // Fenced to the "prestocks" source, so an xStock can never complete it and it can never touch an
+  // xStocks quest. Count-based on purpose: every pre-IPO token is priced by Jupiter only, and the
+  // price cache is empty on a cold start, so a USD threshold could read incomplete for a wallet that
+  // plainly holds the token. `hold_any` with minUsd 0 completes on any in-scope position with
+  // qty > 0, priced or not (the engine never needs a price for it).
+  {
+    key: "pre_ipo_position",
+    partnerSlug: "prestocks",
+    campaignTitle: PRESTOCKS,
+    title: "Pre-IPO Position",
+    desc: "Your connected wallet holds any PreStocks pre-IPO token, whatever the amount. Read straight from Solana and counted by the token, not by a price, because pre-IPO tokens trade on thin pools.",
+    points: 100,
+    rule: { type: "hold_any", minUsd: 0 },
+    sortOrder: 9,
+    assetSource: PRESTOCKS_ASSET_SOURCE,
   },
 
   // --- In-platform quests (hidden house Partner) ----------------------------

@@ -76,6 +76,7 @@ import { ApiError } from "@/lib/server/api";
 import {
   BOT_HANDLES,
   CLOSED_MESSAGE,
+  LEAGUE_ASSET_SOURCE,
   MIN_TRADE_MESSAGE,
   MIN_TRADE_USD,
   RANK_POINTS,
@@ -357,6 +358,31 @@ describe("placeTrade", () => {
     mocks.getPriceBySymbol.mockRejectedValue(new UnknownAssetError("FOOx"));
     await expectApiError(placeTrade({ userId: "u_me", symbol: "FOOx", side: "buy", qty: 1 }, MON), 400, /Unknown xStock: FOOx/);
     expect(mocks.db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("fences the quote to xStocks: a pre-IPO token symbol is refused with 400 and nothing is written", async () => {
+    expect(LEAGUE_ASSET_SOURCE).toBe("xstocks");
+    // Mirror lib/price: the registry knows SPACEX (PreStocks), so an unfenced lookup would quote it,
+    // and the xstocks fence reports it unknown. Any call without the fence fails the test.
+    mocks.getPriceBySymbol.mockImplementation(async (symbol: string, options?: { source?: string }) => {
+      if (options?.source !== "xstocks") throw new Error(`placeTrade must fence its quote to xstocks, got ${JSON.stringify(options)}`);
+      if (symbol.toUpperCase() === "SPACEX") throw new UnknownAssetError(symbol);
+      return quote(TSLAX_ID, "TSLAx", 100);
+    });
+
+    for (const symbol of ["SPACEX", "spacex"]) {
+      await expectApiError(placeTrade({ userId: "u_me", symbol, side: "buy", qty: 1 }, MON), 400, new RegExp(`Unknown xStock: ${symbol}`));
+      expect(mocks.getPriceBySymbol).toHaveBeenLastCalledWith(symbol, { source: LEAGUE_ASSET_SOURCE });
+    }
+    expect(mocks.db.$transaction).not.toHaveBeenCalled();
+    expect(mocks.db.leagueTrade.create).not.toHaveBeenCalled();
+    expect(mocks.db.leagueAccount.upsert).not.toHaveBeenCalled();
+
+    // An xStock still fills through the same fence.
+    await placeTrade({ userId: "u_me", symbol: "TSLAx", side: "buy", qty: 1 }, MON);
+    expect(mocks.getPriceBySymbol).toHaveBeenLastCalledWith("TSLAx", { source: "xstocks" });
+    expect(mocks.db.leagueTrade.create).toHaveBeenCalledTimes(1);
+    expect(mocks.db.leagueTrade.create.mock.calls[0][0].data).toMatchObject({ symbol: "TSLAx" });
   });
 
   it("validates the quantity before touching anything", async () => {

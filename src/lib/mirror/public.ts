@@ -24,7 +24,7 @@ import { SOLANA_MAINNET, type Holding } from "@/lib/core";
 import type { MirrorPublicRow, MirrorTargetView } from "@/lib/api-client";
 // Import cycle (public -> cron/snapshot -> server/queries -> public) is safe: every binding is used only inside functions.
 import { readWalletHoldings } from "@/lib/cron/snapshot";
-import { allocationFromSnapshot, type Allocation } from "./allocation";
+import { COPY_ASSET_SOURCE, allocationFromSnapshot, sourceOfRow, type Allocation } from "./allocation";
 import { PUBLIC_WALLETS, publicWalletLabel } from "./public-wallets";
 
 const LOG_PREFIX = "[mirror/public]";
@@ -49,16 +49,22 @@ export interface PublicWalletRead {
   holdings: Holding[];
   allocation: Allocation;
   /**
-   * False when a position (qty > 0) had no price: its value is unknown, not $0. Such a read is
-   * kept only for PUBLIC_READ_FAILURE_TTL_MS so the next call re-prices it, and the /mirror index
-   * shows its value as unknown.
+   * False when a copied position (qty > 0, COPY_ASSET_SOURCE) had no price: its value is unknown,
+   * not $0. Such a read is kept only for PUBLIC_READ_FAILURE_TTL_MS so the next call re-prices it,
+   * and the /copy index shows its value as unknown. Positions the copy leaves out (pre-IPO
+   * tokens) do not count: their price never changes the allocation.
    */
   priced: boolean;
 }
 
-/** Every position with a quantity carries a price. */
-export function holdingsFullyPriced(holdings: readonly Holding[]): boolean {
-  return holdings.every((h) => !(h.qty > 0) || h.price !== null);
+/**
+ * Every position with a quantity that the copy is built from carries a price. Judged over the
+ * COPY_ASSET_SOURCE rows only, the same rows allocationFromSnapshot keeps: an unpriced pre-IPO
+ * token (a thin DEX pool with no usable quote) never marks a fully priced xStocks copy target as
+ * unpriced, and an unpriced xStock still does.
+ */
+export function holdingsFullyPriced(holdings: readonly Holding[], source: string = COPY_ASSET_SOURCE): boolean {
+  return holdings.every((h) => sourceOfRow(h) !== source || !(h.qty > 0) || h.price !== null);
 }
 
 /** busy: the shared per-minute budget is spent · unavailable: the chain or price read failed · limited: this caller is over its own limit. */

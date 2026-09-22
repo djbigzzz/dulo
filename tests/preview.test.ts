@@ -16,6 +16,9 @@ const NVDA_MINT = "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh";
 const TSLA = `${SOL}/token:${TSLA_MINT}` as AssetId;
 const AAPL = `${SOL}/token:${AAPL_MINT}` as AssetId;
 const NVDA = `${SOL}/token:${NVDA_MINT}` as AssetId;
+/** The one PreStocks mint the mocked second issuer knows (see the prestocks mock below). */
+const SPACEX_MINT = "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh";
+const SPACEX = `${SOL}/token:${SPACEX_MINT}` as AssetId;
 const PUBLISHED = new Date("2026-09-15T13:59:30.000Z");
 
 function asset(mint: string, symbol: string, underlying: string, sector: string): AssetInfo {
@@ -111,7 +114,26 @@ vi.mock("@/lib/assets/xstocks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/assets/xstocks")>();
   return {
     ...actual,
-    xstocks: { mintSet: mocks.mintSet, getAsset: mocks.getAsset, listAssets: mocks.listAssets, normaliseQty: actual.normaliseQty },
+    xstocks: { name: actual.xstocks.name, mintSet: mocks.mintSet, getAsset: mocks.getAsset, listAssets: mocks.listAssets, normaliseQty: actual.normaliseQty },
+  };
+});
+// The second issuer (lib/assets/registry): one pre-IPO token, 9 decimals, sector null. Its mint joins
+// the wallet read; its holding is tagged "prestocks", which every Season 0 quest is fenced away from.
+vi.mock("@/lib/assets/prestocks", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/assets/prestocks")>();
+  const SOL = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+  const SPACEX = "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh";
+  const spacex = { assetId: `${SOL}/token:${SPACEX}`, chainId: SOL, symbol: "SPACEX", underlying: "SPACEX", name: "SpaceX PreStocks", decimals: 9, sector: null, logoUrl: null, pythFeedId: null, multiplier: 1 };
+  return {
+    ...actual,
+    prestocks: {
+      name: actual.prestocks.name,
+      listAssets: async () => [spacex],
+      getAsset: async (id: string) => (id === spacex.assetId ? spacex : null),
+      getAssetBySymbol: async (s: string) => (s.toUpperCase() === "SPACEX" ? spacex : null),
+      mintSet: async () => new Set([SPACEX]),
+      normaliseQty: actual.normaliseQty,
+    },
   };
 });
 
@@ -131,15 +153,15 @@ import {
 } from "@/app/api/v1/preview/preview";
 import { PUBLIC_WALLETS } from "@/lib/mirror/public-wallets";
 import { ipRateLimitKey } from "@/lib/server/rate-limit";
-import { activePlays } from "@/lib/plays/catalogue";
+import { activePlays, playAssetSource } from "@/lib/plays/catalogue";
 import { evaluatePlay, type EvalContext } from "@/lib/plays/engine";
 
 const ADDRESS = PUBLIC_WALLETS[0].address;
 
-/** Active Season 0 Plays as the database returns them (sortOrder, then key). */
+/** Active Season 0 Plays as the database returns them (sortOrder, then key), assetSource column included. */
 const DB_ROWS = [...activePlays()]
   .sort((a, b) => a.sortOrder - b.sortOrder || (a.key < b.key ? -1 : 1))
-  .map((p) => ({ key: p.key, title: p.title, desc: p.desc, points: p.points, badgeKey: p.badgeKey ?? null, rule: p.rule }));
+  .map((p) => ({ key: p.key, title: p.title, desc: p.desc, points: p.points, badgeKey: p.badgeKey ?? null, rule: p.rule, assetSource: playAssetSource(p) }));
 
 async function call(address: string, ip = "203.0.113.7") {
   const req = new Request(`http://localhost/api/v1/preview/${address}`, { headers: { "x-forwarded-for": ip } });
@@ -211,10 +233,10 @@ describe("GET /api/v1/preview/[address]", () => {
     const groups = data.plays.map((p) => group[p.status]);
     expect(groups).toEqual([...groups].sort((a, b) => a - b));
 
-    // One adapter read with the xStocks mint set, one batched price call.
+    // One adapter read with the union of every source's mint set, one batched price call.
     expect(mocks.getTokenBalances).toHaveBeenCalledTimes(1);
     expect(mocks.getTokenBalances.mock.calls[0][0]).toBe(ADDRESS);
-    expect(mocks.getTokenBalances.mock.calls[0][1]).toEqual(new Set([TSLA_MINT, AAPL_MINT, NVDA_MINT]));
+    expect(mocks.getTokenBalances.mock.calls[0][1]).toEqual(new Set([TSLA_MINT, AAPL_MINT, NVDA_MINT, SPACEX_MINT]));
     expect(mocks.getPrices).toHaveBeenCalledTimes(1);
 
     // Read-only: the only database calls were the Season and Play reads.
@@ -247,6 +269,54 @@ describe("GET /api/v1/preview/[address]", () => {
       note: "No qualifying xStock in this wallet right now",
     });
     expect(mocks.getPrices).not.toHaveBeenCalled();
+  });
+
+  // The second issuer in the preview: the pre-IPO position is read, normalised (9 decimals, chain
+  // multiplier) and listed, but no Season 0 quest can see it, exactly as in the cron.
+  it("lists a pre-IPO position but never lets it complete an xStocks quest", async () => {
+    mocks.getTokenBalances.mockResolvedValue([{ chainId: SOL, mint: SPACEX_MINT, account: "acct_Pre", amountRaw: "1000000000", decimals: 9, program: "token-2022", multiplier: 5 }]);
+    mocks.getPrices.mockResolvedValue(new Map([[SPACEX, { ...quote(SPACEX), symbol: "SPACEX", price: 100 }]]));
+
+    const { res, body } = await call(ADDRESS);
+    expect(res.status).toBe(200);
+    const data = body.data!;
+    expect(data.holdings.map((h) => [h.symbol, h.qty, h.multiplier, h.usd])).toEqual([["SPACEX", 5, 5, 500]]);
+    expect(data.totalUsd).toBe(500);
+    const byKey = Object.fromEntries(data.plays.map((p) => [p.key, p]));
+    expect(byKey.first_position).toMatchObject({ status: "not_yet", note: "No qualifying xStock in this wallet right now" });
+    expect(byKey.thousand_club.status).toBe("not_yet");
+    expect(byKey.diversified).toMatchObject({ status: "not_yet", note: "Holds 0 of 3 xStocks needed (each $1+)" });
+    // The one quest fenced to prestocks (Pre-IPO Position, 22 Sep) is the only thing this wallet qualifies for.
+    expect(byKey.pre_ipo_position).toMatchObject({ status: "qualifies", note: QUALIFIES_NOTE, points: 100, assetSource: "prestocks" });
+    expect(byKey.pre_ipo_position.proof).toMatchObject({ symbol: "SPACEX", qty: 5, usd: 500 });
+    expect(data.qualifying).toBe(1);
+    expect(data.qualifyingPoints).toBe(100);
+    // No xStocks quest saw the pre-IPO holding: its mint appears in no proof but the pre-IPO quest's own.
+    expect(JSON.stringify(data.plays.filter((p) => p.key !== "pre_ipo_position"))).not.toContain(SPACEX_MINT);
+    expect(mocks.unexpected).toEqual([]);
+  });
+
+  // A quest written for the second issuer carries its own fence (Play.assetSource) through the
+  // preview: it sees the pre-IPO holding, and an xStocks-only wallet reads "not yet" in its own words.
+  it("evaluates a Play fenced to prestocks against pre-IPO holdings only, with the note in that issuer's words", async () => {
+    const preAny = { key: "pre_any", title: "Pre-IPO Holder", desc: "Hold any pre-IPO token.", points: 50, badgeKey: null, rule: { type: "hold_any", minUsd: 0 }, assetSource: "prestocks" };
+    mocks.playFindMany.mockResolvedValue([...DB_ROWS.map((r) => ({ ...r, assetSource: "xstocks" })), preAny]);
+
+    const xstocksOnly = await call(ADDRESS);
+    const onlyByKey = Object.fromEntries(xstocksOnly.body.data!.plays.map((p) => [p.key, p]));
+    expect(onlyByKey.first_position.status).toBe("qualifies");
+    expect(onlyByKey.pre_any).toMatchObject({ status: "not_yet", note: "No qualifying pre-IPO token in this wallet right now" });
+
+    resetPreviewLimits();
+    mocks.getTokenBalances.mockResolvedValue([{ chainId: SOL, mint: SPACEX_MINT, account: "acct_Pre", amountRaw: "1000000000", decimals: 9, program: "token-2022", multiplier: 5 }]);
+    mocks.getPrices.mockResolvedValue(new Map([[SPACEX, { ...quote(SPACEX), symbol: "SPACEX", price: 100 }]]));
+    const preOnly = await call(ADDRESS);
+    const preByKey = Object.fromEntries(preOnly.body.data!.plays.map((p) => [p.key, p]));
+    expect(preByKey.pre_any).toMatchObject({ status: "qualifies", note: QUALIFIES_NOTE, points: 50 });
+    expect(preByKey.pre_any.proof).toMatchObject({ symbol: "SPACEX", usd: 500, priceSource: "jupiter" });
+    expect(preByKey.first_position.status).toBe("not_yet");
+    expect(preOnly.body.data!.qualifyingPoints).toBe(50);
+    expect(mocks.unexpected).toEqual([]);
   });
 
   it("falls back to the bundled catalogue when the database is unavailable", async () => {

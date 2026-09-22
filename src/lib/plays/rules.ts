@@ -230,16 +230,46 @@ function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+// ---------------------------------------------------------------------------
+// Asset nouns per source
+// ---------------------------------------------------------------------------
+
+/** The AssetSource a hint is worded for when the caller passes none: Season 0's default. */
+export const DEFAULT_HINT_ASSET_SOURCE = "xstocks";
+
+export interface AssetNoun {
+  singular: string;
+  plural: string;
+}
+
+/**
+ * Plain public noun for one asset of a source and for several. Kept here (not imported from
+ * lib/assets/registry) so this file stays client-safe: the registry pulls in the issuer modules.
+ * tests/pre-ipo-quest.test.ts pins it equal to the registry's `assetNoun`, so the two cannot drift.
+ * An unknown source reads as the default one, exactly as the registry does for a legacy row.
+ */
+const ASSET_NOUNS: Readonly<Record<string, AssetNoun>> = {
+  xstocks: { singular: "xStock", plural: "xStocks" },
+  prestocks: { singular: "pre-IPO token", plural: "pre-IPO tokens" },
+};
+
+/** "xStock" / "xStocks" for xstocks, "pre-IPO token" / "pre-IPO tokens" for prestocks. */
+export function hintAssetNoun(assetSource: string | null | undefined): AssetNoun {
+  const key = typeof assetSource === "string" ? assetSource.trim() : "";
+  return ASSET_NOUNS[key] ?? ASSET_NOUNS[DEFAULT_HINT_ASSET_SOURCE];
+}
+
 /** "any xStock" / "TSLAx" / "TSLAx or NVDAx" / "a selected xStock" / "a partner position" */
-function scopeLabel(rule: PlayRule): string {
+function scopeLabel(rule: PlayRule, assetSource: string | null | undefined): string {
   if (rule.partnerAssetIds) {
     return rule.partnerAssetIds.length === 0 ? "a partner position (listing pending)" : "a partner position";
   }
+  const noun = hintAssetNoun(assetSource);
   const syms = rule.assetSymbols ?? [];
   if (syms.length === 0) {
     const n = rule.assetIds?.length ?? 0;
-    if (n === 0) return "any xStock";
-    return n === 1 ? "a selected xStock" : `one of ${n} selected xStocks`;
+    if (n === 0) return `any ${noun.singular}`;
+    return n === 1 ? `a selected ${noun.singular}` : `one of ${n} selected ${noun.plural}`;
   }
   if (syms.length === 1) return syms[0];
   if (syms.length === 2) return `${syms[0]} or ${syms[1]}`;
@@ -273,15 +303,16 @@ function eventCount(event: string, n: number): string {
 }
 
 /** Hint for an internal_event rule, reading distinctBy when set. */
-function internalEventHint(rule: InternalEventRule): string {
+function internalEventHint(rule: InternalEventRule, assetSource: string | null | undefined): string {
   const n = rule.count;
+  const noun = hintAssetNoun(assetSource);
   switch (rule.distinctBy) {
     case "ref":
       return rule.event === "call_placed"
         ? `Make predictions on ${plural(n, "different question")}.`
         : `Place ${eventLabelPlural(rule.event)} on ${plural(n, "different item")}.`;
     case "symbol":
-      return `Place ${eventLabelPlural(rule.event)} in ${plural(n, "different xStock")}.`;
+      return `Place ${eventLabelPlural(rule.event)} in ${plural(n, `different ${noun.singular}`, `different ${noun.plural}`)}.`;
     case "day":
       return rule.event === "game_action"
         ? `Be active on ${plural(n, "different day")} (UTC).`
@@ -291,24 +322,30 @@ function internalEventHint(rule: InternalEventRule): string {
   }
 }
 
-/** Short, human hint for a rule (server-side copy; the UI uses the one in components/plays/rule-hint). */
-export function ruleToHint(rule: PlayRule): string {
+/**
+ * Short, human hint for a rule (server-side copy; the UI uses the one in components/plays/rule-hint).
+ * `assetSource` is the Play's fence (Play.assetSource): it picks the noun, "xStock" for the Season 0
+ * default and "pre-IPO token" for prestocks, so a quest written for the second issuer never reads
+ * as an xStocks one. Omitted or unknown means the default source.
+ */
+export function ruleToHint(rule: PlayRule, assetSource: string | null | undefined = DEFAULT_HINT_ASSET_SOURCE): string {
   const minUsd = "minUsd" in rule && rule.minUsd !== undefined && rule.minUsd > 0 ? ` worth ${fmtUsd(rule.minUsd)}+` : "";
+  const noun = hintAssetNoun(assetSource);
   switch (rule.type) {
     case "hold_any":
-      return `Hold ${scopeLabel(rule)}${minUsd}.`;
+      return `Hold ${scopeLabel(rule, assetSource)}${minUsd}.`;
     case "hold_consecutive":
-      return `Hold the same ${rule.assetSymbols?.length === 1 ? rule.assetSymbols[0] : "xStock"}${minUsd} for ${plural(rule.days, "daily snapshot")} in a row.`;
+      return `Hold the same ${rule.assetSymbols?.length === 1 ? rule.assetSymbols[0] : noun.singular}${minUsd} for ${plural(rule.days, "daily snapshot")} in a row.`;
     case "net_increase_days":
-      return `Grow your ${scopeLabel(rule)} balance on ${plural(rule.count, "separate day")} within ${plural(rule.window, "day")}.`;
+      return `Grow your ${scopeLabel(rule, assetSource)} balance on ${plural(rule.count, "separate day")} within ${plural(rule.window, "day")}.`;
     case "hold_through_date":
-      return `Hold ${scopeLabel(rule)}${minUsd} through an ${rule.calendarKey} date.`;
+      return `Hold ${scopeLabel(rule, assetSource)}${minUsd} through an ${rule.calendarKey} date.`;
     case "diversified":
-      return `Hold ${plural(rule.minAssets, "xStock")} across ${plural(rule.minSectors, "sector")} at once${minUsd ? ` (each${minUsd})` : ""}.`;
+      return `Hold ${plural(rule.minAssets, noun.singular, noun.plural)} across ${plural(rule.minSectors, "sector")} at once${minUsd ? ` (each${minUsd})` : ""}.`;
     case "mirror_match":
       return `Copy a wallet's portfolio and land within ${Math.round(rule.tolerance * 100)}% of its mix.`;
     case "internal_event":
-      return internalEventHint(rule);
+      return internalEventHint(rule, assetSource);
   }
 }
 

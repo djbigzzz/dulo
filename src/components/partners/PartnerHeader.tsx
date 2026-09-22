@@ -14,6 +14,8 @@ export interface PartnerHeaderProps {
   partner: PartnerDetail["partner"];
   /** Plays verifiable now; drives "Plays live" vs "Coming soon". */
   livePlays: number;
+  /** A risk sentence printed under the outbound links (the Token-2022 note on the PreStocks page). */
+  notice?: string | null;
   className?: string;
 }
 
@@ -31,7 +33,7 @@ function XMark({ className }: { className?: string }) {
 }
 
 /** Partner masthead: logo, name, listing chip, blurb, link buttons. */
-export function PartnerHeader({ partner, livePlays, className }: PartnerHeaderProps) {
+export function PartnerHeader({ partner, livePlays, notice = null, className }: PartnerHeaderProps) {
   const label = partnerListingLabel(livePlays);
   const links: Array<{ key: string; href: string; label: string; icon: React.ReactNode }> = [];
   if (partner.links.website) links.push({ key: "website", href: partner.links.website, label: "Website", icon: <Globe data-icon="inline-start" aria-hidden /> });
@@ -73,6 +75,11 @@ export function PartnerHeader({ partner, livePlays, className }: PartnerHeaderPr
             </a>
           ))}
         </div>
+      ) : null}
+      {notice ? (
+        <p data-slot="partner-notice" className="max-w-2xl text-xs leading-relaxed text-pretty text-muted-foreground">
+          {notice}
+        </p>
       ) : null}
     </header>
   );

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PointsChip } from "@/components/common/PointsChip";
 import { formatDateTime } from "@/components/common/format";
+import { isPreIpoSource } from "@/components/common/issuer";
+import { IssuerPill } from "@/components/common/IssuerPill";
 import { ruleToHint } from "@/components/plays/rule-hint";
 import { cardProgress } from "@/components/plays/play-meta";
 import { flattenProof } from "@/components/plays/proof";
@@ -39,8 +41,8 @@ export function PreviewStatusPill({ status, className }: { status: PreviewPlaySt
 /** One Play as this wallet would see it: status, one-line reason and a Proof button. */
 export function PreviewPlayCard({ play, onProof }: { play: PreviewPlayView; onProof: (play: PreviewPlayView) => void }) {
   const qualifies = play.status === "qualifies";
-  // Same rule as the quests board: no dollar target on a card, units labelled for people.
-  const progress = qualifies ? null : cardProgress(play.progress);
+  // Same rule as the quests board: no dollar target on a card, units labelled for people (the quest's own issuer noun).
+  const progress = qualifies ? null : cardProgress(play.progress, play.assetSource);
   return (
     <article
       className={cn(
@@ -53,8 +55,11 @@ export function PreviewPlayCard({ play, onProof }: { play: PreviewPlayView; onPr
       ) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h3 className="text-base font-semibold tracking-tight">{play.title}</h3>
-          <p className="text-sm text-muted-foreground">{ruleToHint(play.rule)}</p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h3 className="text-base font-semibold tracking-tight">{play.title}</h3>
+            {isPreIpoSource(play.assetSource) ? <IssuerPill source={play.assetSource} /> : null}
+          </div>
+          <p className="text-sm text-muted-foreground">{ruleToHint(play.rule, play.assetSource)}</p>
         </div>
         <PointsChip points={play.points} signed muted={!qualifies} className="shrink-0" />
       </div>
@@ -92,13 +97,13 @@ export function PreviewProofSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const entries = React.useMemo(() => (play ? flattenProof(play.proof) : []), [play]);
+  const entries = React.useMemo(() => (play ? flattenProof(play.proof, { assetSource: play.assetSource }) : []), [play]);
   return (
     <Sheet open={open} onOpenChange={(next) => onOpenChange(next)}>
       <SheetContent side="right" className="w-full gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-md">
         <SheetHeader className="border-b border-white/[0.06] pr-12">
           <SheetTitle className="truncate">{play ? play.title : "Proof"}</SheetTitle>
-          <SheetDescription className="truncate">{play ? ruleToHint(play.rule) : "Evidence behind this quest"}</SheetDescription>
+          <SheetDescription className="truncate">{play ? ruleToHint(play.rule, play.assetSource) : "Evidence behind this quest"}</SheetDescription>
           {play ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <PreviewStatusPill status={play.status} className="h-6" />

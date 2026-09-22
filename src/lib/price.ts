@@ -2,9 +2,11 @@
  * lib/price — the only way the app obtains a price. Every quote carries source + age.
  *
  * Selection (HANDOFF §4):
- *   1. Resolve AssetInfo through the AssetSource (xstocks).
- *   2. If the US session is open AND Pyth has a quote for the underlying AND it is
- *      younger than PYTH_MAX_AGE_SECONDS (60s) -> source "pyth".
+ *   1. Resolve AssetInfo through the AssetSource registry (lib/assets/registry: xStocks, PreStocks).
+ *   2. If the US session is open AND the asset's source has Pyth-listed underlyings
+ *      (RegisteredAssetSource.pythUnderlyings) AND Pyth has a quote for the underlying AND it
+ *      is younger than PYTH_MAX_AGE_SECONDS (60s) -> source "pyth". An asset of a source without
+ *      Pyth underlyings (a pre-IPO token) is never sent to Pyth: no Hermes call, no negative-cache entry.
  *   3. Otherwise the Jupiter Price v3 quote for the token mint -> source "jupiter".
  *      (Pyth is not even fetched while the market is closed: it can never win.)
  *   4. Nothing quotes -> price null, source "none".
@@ -38,7 +40,7 @@
  */
 import type { AssetId, AssetInfo, PriceQuote, PriceSource, SourceQuote } from "@/lib/core";
 import { isAssetId, parseAssetId } from "@/lib/core";
-import { xstocks } from "@/lib/assets/xstocks";
+import { resolveAssetAnySource, resolveAssetBySymbolAnySource, type ResolvedAsset } from "@/lib/assets/registry";
 import { isMarketOpen as calendarIsMarketOpen } from "@/lib/prices/calendar";
 import { jupiter } from "@/lib/prices/jupiter";
 import { pyth } from "@/lib/prices/pyth";
@@ -150,24 +152,35 @@ export async function getPrice(assetId: AssetId): Promise<PriceQuote> {
   return m.get(assetId) ?? noneQuote(assetId, fallbackSymbol(assetId), isMarketOpen());
 }
 
-/** Quote by xStocks symbol (e.g. "TSLAx"). Throws UnknownAssetError when the symbol is not in the catalogue. */
-export async function getPriceBySymbol(symbol: string): Promise<PriceQuote> {
-  const { quotes, unknown } = await getPricesBySymbols([symbol]);
+/**
+ * Options for the symbol lookups. `source` fences the lookup to one AssetSource by name
+ * ("xstocks"): a symbol another source knows (a PreStocks pre-IPO token, say) then counts as
+ * unknown, exactly as if no source knew it. The weekly competition uses this to stay xStocks-only.
+ */
+export interface PriceSymbolOptions {
+  source?: string;
+}
+
+/** Quote by symbol (e.g. "TSLAx", "SPACEX") from whichever AssetSource knows it. Throws UnknownAssetError when none does. */
+export async function getPriceBySymbol(symbol: string, options: PriceSymbolOptions = {}): Promise<PriceQuote> {
+  const { quotes, unknown } = await getPricesBySymbols([symbol], options);
   if (unknown.length > 0 || quotes.length === 0) throw new UnknownAssetError(symbol);
   return quotes[0];
 }
 
-/** Batch quote by symbol. Unknown symbols are reported, not thrown. */
+/** Batch quote by symbol. Unknown symbols (including those outside `options.source`) are reported, not thrown. */
 export async function getPricesBySymbols(
   symbols: readonly string[],
+  options: PriceSymbolOptions = {},
 ): Promise<{ quotes: PriceQuote[]; unknown: string[] }> {
   const unique = [...new Set(symbols.map((s) => s.trim()).filter(Boolean))];
   const unknown: string[] = [];
   const idBySymbol = new Map<string, AssetId>();
+  const fence = typeof options.source === "string" && options.source.trim() ? options.source.trim() : null;
   await Promise.all(
     unique.map(async (sym) => {
-      const info = await safeGetAssetBySymbol(sym);
-      if (info) idBySymbol.set(sym, info.assetId);
+      const hit = await safeResolveAssetBySymbol(sym);
+      if (hit && (fence === null || hit.source === fence)) idBySymbol.set(sym, hit.info.assetId);
       else unknown.push(sym);
     }),
   );
@@ -211,18 +224,22 @@ export async function getPrices(assetIds: readonly AssetId[]): Promise<Map<Asset
   }
   if (misses.length === 0) return result;
 
-  // 2. Resolve asset metadata through the AssetSource.
-  const infos = await Promise.all(misses.map((id) => safeGetAsset(id)));
+  // 2. Resolve asset metadata through the AssetSource registry.
+  const resolved = await Promise.all(misses.map((id) => safeResolveAsset(id)));
   const known: AssetInfo[] = [];
+  // Only assets whose source has Pyth-listed underlyings ever reach Hermes.
+  const pythable: AssetInfo[] = [];
   misses.forEach((id, i) => {
-    const info = infos[i];
-    if (info) known.push(info);
-    else result.set(id, noneQuote(id, fallbackSymbol(id), marketOpen));
+    const hit = resolved[i];
+    if (hit) {
+      known.push(hit.info);
+      if (hit.pythUnderlyings) pythable.push(hit.info);
+    } else result.set(id, noneQuote(id, fallbackSymbol(id), marketOpen));
   });
 
   // 3. Fetch upstream once for the whole batch. Pyth only matters while the market is open.
   const [pythQuotes, jupiterQuotes] = await Promise.all([
-    marketOpen && known.length ? safeSource(pyth, known) : Promise.resolve(emptySourceMap()),
+    marketOpen && pythable.length ? safeSource(pyth, pythable) : Promise.resolve(emptySourceMap()),
     known.length ? safeSource(jupiter, known) : Promise.resolve(emptySourceMap()),
   ]);
 
@@ -289,19 +306,19 @@ async function safeSource(source: PriceSource, assets: AssetInfo[]): Promise<Sou
   }
 }
 
-async function safeGetAsset(assetId: AssetId): Promise<AssetInfo | null> {
+async function safeResolveAsset(assetId: AssetId): Promise<ResolvedAsset | null> {
   if (!isAssetId(assetId)) return null;
   try {
-    return await xstocks.getAsset(assetId);
+    return await resolveAssetAnySource(assetId);
   } catch (e) {
     console.warn(`[price] asset lookup failed for ${assetId}: ${e instanceof Error ? e.message : String(e)}`);
     return null;
   }
 }
 
-async function safeGetAssetBySymbol(symbol: string): Promise<AssetInfo | null> {
+async function safeResolveAssetBySymbol(symbol: string): Promise<ResolvedAsset | null> {
   try {
-    return await xstocks.getAssetBySymbol(symbol);
+    return await resolveAssetBySymbolAnySource(symbol);
   } catch (e) {
     console.warn(`[price] symbol lookup failed for ${symbol}: ${e instanceof Error ? e.message : String(e)}`);
     return null;
