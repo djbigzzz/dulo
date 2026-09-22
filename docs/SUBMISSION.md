@@ -111,9 +111,9 @@ Built solo. GitHub: `djbigzzz` (the repo owner). No X account exists for the pro
 
 Per-track wording, if the form asks:
 
-\text
+````text
 Dulo scores PreStocks through the same engine it scores xStocks with: no second code path. The eight pre-IPO tokens are read from Token-2022 balances with the ScaledUiAmount multiplier applied (SpaceX x5, OpenAI x1.4861347, both live), priced by Jupiter with the issuer's own mark shown beside the DEX price as two different numbers, paper-tradable 24/7 with virtual cash in the weekly competition, and scored by four pre-IPO quests with a proof on each. A corporate-actions feed reads every adjustment straight from the mint. Points only, no cash value; no custody; every swap is the user's own, in Jupiter.
-\
+````
 
 Not ticked: Pyth (no API key in production, so the integration is documented and dormant), Tessera (the PreStocks track excludes any project integrating non-PreStocks pre-IPO tokens), Meteora DBC and Clawpump (both require launching a token).
 
