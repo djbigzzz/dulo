@@ -28,7 +28,7 @@ The entertainment layer for xStocks, live on Solana mainnet. Predict Friday clos
 
 ## Step 2: Description
 
-### Full Description (Markdown, 5,000 max): 4,219 measured
+### Full Description (Markdown, 5,000 max): 4,264 measured
 
 ````markdown
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
@@ -81,7 +81,7 @@ Players are free. Partners would list on-chain quests and pay per verified compl
 
 ## Team
 
-Built solo. Live since 21 Sep 2026 on Vercel and Neon: no players yet, no partner signed and no badge minted, and every count on the site reads zero because it is zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,398 tests, CI on every push.
+Built solo. Live since 21 Sep 2026 on Vercel and Neon: no external players yet (one account so far: the founder's), no partner signed and no badge minted, and every count on the site reads zero because it is zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,398 tests, CI on every push.
 
 Points only, no cash value. Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions. Dulo is independent and not affiliated with xStocks (Backed Finance owns that brand). Original work, written for this hackathon.
 ````

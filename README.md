@@ -17,7 +17,7 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 
 > [!NOTE]
 > [!NOTE]
-> **Live at https://dulo-iota.vercel.app**, reading Solana mainnet, not a testnet mock. It is deployed but brand new: no players yet, no project has signed up, no badge has been minted and nothing is billed. Every count below reads zero because it is zero.
+> **Live at https://dulo-iota.vercel.app**, reading Solana mainnet, not a testnet mock. It is deployed but brand new: no external players yet (one account so far: the founder's), no project has signed up, no badge has been minted and nothing is billed. Every count below reads zero because it is zero.
 
 | | |
 |---|---|
@@ -367,7 +367,7 @@ Players are free, forever. The plan is that partners list on-chain quests and pa
 
 ## Numbers so far
 
-None yet. The app went live on 21 Sep 2026 and has had no players since, so there are no completed quests and no minted badges to report. The table below stays empty until it does. Read any number off `npm run -s stats` on the day, never from memory.
+None yet. The app went live on 21 Sep 2026 and has had no external players since (one account so far: the founder's), so there are no completed quests and no minted badges to report. The table below stays empty until it does. Read any number off `npm run -s stats` on the day, never from memory.
 
 <!-- Fill every <N> from the same day's run. If usersWithCompletedPlay is under 10, replace this table with one line: "<N> early players so far." Never round up, never count bots or the founder's wallets. -->
 
@@ -477,7 +477,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 ## Known limitations
 
-- **Brand new.** Live at https://dulo-iota.vercel.app since 21 Sep 2026 with no players yet, so the Season leaderboard is empty and no badge has been minted. It runs on Vercel's free plan: the five-minute tick comes from a GitHub Actions pinger with Vercel's daily run as backstop, and without a Helius or Jupiter key the public RPC and keyless Jupiter rate-limit under load.
+- **Brand new.** Live at https://dulo-iota.vercel.app since 21 Sep 2026 with no external players yet (one account so far: the founder's), so the Season leaderboard is empty and no badge has been minted. It runs on Vercel's free plan: the five-minute tick comes from a GitHub Actions pinger with Vercel's daily run as backstop, and without a Helius or Jupiter key the public RPC and keyless Jupiter rate-limit under load.
 - **No Pyth key.** Pyth Hermes needs a key and Season 0 runs without one. Jupiter Price v3 therefore prices the competition and settles the predictions, and the source and age are printed on every chip and card. Outside the US session a price is Jupiter's last quote; after 6 hours it is marked stale.
 - **Predictions stay open until the Friday close.** A late entry can win points from the house-bot pools at little risk. The planned fix is to close entries earlier and open next week's questions at that moment.
 - **Throwaway accounts.** Someone can put a throwaway account's starter points on the side that is about to lose, which moves those points to their main account as Season points. A new-account limit of 20 an hour per network only slows this down, and it lives in memory on each server instance. The planned fix weights accounts by account or wallet age, never by holdings.

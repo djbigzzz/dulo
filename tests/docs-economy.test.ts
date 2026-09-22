@@ -351,7 +351,7 @@ describe("docs economy — honest claims across every doc", () => {
     ] as const) {
       expect(text, `${rel} must name the live URL`).toContain(LIVE_URL);
       expect(text, `${rel} must not still say it is not deployed`).not.toMatch(/not deployed yet|no live URL|nothing is deployed/i);
-      for (const denial of [/no players|no users/i, /no partner|no partners/i, /no badge has been minted|no minted [Bb]adge/i, /no billing|nothing is billed/i]) {
+      for (const denial of [/no (external )?players|no (external )?users/i, /no partner|no partners/i, /no badge has been minted|no minted [Bb]adge/i, /no billing|nothing is billed/i]) {
         expect(text, `${rel} must still deny: ${denial}`).toMatch(denial);
       }
     }
