@@ -5,7 +5,7 @@
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
 
 [![CI](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-1%2C176%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
+[![Tests](https://img.shields.io/badge/tests-1%2C398%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
 [![Solana](https://img.shields.io/badge/Solana-mainnet-ff6a2a?style=flat&labelColor=0a0908)](#why-solana)
 [![Licence](https://img.shields.io/badge/licence-MIT-a9a299?style=flat&labelColor=0a0908)](LICENSE)
 
@@ -16,7 +16,6 @@
 Three games on one Season leaderboard: points-only **predictions** on Friday closes, a weekly **competition** with $10,000 of virtual cash at real xStock and pre-IPO prices, and **quests**, some completed in the app and some verified from your own Solana wallet with the proof attached. Every new player starts with 1,000 starter points. Points only, no cash value.
 
 > [!NOTE]
-> [!NOTE]
 > **Live at https://dulo-iota.vercel.app**, reading Solana mainnet, not a testnet mock. It is deployed but brand new: no external players yet (one account so far: the founder's), no project has signed up, no badge has been minted and nothing is billed. Every count below reads zero because it is zero.
 
 | | |
@@ -24,10 +23,20 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 | **Live app** | **https://dulo-iota.vercel.app** |
 | **Pitch video** | _recording this week_ |
 | **Technical video** | [Platform walkthrough on Loom](https://www.loom.com/share/0cb82389e1214dddb84027beecd1d008) (4:59) |
+| **Pitch deck** | [Dulo-pitch-deck.pdf](docs/pitch/Dulo-pitch-deck.pdf) (13 slides) |
 | **Hackathon** | [Stocklana](https://hackathons.solana.com/hackathons/stocklana) — submissions close Fri 25 Sep 2026, 16:00 ET, and judging runs to 2 Oct |
 | **Licence** | [MIT](LICENSE) |
 
-<!-- Screenshots (docs/screenshots/, 1280x800 and 390 px) go here once captured. Do not link images that are not in the repo. -->
+<p align="center">
+  <img src="docs/screenshots/landing.jpg" width="49.5%" alt="The landing: the live prediction cards for the week and the three game tiles">
+  <img src="docs/screenshots/prestocks.jpg" width="49.5%" alt="Pre-IPO: the eight PreStocks pre-IPO tokens with a price chip each and paper trades with virtual cash">
+</p>
+<p align="center">
+  <img src="docs/screenshots/predictions.jpg" width="32.8%" alt="Predictions: points-only Yes or No on Friday closes">
+  <img src="docs/screenshots/competition.jpg" width="32.8%" alt="Weekly competition (virtual cash): countdown, players, points for first, starting cash">
+  <img src="docs/screenshots/quests.jpg" width="32.8%" alt="Quests: in-platform, on-chain with proofs, partner quests coming soon">
+</p>
+<p align="center"><sub>Production screenshots, 22 Sep 2026, 1280×800. Phone captures and the check-a-wallet view are in <a href="docs/screenshots">docs/screenshots</a>.</sub></p>
 
 ---
 
@@ -216,10 +225,10 @@ Four quests (First Position, Diamond Hands, Earnings Holder, Portfolio Match) an
 
 ```mermaid
 flowchart TD
-  cron["Vercel Cron, every 5 min<br/>/api/cron/tick: games, snapshot, evaluate, badges"]
+  cron["Tick every 5 min: GitHub Actions pinger, Vercel Cron daily as backstop<br/>/api/cron/tick: games, snapshot, evaluate, badges"]
   fast["Sign-in or Refresh<br/>runForUser fast path"]
   adapter["ChainAdapter: src/lib/adapters/solana.ts<br/>SPL + Token-2022 token accounts<br/>ScaledUiAmount multiplier per mint, pending newMultiplier applied when due"]
-  assets["AssetSource: src/lib/assets/xstocks.ts<br/>xStocks catalogue, CAIP-19 asset ids, sectors<br/>qty = raw / 10^decimals x multiplier"]
+  assets["AssetSource registry: src/lib/assets/registry.ts<br/>xstocks.ts (catalogue, sectors) + prestocks.ts (eight pre-IPO mints)<br/>CAIP-19 asset ids; qty = raw / 10^decimals x multiplier"]
   price["lib/price: src/lib/price.ts<br/>Jupiter Price v3, Pyth only when keyed<br/>every quote carries source + age"]
   snap["Snapshot row per wallet<br/>assetId, raw, multiplier, qty, price, priceSource, usd"]
   engine["Rule engine: src/lib/plays/engine.ts<br/>pure function of JSON rule + snapshot history<br/>returns complete + proof"]
@@ -269,7 +278,7 @@ The same tick also writes:
 ```mermaid
 flowchart LR
   user["Browser PWA<br/>wallet-adapter + SIWS"]
-  vcron["Vercel Cron */5"]
+  vcron["Tick */5: Actions pinger<br/>+ Vercel Cron daily"]
 
   subgraph routes["Next.js 15 route handlers"]
     v1["/api/v1/* typed envelope handlers, zod"]
@@ -279,7 +288,7 @@ flowchart LR
   subgraph lib["src/lib"]
     core["core: ChainAdapter, AssetSource, PriceSource, GameModule, CAIP-19"]
     adapter["adapters/solana.ts"]
-    xs["assets/xstocks.ts + bundled 832-asset catalogue"]
+    xs["assets/registry.ts: xstocks.ts (bundled 832-asset catalogue) + prestocks.ts"]
     pr["price.ts: prices/jupiter.ts, prices/pyth.ts"]
     eng["plays/engine.ts + plays/rules.ts"]
     games["games/league.ts, games/calls.ts<br/>games/ledger-policy.ts: starter points, Season points rule"]
@@ -399,7 +408,7 @@ Nothing has been minted yet: no server wallet has run in production, so there is
 
 ## Run locally
 
-You need Node 20+ (CI uses 22), npm, and a Postgres database you can reach. xStocks and Jupiter exist only on mainnet, so local development reads mainnet. The public RPC is fine for light use; set `HELIUS_API_KEY` for anything more.
+You need Node 20+ (CI uses 24), npm, and a Postgres database you can reach. xStocks and Jupiter exist only on mainnet, so local development reads mainnet. The public RPC is fine for light use; set `HELIUS_API_KEY` for anything more.
 
 ```bash
 git clone https://github.com/djbigzzz/dulo.git
