@@ -158,6 +158,17 @@ export const InternalEventRuleSchema = z.strictObject({
   ...scopeFields,
 });
 
+/**
+ * An in-scope asset was held across a Token-2022 ScaledUiAmount change: the multiplier at a later
+ * day-end snapshot differs from an earlier one while the raw balance was kept (a split, or an
+ * issuer's periodic adjustment, changes the number of tokens shown, never the holder's raw
+ * balance). No threshold: the wallet state is "the same raw balance, a new multiplier".
+ */
+export const MultiplierChangeRuleSchema = z.strictObject({
+  type: z.literal("multiplier_change"),
+  ...scopeFields,
+});
+
 export const PlayRuleSchema = z.discriminatedUnion("type", [
   HoldAnyRuleSchema,
   HoldConsecutiveRuleSchema,
@@ -166,6 +177,7 @@ export const PlayRuleSchema = z.discriminatedUnion("type", [
   DiversifiedRuleSchema,
   MirrorMatchRuleSchema,
   InternalEventRuleSchema,
+  MultiplierChangeRuleSchema,
 ]);
 
 export type PlayRule = z.infer<typeof PlayRuleSchema>;
@@ -178,6 +190,7 @@ export type HoldThroughDateRule = z.infer<typeof HoldThroughDateRuleSchema>;
 export type DiversifiedRule = z.infer<typeof DiversifiedRuleSchema>;
 export type MirrorMatchRule = z.infer<typeof MirrorMatchRuleSchema>;
 export type InternalEventRule = z.infer<typeof InternalEventRuleSchema>;
+export type MultiplierChangeRule = z.infer<typeof MultiplierChangeRuleSchema>;
 
 export const PLAY_RULE_TYPES = [
   "hold_any",
@@ -187,6 +200,7 @@ export const PLAY_RULE_TYPES = [
   "diversified",
   "mirror_match",
   "internal_event",
+  "multiplier_change",
 ] as const satisfies readonly PlayRuleType[];
 
 // ---------------------------------------------------------------------------
@@ -257,6 +271,11 @@ const ASSET_NOUNS: Readonly<Record<string, AssetNoun>> = {
 export function hintAssetNoun(assetSource: string | null | undefined): AssetNoun {
   const key = typeof assetSource === "string" ? assetSource.trim() : "";
   return ASSET_NOUNS[key] ?? ASSET_NOUNS[DEFAULT_HINT_ASSET_SOURCE];
+}
+
+/** "a pre-IPO token" / "an xStock": the indefinite article for a noun read aloud ("x" opens with a vowel sound). */
+export function withArticle(noun: string): string {
+  return `${/^(?:[aeiou]|x)/i.test(noun) ? "an" : "a"} ${noun}`;
 }
 
 /** "any xStock" / "TSLAx" / "TSLAx or NVDAx" / "a selected xStock" / "a partner position" */
@@ -346,6 +365,8 @@ export function ruleToHint(rule: PlayRule, assetSource: string | null | undefine
       return `Copy a wallet's portfolio and land within ${Math.round(rule.tolerance * 100)}% of its mix.`;
     case "internal_event":
       return internalEventHint(rule, assetSource);
+    case "multiplier_change":
+      return `Hold ${withArticle(noun.singular)} across an on-chain adjustment (the same raw balance, a new multiplier).`;
   }
 }
 

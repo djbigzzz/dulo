@@ -129,6 +129,44 @@ export function cardProgress(progress: PlayProgressView | null | undefined, asse
   return { ...progress, unit: progressUnitLabel(progress.unit, assetSource) };
 }
 
+/** The card's status line when a quest is waiting on the next on-chain adjustment. */
+export const NEXT_ADJUSTMENT_NOTE = "Completes on the next adjustment.";
+/** The last adjustment on record was not held across; the quest is still open. */
+export const MISSED_ADJUSTMENT_NOTE = "The last adjustment was not held across. Completes on the next one.";
+
+/** proof.reason as the engine writes it ("no_adjustment_yet"), or null when the proof carries none. */
+function proofReason(proof: unknown): string | null {
+  if (typeof proof !== "object" || proof === null || Array.isArray(proof)) return null;
+  const reason = (proof as Record<string, unknown>).reason;
+  return typeof reason === "string" ? reason : null;
+}
+
+/**
+ * One sentence under the status pill for a quest that waits on an on-chain event rather than on
+ * the player. A multiplier_change quest with nothing changed on record reads "Completes on the
+ * next adjustment."; it never reads as failed. Null for every other quest, and once complete.
+ */
+export function questStatusNote(play: Pick<PlayLike, "rule" | "proof" | "status" | "comingSoon">): string | null {
+  if (play.comingSoon || play.status === "complete" || play.rule.type !== "multiplier_change") return null;
+  switch (proofReason(play.proof)) {
+    case "no_adjustment_yet":
+    case "no_snapshots":
+      return NEXT_ADJUSTMENT_NOTE;
+    case "not_held_through":
+      return MISSED_ADJUSTMENT_NOTE;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Whether a card draws a progress bar for this rule. A multiplier_change quest is one event
+ * ("0 of 1 adjustments"): an empty bar would read as failure, so the card prints the status note instead.
+ */
+export function showsProgressBar(rule: PlayRule): boolean {
+  return rule.type !== "multiplier_change";
+}
+
 export interface BoardTotals {
   /** Live quests (coming soon left out). */
   livePlays: number;

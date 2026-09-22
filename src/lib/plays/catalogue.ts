@@ -4,11 +4,11 @@ import { HOUSE_PARTNER_SLUG, SEASON0_PARTNERS, partnerBySlug } from "./partners"
 /**
  * Season 0 quest catalogue (docs/HANDOFF.md §3.1). Code name: Play.
  *
- * 20 rows: 8 in-platform quests (internal_event rules, completed with starter points and
- * virtual cash), 10 on-chain quests (verified from the user's wallet snapshots; each description
+ * 21 rows: 8 in-platform quests (internal_event rules, completed with starter points and
+ * virtual cash), 11 on-chain quests (verified from the user's wallet snapshots; each description
  * is the wallet state to reach, never an instruction to buy: 9 fenced to xStocks and, since
- * 22 Sep, 1 fenced to PreStocks pre-IPO tokens) and 2 partner quests marked coming soon.
- * Live totals: 850 in-platform points, 2,800 on-chain points.
+ * 22 Sep, 2 fenced to PreStocks pre-IPO tokens) and 2 partner quests marked coming soon.
+ * Live totals: 850 in-platform points, 2,950 on-chain points.
  *
  * This is the source of truth the seed writes to the Play table. Rules are pure JSON
  * (PlayRuleSchema); presentation flags such as `comingSoon` live on the catalogue entry,
@@ -166,7 +166,7 @@ export const SEASON0_PLAYS: readonly CataloguePlay[] = [
     sortOrder: 8,
   },
 
-  // --- On-chain quest: PreStocks (second issuer, added 22 Sep 2026) ----------
+  // --- On-chain quests: PreStocks (second issuer, added 22 Sep 2026) ---------
   // Fenced to the "prestocks" source, so an xStock can never complete it and it can never touch an
   // xStocks quest. Count-based on purpose: every pre-IPO token is priced by Jupiter only, and the
   // price cache is empty on a cold start, so a USD threshold could read incomplete for a wallet that
@@ -181,6 +181,23 @@ export const SEASON0_PLAYS: readonly CataloguePlay[] = [
     points: 100,
     rule: { type: "hold_any", minUsd: 0 },
     sortOrder: 9,
+    assetSource: PRESTOCKS_ASSET_SOURCE,
+  },
+  // multiplier_change (the eighth rule type) reads consecutive day-end snapshots and completes when the
+  // same raw balance sits under a new Token-2022 ScaledUiAmount multiplier AND the mint's own record
+  // (lib/corporate-actions) dates that change between the two ticks. An adjustment changes the
+  // number of tokens shown, never the holder's value, and the copy says so. Both PreStocks adjustments
+  // on record (SpaceX 1 -> 5 on 10 Jun 2026, OpenAI 1 -> 1.4861347 on 17 Jul 2026) predate Dulo's first
+  // production snapshot (21 Sep 2026), so this quest is truthful only as "completes on the next one".
+  {
+    key: "held_through_split",
+    partnerSlug: "prestocks",
+    campaignTitle: PRESTOCKS,
+    title: "Held Through a Split",
+    desc: "Your wallet held a pre-IPO token across an on-chain adjustment: the same raw balance in two daily snapshots, with a new multiplier between them. Completes on the next adjustment; SpaceX's 5-for-1 and OpenAI's x1.4861 happened before Dulo took its first snapshot.",
+    points: 150,
+    rule: { type: "multiplier_change" },
+    sortOrder: 10,
     assetSource: PRESTOCKS_ASSET_SOURCE,
   },
 

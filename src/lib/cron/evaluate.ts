@@ -27,6 +27,7 @@
  */
 import type { Prisma } from "@prisma/client";
 import { listAllAssets } from "@/lib/assets/registry";
+import { listCorporateActions } from "@/lib/corporate-actions";
 import { DEFAULT_ASSET_SOURCE, type AssetInfo, type Holding, type HoldingsSnapshot, type InternalEvent, type PriceSourceName } from "@/lib/core";
 import { mirrorEventsForUser } from "@/lib/mirror/events";
 import { evaluatePlay, mergeSnapshots, type EvalContext, type EvalResult } from "@/lib/plays/engine";
@@ -311,7 +312,7 @@ export async function buildEvalContext(userId: string, now: Date, opts: BuildEva
   const wallets = await db.wallet.findMany({ where: { userId }, select: { id: true } });
   const walletIds = wallets.map((w) => w.id);
 
-  const [rows, dbEvents, mirrorEvents, catalogue] = await Promise.all([
+  const [rows, dbEvents, mirrorEvents, catalogue, corporateActions] = await Promise.all([
     walletIds.length > 0
       ? db.snapshot.findMany({
           where: { walletId: { in: walletIds }, takenAt: { gte: since } },
@@ -323,6 +324,9 @@ export async function buildEvalContext(userId: string, now: Date, opts: BuildEva
     // P4: the user's recorded Mirror intent as a mirror_executed event (never throws).
     mirrorEventsForUser(userId),
     opts.catalogue ? Promise.resolve(opts.catalogue) : buildCatalogueIndex(),
+    // The adjustments each mint records (cached 10 minutes, never throws): multiplier_change
+    // completes only for a change one of them corroborates, never for a snapshot pair alone.
+    listCorporateActions(),
   ]);
 
   return {
@@ -332,6 +336,7 @@ export async function buildEvalContext(userId: string, now: Date, opts: BuildEva
     earnings: earningsCalendar(),
     sectorOf: catalogue.sectorOf,
     underlyingOf: catalogue.underlyingOf,
+    corporateActions,
   };
 }
 

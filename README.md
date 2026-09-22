@@ -108,7 +108,7 @@ Points only, no cash value. Points live in an append-only `PointsEvent` ledger w
 - **$10,000 of virtual cash per competition week.** It is neither real money nor points. Your competition account opens with your first paper trade, and the app never adds cash and points into one number.
 - **Season points = quests + weekly finishes (top 10 with 3+ trades) + settled prediction results.** Starter points, house seed rows and points in open predictions are left out. A prediction counts once it settles: the points back if it settles your way, minus the points you put in if it does not, and zero on a refund.
 - **Weekly finishes.** Ranks 1 to 10 by virtual portfolio value earn 1,000 / 700 / 500 / 300 / 200 / 100 / 100 / 100 / 100 / 100 points. Only real accounts with at least 3 trades that week are paid, so a place held by a house bot pays nobody.
-- **Quests.** The 8 in-platform quests are worth 850 points and use virtual cash and points. The 10 on-chain quests are worth 2,800 points and are verified from your wallet: nine read xStocks and one, Pre-IPO Position, reads PreStocks pre-IPO tokens. Each on-chain quest describes a wallet state and never tells anyone to buy anything. Partner quests (Kamino Collateral, Jupiter Recurring) are listed as coming soon and cannot be verified yet.
+- **Quests.** The 8 in-platform quests are worth 850 points and use virtual cash and points. The 11 on-chain quests are worth 2,950 points and are verified from your wallet: nine read xStocks and two, Pre-IPO Position and Held Through a Split, read PreStocks pre-IPO tokens. Each on-chain quest describes a wallet state and never tells anyone to buy anything. Partner quests (Kamino Collateral, Jupiter Recurring) are listed as coming soon and cannot be verified yet.
 - **Points balance and Season points.** Your points balance is what you can put into predictions: your Season points, plus your starter points, minus the points in your open predictions. The leaderboard ranks Season points. A player with 0 Season points or fewer reads "Not ranked yet".
 - **Points cannot be bought, cashed out or sent to another player.** Points only move between players through a shared prediction pool.
 - **What partners would pay for.** The plan is that partners list on-chain quests and pay per verified completion. It is only a plan: nothing is billed, no partner has signed and there is no billing code.
@@ -156,7 +156,7 @@ The full ledger table, with every limit and the code that enforces it, is in [`d
 
 ### 3. Quests
 
-A quest is a JSON rule on a database row, validated by a zod schema with seven rule types. Adding a quest means adding a row, not code. No quest tells anyone to buy a security: an on-chain quest describes the wallet state to reach, and its proof shows that the wallet reached it.
+A quest is a JSON rule on a database row, validated by a zod schema with eight rule types. Adding a quest means adding a row, not code. No quest tells anyone to buy a security: an on-chain quest describes the wallet state to reach, and its proof shows that the wallet reached it.
 
 **In-platform quests: points and virtual cash** (850 points). The prediction and trade routes check these as they run, so the toast arrives in the same response.
 
@@ -171,7 +171,7 @@ A quest is a JSON rule on a database row, validated by a zod schema with seven r
 | Three Game Days | `game_action` × 3, one per UTC day | A paper trade or a new prediction on three different days | 150 |
 | Five Predictions | `call_placed` × 5, one per question | Predictions on five different questions, over several weeks | 150 |
 
-**On-chain quests, verified from your wallet** (2,800 points: nine fenced to xStocks, one to PreStocks pre-IPO tokens).
+**On-chain quests, verified from your wallet** (2,950 points: nine fenced to xStocks, two to PreStocks pre-IPO tokens).
 
 | Quest | Rule `type` | The wallet state that completes it | Points | Badge |
 |---|---|---|---|---|
@@ -185,6 +185,7 @@ A quest is a JSON rule on a database row, validated by a zod schema with seven r
 | Sector Spread | `diversified` | 5+ xStocks across 4+ sectors in the same snapshot | 400 | |
 | Portfolio Match | `mirror_match` | An allocation within 20% of a portfolio you chose to copy | 500 | yes |
 | Pre-IPO Position | `hold_any` | Any PreStocks pre-IPO token, whatever the amount, counted by the token and not by a price (fenced to the `prestocks` source) | 100 | |
+| Held Through a Split | `multiplier_change` | A pre-IPO token held across an on-chain adjustment: the same raw balance in two daily snapshots with a new multiplier between them (fenced to the `prestocks` source; an adjustment changes the number of tokens shown, not the holder's value) | 150 | |
 
 **Coming soon from partners.** These are seeded inactive and never evaluated. No partner has signed.
 
@@ -330,7 +331,7 @@ Rules the codebase keeps:
 
 **How Dulo relates to xPoints.** They are complementary: an issuer's own points reward activity in its own venues, while Dulo scores verified behaviour across apps and issuers and routes holders to the apps that list a quest.
 
-**Issuer scope.** Season 0 scores xStocks, and since 22 Sep it also reads a second issuer. PreStocks pre-IPO tokens are eight more Token-2022 mints (`src/lib/assets/prestocks.ts`), registered beside xStocks in `src/lib/assets/registry.ts`. The snapshot reads the union of both mint sets in the same batched RPC calls it already made, so the second issuer costs zero extra RPC calls; each holding is tagged with the source that resolved it; the price layer sends only xStocks symbols to Pyth, so a pre-IPO token is Jupiter-priced and never a Hermes call; and the engine fences every quest to the issuer on its `Play.assetSource`. One quest, Pre-IPO Position, is fenced to `prestocks`; the nine xStocks quests evaluate identically with or without pre-IPO tokens in the wallet (`tests/second-issuer-regression.test.ts`). Another issuer later is another implementation behind the same interface, not a rewrite.
+**Issuer scope.** Season 0 scores xStocks, and since 22 Sep it also reads a second issuer. PreStocks pre-IPO tokens are eight more Token-2022 mints (`src/lib/assets/prestocks.ts`), registered beside xStocks in `src/lib/assets/registry.ts`. The snapshot reads the union of both mint sets in the same batched RPC calls it already made, so the second issuer costs zero extra RPC calls; each holding is tagged with the source that resolved it; the price layer sends only xStocks symbols to Pyth, so a pre-IPO token is Jupiter-priced and never a Hermes call; and the engine fences every quest to the issuer on its `Play.assetSource`. Two quests, Pre-IPO Position and Held Through a Split, are fenced to `prestocks`; the nine xStocks quests evaluate identically with or without pre-IPO tokens in the wallet (`tests/second-issuer-regression.test.ts`). Another issuer later is another implementation behind the same interface, not a rewrite.
 
 ## Points only
 
@@ -347,7 +348,7 @@ Points only, no cash value. Points are not tokens and are not on-chain. On-chain
 | Partner | Label | What is listed |
 |---|---|---|
 | xStocks | Quests live | Nine on-chain quests verified from xStocks holdings |
-| PreStocks | Quests live | One on-chain quest, Pre-IPO Position, verified from PreStocks pre-IPO token holdings |
+| PreStocks | Quests live | Two on-chain quests, Pre-IPO Position and Held Through a Split, verified from PreStocks pre-IPO token holdings |
 | Jupiter | Coming soon | A Recurring-order quest (the copy tool's swap links already open jup.ag) |
 | Kamino | Coming soon | A collateral quest, to be read from Kamino's public API |
 
@@ -482,6 +483,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 - **Check any wallet is one live read.** On-chain quests that need daily history (Diamond Hands, Steady Buyer, Earnings Holder) show "Needs daily snapshots". The per-IP and per-instance rate limits live in memory.
 - **The Jupiter Recurring and Kamino quests are coming soon.** They are listed but cannot be verified yet.
 - **PreStocks pre-IPO tokens trade on thin pools and are Jupiter-only priced.** None of the eight has a Pyth feed, so a pre-IPO price is always Jupiter's quote from a thin Meteora pool, with its source and age shown. The issuer's mark (`markPrice` from the PreStocks API) is a separate number and not a tradeable quote; the app never presents the gap between the two as a discount. Pre-IPO Position is therefore count-based, and the competition and the copy tool stay xStocks-only.
+- **Held Through a Split cannot have completed yet.** Both PreStocks adjustments on record (SpaceX's 5-for-1, effective 10 Jun 2026, and OpenAI's x1.4861, effective 17 Jul 2026, read from each mint's ScaledUiAmount config) predate Dulo's first production snapshot on 21 Sep 2026, so no wallet on record held through either. The quest completes on the next adjustment, and its copy says so. An adjustment changes the number of tokens shown, not the holder's value, and the app never presents one as a price signal.
 - **More in the handoff.** The full list, with a planned fix for each, is in `docs/HANDOFF.md` §3.9.
 
 ## Disclosure

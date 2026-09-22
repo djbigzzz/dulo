@@ -76,6 +76,18 @@ export function formatDate(iso: string | Date | null | undefined): string {
   return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(d);
 }
 
+/**
+ * "10 Jun 2026" for an on-chain instant, always in UTC — empty string for null/invalid. For a
+ * date the chain names (a corporate action's effective time, read from the mint), so every viewer
+ * and every test machine prints the same day whatever its zone; formatDate is for the viewer's own moments.
+ */
+export function formatDateUtc(iso: string | Date | null | undefined): string {
+  if (!iso) return "";
+  const d = iso instanceof Date ? iso : new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(d);
+}
+
 /** "14 Sep 2026, 16:05" in the viewer's zone — empty string for null/invalid. */
 export function formatDateTime(iso: string | Date | null | undefined): string {
   if (!iso) return "";

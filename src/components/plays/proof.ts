@@ -111,6 +111,11 @@ const LABELS: Record<string, string> = {
   needed: "Needed",
   distinctBy: "Counted once per",
   refs: "Latest counted",
+  // multiplier_change proofs (`before` / `after` keep the earnings wording): the same raw balance, a new multiplier. Never a price.
+  ratio: "Multiplier ratio",
+  multiplier: "Multiplier",
+  raw: "Raw balance",
+  missed: "Adjustments not held across",
 };
 
 /** Plain words for the internal event names an in-platform quest's proof carries. */

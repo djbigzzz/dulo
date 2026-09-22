@@ -7,6 +7,7 @@ import type {
   HoldThroughDateRule,
   InternalEventRule,
   MirrorMatchRule,
+  MultiplierChangeRule,
   NetIncreaseDaysRule,
   PlayRule,
 } from "./rules";
@@ -53,6 +54,23 @@ export interface EvalContext {
   sectorOf: (assetId: string) => string | null;
   /** Underlying ticker for an asset id, e.g. "TSLA" for TSLAx; null when unknown. */
   underlyingOf: (assetId: string) => string | null;
+  /**
+   * The corporate actions on record per mint (lib/corporate-actions listCorporateActions: the
+   * ScaledUiAmount state read from the mint itself). multiplier_change completes ONLY for a
+   * change that one of these corroborates: a snapshot pair alone never scores, so a degraded
+   * mint read in one tick can never look like an adjustment. Omitted or empty means nothing
+   * is on record and the rule stays incomplete.
+   */
+  corporateActions?: readonly OnRecordAdjustment[];
+}
+
+/** One ScaledUiAmount change read from a mint, as the engine needs it (CorporateActionView satisfies it). */
+export interface OnRecordAdjustment {
+  assetId: string;
+  multiplierBefore: number;
+  multiplierAfter: number;
+  /** When the new multiplier took (or takes) effect on chain; null when the mint carries no timestamp. */
+  effectiveAt: string | Date | null;
 }
 
 export interface EvalResult {
@@ -84,6 +102,8 @@ export function evaluatePlay(rule: PlayRule, ctx: EvalContext, assetSource: stri
         return evalMirrorMatch(rule, c);
       case "internal_event":
         return evalInternalEvent(rule, c);
+      case "multiplier_change":
+        return evalMultiplierChange(rule, c);
       default:
         return incomplete("unknown_rule_type", { type: (rule as { type: string }).type });
     }
@@ -733,6 +753,148 @@ function evalInternalEventDistinct(rule: InternalEventRule, by: DistinctByKey, c
   return { complete: true, proof, progress, completedAt: iso(firsts[count - 1].ts) };
 }
 
+/**
+ * multiplier_change {}
+ * A Token-2022 ScaledUiAmount change (a split, or an issuer's periodic adjustment) rewrites the
+ * multiplier on the mint and leaves every holder's raw balance alone. The rule completes when,
+ * for one in-scope asset, two day-end snapshots on CONSECUTIVE calendar days both hold the asset
+ * with THE SAME raw balance while the multiplier changed between them, and the change is the
+ * one the mint itself records (ctx.corporateActions, read by lib/corporate-actions): the earlier
+ * snapshot shows the record's multiplierBefore, the later one its multiplierAfter, and the
+ * record's effectiveAt lies in (before.takenAt, after.takenAt]. A snapshot pair alone never
+ * scores, in either direction: a degraded mint read that writes a wrong multiplier into one
+ * tick has no record behind it and is ignored. A missed day (a cron outage) is not a pair, so
+ * selling out and buying back across missed days never counts; a day-end without the asset, or
+ * a different raw balance (trimmed or added to) across the change, is "not held through".
+ * Price plays no part: the adjustment changes the number of tokens shown, not the holder's
+ * value, and the proof shows exactly that (same raw, new multiplier).
+ *
+ * When several assets qualify the largest ratio (after / before) wins, then the earliest
+ * completedAt, then assetId. completedAt = takenAt of the later snapshot. Progress is 0 or 1
+ * "adjustments". Incomplete reasons: not_held_through (an adjustment on record landed between
+ * two consecutive day-ends but the balance was not kept across it; proof.missed lists them) and
+ * no_adjustment_yet (no adjustment on record has landed between two observed day-ends,
+ * including a single baseline snapshot).
+ */
+function evalMultiplierChange(rule: MultiplierChangeRule, c: Ctx): EvalResult {
+  const scope = scopeOf(rule, c.assetSource);
+  if (scope.kind === "none") return incomplete(scope.reason);
+  const days = dailySnapshots(c.snapshots);
+  if (days.length === 0) return incomplete("no_snapshots");
+
+  interface Obs {
+    day: string;
+    takenAt: Date;
+    symbol: string;
+    multiplier: number;
+    raw: string;
+    qty: number;
+  }
+  interface Point {
+    day: string;
+    multiplier: number;
+    qty: number;
+    raw: string;
+  }
+  const point = (o: Obs): Point => ({ day: o.day, multiplier: o.multiplier, qty: o.qty, raw: o.raw });
+
+  // Per day, the in-scope observation of every asset present (duplicate rows summed; qty 0 rows kept as "not held").
+  const perDay = days.map(({ day, snapshot }) => {
+    const obs = new Map<string, Obs>();
+    for (const h of snapshot.holdings) {
+      if (!inScope(scope, h)) continue;
+      const cur = obs.get(h.assetId);
+      if (!cur) {
+        obs.set(h.assetId, { day, takenAt: snapshot.takenAt, symbol: h.symbol, multiplier: h.multiplier, raw: h.raw, qty: h.qty });
+        continue;
+      }
+      cur.qty += h.qty;
+      cur.raw = addRaw(cur.raw, h.raw);
+    }
+    return { day, takenAt: snapshot.takenAt, obs };
+  });
+  const assetIds = [...new Set(perDay.flatMap((d) => [...d.obs.keys()]))].sort(cmpStr);
+  const isHeld = (o: Obs | undefined): o is Obs => o !== undefined && o.qty > 0 && cmpRaw(o.raw, "0") > 0;
+
+  interface Match {
+    assetId: string;
+    symbol: string;
+    before: Obs;
+    after: Obs;
+    ratio: number;
+  }
+  const matches: Match[] = [];
+  const missed: Array<Record<string, unknown>> = [];
+
+  for (const assetId of assetIds) {
+    const records = c.corporateActions.get(assetId) ?? [];
+    if (records.length === 0) continue;
+    let symbol = assetId;
+    for (let i = 1; i < perDay.length; i++) {
+      const prev = perDay[i - 1];
+      const cur = perDay[i];
+      if (cur.day !== addDays(prev.day, 1)) continue;
+      const before = prev.obs.get(assetId);
+      const after = cur.obs.get(assetId);
+      symbol = after?.symbol ?? before?.symbol ?? symbol;
+      // The record that landed between these two day-ends and agrees with what each of them shows.
+      const record = records.find(
+        (r) =>
+          r.effectiveAt.getTime() > prev.takenAt.getTime() &&
+          r.effectiveAt.getTime() <= cur.takenAt.getTime() &&
+          (!isHeld(before) || !multiplierDiffers(before.multiplier, r.multiplierBefore)) &&
+          (!isHeld(after) || !multiplierDiffers(after.multiplier, r.multiplierAfter)),
+      );
+      if (!record) continue;
+      if (isHeld(before) && isHeld(after) && cmpRaw(after.raw, before.raw) === 0) {
+        matches.push({ assetId, symbol, before, after, ratio: round8(after.multiplier / before.multiplier) });
+      } else if (missed.length < MAX_PROOF_CHECKED) {
+        missed.push({
+          assetId,
+          symbol,
+          before: before ? point(before) : { day: prev.day, multiplier: record.multiplierBefore, qty: 0, raw: "0" },
+          after: after ? point(after) : { day: cur.day, multiplier: record.multiplierAfter, qty: 0, raw: "0" },
+        });
+      }
+    }
+  }
+
+  if (matches.length > 0) {
+    matches.sort(
+      (a, b) => b.ratio - a.ratio || a.after.takenAt.getTime() - b.after.takenAt.getTime() || cmpStr(a.assetId, b.assetId),
+    );
+    const best = matches[0];
+    return {
+      complete: true,
+      proof: { assetId: best.assetId, symbol: best.symbol, before: point(best.before), after: point(best.after), ratio: best.ratio },
+      progress: { current: 1, target: 1, unit: "adjustments" },
+      completedAt: iso(best.after.takenAt),
+    };
+  }
+
+  const progress = { current: 0, target: 1, unit: "adjustments" };
+  const latest = days[days.length - 1];
+  if (missed.length > 0) return incomplete("not_held_through", { takenAt: iso(latest.snapshot.takenAt), missed }, progress);
+  return incomplete("no_adjustment_yet", { takenAt: iso(latest.snapshot.takenAt), days: days.length }, progress);
+}
+
+/** Multipliers are chain-reported decimals; anything beyond float noise is a change. */
+function multiplierDiffers(a: number, b: number): boolean {
+  return Math.abs(a - b) > MULTIPLIER_EPS * Math.max(1, Math.abs(a), Math.abs(b));
+}
+
+/** Compare two base-unit amounts; exact via BigInt when both are integer strings, numeric otherwise (NaN reads as 0). */
+function cmpRaw(a: string, b: string): number {
+  if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+    const x = BigInt(a);
+    const y = BigInt(b);
+    return x < y ? -1 : x > y ? 1 : 0;
+  }
+  const x = Number(a) || 0;
+  const y = Number(b) || 0;
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
 // ---------------------------------------------------------------------------
 // Context + input sanitising
 // ---------------------------------------------------------------------------
@@ -750,6 +912,14 @@ interface Ctx {
   underlyingOf: (assetId: string) => string | null;
   /** The evaluating Play's AssetSource; null when the caller has no Play context. */
   assetSource: string | null;
+  /** Sanitised adjustments on record, per assetId (only those with a date and two different positive multipliers). */
+  corporateActions: Map<string, CleanAdjustment[]>;
+}
+
+interface CleanAdjustment {
+  multiplierBefore: number;
+  multiplierAfter: number;
+  effectiveAt: Date;
 }
 
 function cleanContext(ctx: EvalContext, assetSource: string | null): Ctx {
@@ -766,7 +936,28 @@ function cleanContext(ctx: EvalContext, assetSource: string | null): Ctx {
     sectorOf,
     underlyingOf,
     assetSource: typeof assetSource === "string" && assetSource.trim().length > 0 ? assetSource.trim() : null,
+    corporateActions: cleanAdjustments(raw.corporateActions),
   };
+}
+
+/**
+ * Adjustments on record, per assetId. An entry without an effective date cannot be placed
+ * between two snapshots and is dropped: a change the mint does not date is never scored.
+ */
+function cleanAdjustments(input: unknown): Map<string, CleanAdjustment[]> {
+  const out = new Map<string, CleanAdjustment[]>();
+  for (const a of Array.isArray(input) ? input : []) {
+    if (!isObj(a) || typeof a.assetId !== "string" || a.assetId.length === 0) continue;
+    const multiplierBefore = num(a.multiplierBefore);
+    const multiplierAfter = num(a.multiplierAfter);
+    const effectiveAt = toDate(a.effectiveAt);
+    if (multiplierBefore === null || multiplierAfter === null || multiplierBefore <= 0 || multiplierAfter <= 0 || !effectiveAt) continue;
+    if (!multiplierDiffers(multiplierBefore, multiplierAfter)) continue;
+    const list = out.get(a.assetId) ?? [];
+    list.push({ multiplierBefore, multiplierAfter, effectiveAt });
+    out.set(a.assetId, list);
+  }
+  return out;
 }
 
 function safeLookup(fn: unknown): (assetId: string) => string | null {
@@ -994,6 +1185,8 @@ const DAY_MS = 86_400_000;
 /** Tolerance for float noise on qty comparisons. */
 const QTY_EPS = 1e-9;
 const WEIGHT_EPS = 1e-9;
+/** Relative tolerance for "the multiplier changed" (chain multipliers carry up to ~10 decimals). */
+const MULTIPLIER_EPS = 1e-9;
 /** Cap on per-day lists in proofs so a 365-day rule keeps the JSON small. */
 const MAX_PROOF_DAYS = 60;
 const MAX_PROOF_CHECKED = 10;
@@ -1055,6 +1248,10 @@ function round2(n: number): number {
 
 function round4(n: number): number {
   return Math.round(n * 10_000) / 10_000;
+}
+
+function round8(n: number): number {
+  return Math.round(n * 100_000_000) / 100_000_000;
 }
 
 /** Sum two base-unit amounts; exact via BigInt when both are integer strings. */

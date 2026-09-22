@@ -25,7 +25,7 @@ const PURCHASE_WORDS = /\b(buy|buys|buying|purchase|swap|swaps|deposit|broker|ad
 const BETTING_WORDS = /prediction markets?|\bstakes?\b|\bstaked\b|\bstaking\b|\bodds\b|\bpayouts?\b|\bbets?\b|\bbetting\b/i;
 
 describe("quest compliance — on-chain quests describe a wallet state", () => {
-  it("covers every row whose rule is not internal_event (10 live on-chain quests + 2 partner quests)", () => {
+  it("covers every row whose rule is not internal_event (11 live on-chain quests + 2 partner quests)", () => {
     expect(onChainRows.map((p) => p.key)).toEqual([
       "first_position",
       "diversified",
@@ -37,6 +37,7 @@ describe("quest compliance — on-chain quests describe a wallet state", () => {
       "index_holder",
       "sector_spread",
       "pre_ipo_position",
+      "held_through_split",
       "kamino_collateral",
       "jupiter_dca",
     ]);
@@ -109,13 +110,13 @@ describe("quest compliance — every quest", () => {
     }
   });
 
-  it("live points: in-platform 850, on-chain 2,800 (2,700 xStocks + 100 PreStocks)", () => {
+  it("live points: in-platform 850, on-chain 2,950 (2,700 xStocks + 250 PreStocks)", () => {
     const live = activePlays();
     const total = (kind: "in-platform" | "on-chain") =>
       live.filter((p) => questKind({ rule: p.rule, comingSoon: p.comingSoon === true }) === kind).reduce((n, p) => n + p.points, 0);
     expect(total("in-platform")).toBe(850);
-    expect(total("on-chain")).toBe(2800);
-    expect(live.reduce((n, p) => n + p.points, 0)).toBe(3650);
+    expect(total("on-chain")).toBe(2950);
+    expect(live.reduce((n, p) => n + p.points, 0)).toBe(3800);
   });
 
   it("the only quests coming soon are the two partner quests, seeded inactive with no asset to read yet", () => {

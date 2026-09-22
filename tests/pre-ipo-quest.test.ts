@@ -114,9 +114,13 @@ describe("Pre-IPO Position: the one PreStocks quest", () => {
     expect(activePlays().map((p) => p.key)).toContain("pre_ipo_position");
   });
 
-  it("is the only quest carrying its own fence; every other row keeps the Season 0 default", () => {
+  it("shares the prestocks fence with Held Through a Split only; every other row keeps the Season 0 default", () => {
+    const split = playByKey("held_through_split")!;
+    expect(split.assetSource).toBe(PRESTOCKS_ASSET_SOURCE);
+    expect(split.partnerSlug).toBe("prestocks");
+    expect(split.sortOrder).toBe(play.sortOrder + 1);
     for (const p of SEASON0_PLAYS) {
-      if (p.key === "pre_ipo_position") continue;
+      if (p.key === "pre_ipo_position" || p.key === "held_through_split") continue;
       expect(p.assetSource, p.key).toBeUndefined();
       expect(playAssetSource(p), p.key).toBe(SEASON0_ASSET_SOURCE);
     }
@@ -263,7 +267,8 @@ describe("every word about PreStocks in the docs", () => {
   it("HANDOFF §3.1 carries the quest and §3.10 the noun", () => {
     const catalogue = section(HANDOFF, "### 3.1 ");
     expect(catalogue).toMatch(/^\| pre_ipo_position \| Pre-IPO Position \| on-chain \| `hold_any` minUsd 0.*\| 100 \| +\|$/m);
-    expect(catalogue).toContain("the 10 live on-chain quests 2,800");
+    expect(catalogue).toContain("the 11 live on-chain quests 2,950");
+    expect(catalogue).toMatch(/^\| held_through_split \| Held Through a Split \| on-chain \| `multiplier_change`.*\| 150 \| +\|$/m);
     const vocabulary = section(HANDOFF, "### 3.10 Vocabulary");
     expect(vocabulary).toMatch(/PreStocks/);
     expect(vocabulary).toMatch(/pre-IPO token/);
@@ -281,7 +286,7 @@ describe("every word about PreStocks in the docs", () => {
   });
 
   it("CLAUDE.md names the quest and the noun", () => {
-    expect(BRIEF).toContain("Added 22 Sep: Pre-IPO Position (PreStocks, source prestocks)");
+    expect(BRIEF).toContain("Added 22 Sep: Pre-IPO Position, Held Through a Split (PreStocks, source prestocks)");
     expect(BRIEF).toMatch(/^- PreStocks[^\n]*pre-IPO token/m);
   });
 

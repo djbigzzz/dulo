@@ -78,9 +78,13 @@ const mocks = vi.hoisted(() => ({
   mintSet: vi.fn(),
   evaluatePlay: vi.fn(),
   mergeSnapshots: vi.fn(),
+  listCorporateActions: vi.fn(),
 }));
 
 vi.mock("@/lib/server/db", () => ({ db: mocks.db }));
+// The adjustments on record (lib/corporate-actions reads the registry and the chain): mocked so
+// the unit test never reaches an issuer API or an RPC.
+vi.mock("@/lib/corporate-actions", () => ({ listCorporateActions: mocks.listCorporateActions }));
 
 vi.mock("@/lib/adapters/solana", () => ({
   solana: { chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", getTokenBalances: mocks.getTokenBalances },
@@ -411,12 +415,17 @@ describe("buildEvalContext", () => {
       { id: "trade_2", ts: new Date("2026-09-14T10:00:00Z"), symbol: "TSLAx", side: "buy", leagueAccountId: "la_1" },
     ]);
     mocks.db.position.findMany.mockResolvedValue([{ marketId: "mkt_1", side: "yes", points: 50, createdAt: new Date("2026-09-14T09:00:00Z") }]);
+    const spacexSplit = { assetId: `${SOL}/token:PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh`, symbol: "SPACEX", source: "prestocks", kind: "split", multiplierBefore: 1, multiplierAfter: 5, ratio: 5, effectiveAt: "2026-06-10T04:30:00.000Z", effective: true };
+    mocks.listCorporateActions.mockResolvedValue([spacexSplit]);
 
     const ctx = await buildEvalContext(USER, NOW, {
       extraEvents: [{ type: "mirror_executed", userId: USER, ref: "mirror:abc", ts: new Date("2026-09-14T11:00:00Z") }],
     });
 
     expect(ctx.now).toBe(NOW);
+    // The adjustments on record ride along for multiplier_change: the engine scores nothing without them.
+    expect(ctx.corporateActions).toEqual([spacexSplit]);
+    expect(mocks.listCorporateActions).toHaveBeenCalledTimes(1);
     const where = mocks.db.snapshot.findMany.mock.calls[0][0].where;
     expect(where.walletId).toEqual({ in: ["w1", "w2"] });
     expect(where.takenAt.gte).toEqual(new Date(NOW.getTime() - 45 * 24 * 60 * 60 * 1000));

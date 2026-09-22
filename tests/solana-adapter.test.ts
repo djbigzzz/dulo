@@ -290,6 +290,50 @@ describe("getTokenBalances", () => {
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  // A degraded mint read must never become a multiplier of 1 in a snapshot: to the Plays engine
+  // that would look exactly like a corporate action (5 -> 1 -> 5), and a PointsEvent is forever.
+  it("fails the whole read (never 'assume 1') when a Token-2022 balance's mint account comes back null, and does not cache the null", async () => {
+    const rpc = fakeRpc({ [TSLAX]: null });
+    const adapter = makeAdapter(rpc);
+    const err = await adapter.getTokenBalances(OWNER).catch((e) => e);
+    expect(err).toBeInstanceOf(SolanaAdapterError);
+    expect(err).toMatchObject({ op: "getTokenBalances", kind: "rpc" });
+    expect(String(err.message)).toMatch(/refusing to assume multiplier 1/);
+    expect(String(err.message)).toContain(TSLAX);
+    // The null answer was not cached: the next read asks the node again and, once it answers, succeeds.
+    rpc.getMultipleParsedAccounts.mockImplementation(async (keys: PublicKey[]) => ({
+      context: { slot: 1 },
+      value: keys.map((k) => MINT_FIXTURES[k.toBase58()] ?? null),
+    }));
+    const rows = await adapter.getTokenBalances(OWNER);
+    expect(rows.find((r) => r.mint === TSLAX)?.multiplier).toBe(1.25);
+    expect(rpc.getMultipleParsedAccounts).toHaveBeenCalledTimes(2);
+    // getMintInfos still answers program null for the missing account (the corporate-actions list treats it as "no action").
+    const infos = await makeAdapter(fakeRpc({ [TSLAX]: null })).getMintInfos([TSLAX]);
+    expect(infos.get(TSLAX)).toEqual({ mint: TSLAX, program: null, scaledUi: null });
+  });
+
+  it("fails the whole read when the ScaledUiAmount extension is present but unreadable, and does not cache that answer either", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const broken = parsedMint(TOKEN_2022_PROGRAM_ID, 8, [{ extension: "scaledUiAmountConfig", state: { multiplier: "abc" } }]);
+    const rpc = fakeRpc({ [TSLAX]: broken });
+    const adapter = makeAdapter(rpc);
+    try {
+      await expect(adapter.getTokenBalances(OWNER)).rejects.toMatchObject({ op: "getTokenBalances", kind: "rpc" });
+      // The failed read asked once for both Token-2022 mints with a balance (TSLAx, METAx).
+      expect(rpc.getMultipleParsedAccounts).toHaveBeenCalledTimes(1);
+      const infos = await adapter.getMintInfos([TSLAX]);
+      expect(infos.get(TSLAX)).toMatchObject({ program: "token-2022", scaledUi: null, unreadable: true });
+      // An unreadable state is never served from the cache: TSLAx was asked again.
+      expect(rpc.getMultipleParsedAccounts).toHaveBeenCalledTimes(2);
+      // A Token-2022 mint WITHOUT the extension is a plain 1 (METAx), cached as usual by the first read.
+      expect((await adapter.getMintInfos([METAX])).get(METAX)).toEqual({ mint: METAX, program: "token-2022", scaledUi: null });
+      expect(rpc.getMultipleParsedAccounts).toHaveBeenCalledTimes(2);
+    } finally {
+      warn.mockRestore();
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -357,9 +401,10 @@ describe("getMintMultiplier", () => {
     expect(sizes).toEqual([100, 100, 31]);
     expect(rpc.getMultipleParsedAccounts.mock.calls[0][1]).toEqual({ commitment: "confirmed" });
 
-    // Second call: everything is cached, no RPC.
+    // Second call: the mint that exists is cached; a missing account is never cached, so it alone is asked again.
     await adapter.getMintMultipliers([TSLAX, many[0]]);
-    expect(rpc.getMultipleParsedAccounts).toHaveBeenCalledTimes(3);
+    expect(rpc.getMultipleParsedAccounts).toHaveBeenCalledTimes(4);
+    expect((rpc.getMultipleParsedAccounts.mock.calls[3][0] as PublicKey[]).map((k) => k.toBase58())).toEqual([many[0]]);
   });
 
   it("falls back to decoding raw Token-2022 mint bytes when the RPC does not jsonParse", async () => {

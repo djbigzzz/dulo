@@ -386,6 +386,7 @@ describe("preview status mapping", () => {
     expect(previewKind({ type: "hold_consecutive", days: 7 })).toBe("history");
     expect(previewKind({ type: "net_increase_days", count: 3, window: 14 })).toBe("history");
     expect(previewKind({ type: "hold_through_date", calendarKey: "earnings" })).toBe("history");
+    expect(previewKind({ type: "multiplier_change" })).toBe("history");
     expect(previewKind({ type: "mirror_match", tolerance: 0.2 })).toBe("activity");
     expect(previewKind({ type: "internal_event", event: "league_trade", count: 3 })).toBe("activity");
     expect(previewKind({ type: "internal_event", event: "game_action", count: 3, distinctBy: "day" })).toBe("activity");

@@ -410,6 +410,7 @@ describe("quests board and Partner page", () => {
       partner: { ...p, chainIds: [SOL] },
       campaigns: [{ id: `camp-${p.slug}-season-0`, title: `${p.name} · Stocks Season`, seasonId: "season-0", startsAt: NOW.toISOString(), endsAt: NOW.toISOString(), plays }],
       totals: { plays: plays.length, completions: 0 },
+      corporateActions: [],
     });
     const pre = html(createElement(PartnerBody, { detail: detail(partner, [prePlay]) }));
     expect(pre).toContain(COMPLIANCE_LINE);

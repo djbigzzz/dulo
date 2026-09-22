@@ -18,6 +18,7 @@ import { assetNounFor, type IssuerNoun } from "@/components/common/issuer";
  *   net_increase_days   -> "xStocks balance up on 3 separate days in any 14-day window"
  *   hold_through_date   -> "Held through an earnings date"
  *   mirror_match        -> "Wallet allocation within 20% of a portfolio you copied"
+ *   multiplier_change   -> "Pre-IPO token held across an on-chain adjustment (same raw balance, new multiplier)"
  *   internal_event      -> "Make 3 paper trades" / "Make a prediction"
  *     + distinctBy        -> "Make predictions on 3 different questions" (ref)
  *                            "Make paper trades in 3 different xStocks" (symbol)
@@ -134,6 +135,9 @@ export function ruleToHint(rule: PlayRule, assetSource?: string | null): string 
       return `Wallet allocation within ${Math.round(rule.tolerance * 100)}% of a portfolio you copied`;
     case "internal_event":
       return eventHint(rule.event, rule.count, rule.distinctBy);
+    case "multiplier_change":
+      // A split or an issuer adjustment changes the number of tokens shown, never the holder's value.
+      return `${lead(noun.singular)} held across an on-chain adjustment (same raw balance, new multiplier)`;
     default:
       // A rule type this build does not know (bad DB row or a newer engine). Never throw in the UI.
       return "Complete the on-chain action";

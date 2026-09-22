@@ -29,6 +29,8 @@ import {
   cardProgress,
   proofProgress,
   questKind,
+  questStatusNote,
+  showsProgressBar,
   visibleStartAction,
 } from "@/components/plays/play-meta";
 
@@ -200,7 +202,10 @@ export function PlayCard<P extends PlayCardPlay>({
   const assetSource = questAssetSource(play);
   const preIpo = isPreIpoSource(assetSource);
   // No bar for a dollar target (it would read as "buy more"); units are labelled for people.
-  const progress = status === "in_progress" ? cardProgress(proofProgress(play.proof), assetSource) : null;
+  // No bar either for a one-event quest (an adjustment): its status note says what it waits on.
+  const progress = status === "in_progress" && showsProgressBar(play.rule) ? cardProgress(proofProgress(play.proof), assetSource) : null;
+  // "Completes on the next adjustment.": the quest waits on the chain, not on the player, and never reads as failed.
+  const statusNote = showStatus ? questStatusNote({ ...play, status }) : null;
   // In-platform quests (and Portfolio Match) link to where they happen inside Dulo; on-chain quests carry no action.
   const where = visibleStartAction({ ...play, status });
   const hasProof = !isEmptyProof(play.proof);
@@ -344,6 +349,11 @@ export function PlayCard<P extends PlayCardPlay>({
                 signedIn={signedIn}
                 completedAt={play.completedAt ?? null}
               />
+            ) : null}
+            {statusNote ? (
+              <span data-slot="status-note" className="text-xs text-muted-foreground">
+                {statusNote}
+              </span>
             ) : null}
             {play.completions > 0 ? (
               <span className="text-xs text-muted-foreground tabular-nums">

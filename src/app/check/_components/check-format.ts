@@ -1,5 +1,6 @@
 import type { PreviewHoldingView, PreviewPlayStatus, PreviewResponse } from "@/lib/api-client";
-import { ageSeconds, formatUsd } from "@/components/common/format";
+import { corporateActionLabel } from "@/components/common/corporate-actions";
+import { ageSeconds, formatDateUtc, formatUsd } from "@/components/common/format";
 import { isPreIpoSource, issuerLabel } from "@/components/common/issuer";
 import { priceSourceLabel } from "@/components/common/PriceChip";
 
@@ -92,6 +93,24 @@ export function multiplierArithmetic(qty: number, multiplier: number): string | 
   const raw = rawQtyBeforeMultiplier(qty, multiplier);
   if (raw === null) return null;
   return `${formatQty(raw)} × ${qtyFmt(6).format(multiplier)} = ${formatQty(qty)}`;
+}
+
+/**
+ * The corporate-action line for a holding whose mint has a PAST action, with the holding's own
+ * numbers: "5-for-1 adjustment on 10 Jun 2026: raw 8,742.52 × 5 = 43,712.58". Null for a holding
+ * without an action, for one still pending (nothing has changed on chain yet), or when the
+ * multiplier is 1 (no arithmetic to show). The raw balance, the multiplier and the quantity, and
+ * never a percentage: the action changed the number of tokens shown, not the holder's value.
+ */
+export function holdingActionLine(h: Pick<PreviewHoldingView, "qty" | "multiplier" | "action">): string | null {
+  const action = h.action;
+  if (!action || !action.effective) return null;
+  const raw = rawQtyBeforeMultiplier(h.qty, h.multiplier);
+  if (raw === null) return null;
+  // The on-chain (UTC) day, the one the docs name, whatever zone the viewer is in.
+  const day = formatDateUtc(action.effectiveAt);
+  const when = day ? ` on ${day}` : "";
+  return `${corporateActionLabel(action)}${when}: raw ${formatQty(raw)} × ${qtyFmt(6).format(h.multiplier)} = ${formatQty(h.qty)}`;
 }
 
 /** True when the read holds at least one PreStocks pre-IPO token. */

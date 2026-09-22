@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, SearchX } from "lucide-react";
 import { cn } from "cn";
-import { apiGet, type PartnerDetail } from "@/lib/api-client";
+import { apiGet, type CorporateActionView, type PartnerDetail } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE, PRE_IPO_TOKEN_2022_NOTE } from "@/components/common/compliance";
+import { CORPORATE_ACTION_EXPLANATION, corporateActionLabel, corporateActionWhen, multiplierChangeLabel } from "@/components/common/corporate-actions";
 import { isPreIpoQuest, PRESTOCKS_PARTNER_SLUG } from "@/components/common/issuer";
+import { IssuerPill } from "@/components/common/IssuerPill";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { StatStrip } from "@/components/common/StatStrip";
@@ -72,6 +74,44 @@ export function isPreIpoPartner(slug: string, plays: ReadonlyArray<{ key: string
   return slug === PRESTOCKS_PARTNER_SLUG || plays.some(isPreIpoQuest);
 }
 
+/**
+ * The corporate actions on record for an issuer Partner's mints, one glass row each: the symbol,
+ * a plain label ("5-for-1 adjustment"), when it takes effect, the multiplier before and after, and
+ * the one sentence that says what an action is. Renders nothing for an empty list: no placeholder,
+ * no heading. Never a price, a percentage or a word that reads as a signal.
+ */
+export function CorporateActionsSection({ actions, className }: { actions: ReadonlyArray<CorporateActionView> | null | undefined; className?: string }) {
+  const rows = Array.isArray(actions) ? actions.filter((a) => a && typeof a.assetId === "string" && typeof a.symbol === "string") : [];
+  if (rows.length === 0) return null;
+  return (
+    <section aria-labelledby="partner-corporate-actions" data-slot="corporate-actions" className={cn("flex flex-col gap-4 pt-2", className)}>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs font-medium tracking-[0.14em] text-gold uppercase">Read from the mint</p>
+          <h2 id="partner-corporate-actions" className="font-display text-3xl leading-none font-normal sm:text-4xl">
+            Corporate actions
+          </h2>
+        </div>
+        <div className="h-px bg-gradient-to-r from-white/[0.12] via-white/[0.05] to-transparent" aria-hidden />
+      </div>
+      <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
+        {rows.map((a) => (
+          <li key={a.assetId} data-slot="corporate-action" data-kind={a.kind} className="flex flex-col gap-2 px-4 py-3 sm:px-5 sm:py-4">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="font-mono text-sm font-semibold">{a.symbol}</span>
+              <IssuerPill source={a.source} />
+              <span className="text-sm text-foreground">{corporateActionLabel(a)}</span>
+              <span className="text-sm text-muted-foreground tabular-nums">{corporateActionWhen(a)}</span>
+              <span className="text-sm text-muted-foreground tabular-nums sm:ml-auto">{multiplierChangeLabel(a)}</span>
+            </div>
+            <p className="text-xs leading-relaxed text-pretty text-muted-foreground">{CORPORATE_ACTION_EXPLANATION}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** Exported for tests. */
 export function PartnerBody({ detail }: { detail: PartnerDetail }) {
   const plays = detail.campaigns.flatMap((c) => c.plays);
@@ -105,6 +145,9 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
           ]}
         />
       ) : null}
+
+      {/* Issuer Partners only (the route sends [] for every other Partner): the actions on their mints, above the quests. */}
+      <CorporateActionsSection actions={detail.corporateActions} />
 
       <section aria-labelledby="partner-plays" className="flex flex-col gap-5 pt-2">
         <div className="flex flex-col gap-4">

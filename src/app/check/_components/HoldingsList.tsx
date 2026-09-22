@@ -5,10 +5,11 @@ import type { PreviewHoldingView, PreviewResponse } from "@/lib/api-client";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PriceChip } from "@/components/common/PriceChip";
 import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
+import { CORPORATE_ACTION_EXPLANATION } from "@/components/common/corporate-actions";
 import { ageSeconds, formatAge, formatUsd } from "@/components/common/format";
 import { isPreIpoSource, unitWordFor } from "@/components/common/issuer";
 import { IssuerPill } from "@/components/common/IssuerPill";
-import { formatMultiplier, formatQty, hasPreIpoHolding, issuerMarkLine, multiplierArithmetic } from "@/app/check/_components/check-format";
+import { formatMultiplier, formatQty, hasPreIpoHolding, holdingActionLine, issuerMarkLine, multiplierArithmetic } from "@/app/check/_components/check-format";
 
 const MULTIPLIER_TITLE = "Token-2022 multiplier applied to the raw balance (splits and dividends)";
 
@@ -22,6 +23,8 @@ export function HoldingRow({ holding: h, now }: { holding: PreviewHoldingView; n
   const mult = formatMultiplier(h.multiplier);
   const preIpo = isPreIpoSource(h.source);
   const arithmetic = preIpo ? multiplierArithmetic(h.qty, h.multiplier) : null;
+  // A past corporate action on the mint: the same arithmetic with the action named, for any issuer.
+  const actionLine = holdingActionLine(h);
   const markLine = issuerMarkLine(h, now);
   return (
     <li data-slot="holding-row" data-source={h.source} className="flex flex-col gap-2 px-4 py-3 sm:px-5">
@@ -44,6 +47,15 @@ export function HoldingRow({ holding: h, now }: { holding: PreviewHoldingView; n
         <p data-slot="multiplier-arithmetic" className="text-xs text-muted-foreground tabular-nums" title={MULTIPLIER_TITLE}>
           Balance on chain {arithmetic} {unitWordFor(h.source, h.qty)} after the Token-2022 multiplier.
         </p>
+      ) : null}
+      {actionLine ? (
+        <div data-slot="corporate-action" className="flex flex-col gap-0.5">
+          <p className="text-xs text-muted-foreground tabular-nums">{actionLine}</p>
+          {/* Visible, not a tooltip: a phone has no hover and a paragraph has no focus. The same sentence the Partner page prints. */}
+          <p data-slot="corporate-action-explanation" className="text-xs leading-relaxed text-pretty text-muted-foreground">
+            {CORPORATE_ACTION_EXPLANATION}
+          </p>
+        </div>
       ) : null}
       <PriceChip quote={h.quote} className="self-start" />
       {markLine ? (

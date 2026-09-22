@@ -16,10 +16,17 @@ const mocks = vi.hoisted(() => ({
   getPrices: vi.fn(),
   getSession: vi.fn(),
   clearSessionCookie: vi.fn(),
+  listCorporateActions: vi.fn(),
 }));
 vi.mock("@/lib/server/db", () => ({ db: mocks.db }));
 vi.mock("@/lib/auth/session", () => ({ getSession: mocks.getSession, clearSessionCookie: mocks.clearSessionCookie }));
 vi.mock("@/lib/price", () => ({ getPrices: mocks.getPrices }));
+// lib/corporate-actions reads the asset registry (issuer APIs) and the chain adapter: a unit test
+// of the queries must never reach either, so the list is mocked and the issuer test is the real one.
+vi.mock("@/lib/corporate-actions", () => ({
+  listCorporateActions: mocks.listCorporateActions,
+  issuerSourceForPartner: (slug: string) => (slug === "xstocks" || slug === "prestocks" ? slug : null),
+}));
 
 import {
   REAL_USER_WHERE,
@@ -46,6 +53,35 @@ describe("getPartner", () => {
     expect(await getPartner("xstocks")).toBeNull();
     expect(mocks.db.partner.findUnique).toHaveBeenCalledTimes(1);
     expect(mocks.db.partner.findUnique.mock.calls[0][0].where).toEqual({ slug: "xstocks" });
+  });
+
+  const SPACEX_SPLIT = {
+    assetId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+    symbol: "SPACEX",
+    source: "prestocks",
+    kind: "split",
+    multiplierBefore: 1,
+    multiplierAfter: 5,
+    ratio: 5,
+    effectiveAt: "2026-06-10T04:30:00.000Z",
+    effective: true,
+  };
+  const partnerRow = (slug: string) => ({ slug, name: slug, logoUrl: null, blurb: "", links: {}, chainIds: [], sortOrder: 1, campaigns: [] });
+
+  it("carries an issuer Partner's corporate actions from the shared list, read once for that source", async () => {
+    mocks.db.partner.findUnique.mockResolvedValue(partnerRow("prestocks"));
+    mocks.listCorporateActions.mockResolvedValue([SPACEX_SPLIT]);
+    const detail = await getPartner("prestocks");
+    expect(detail?.corporateActions).toEqual([SPACEX_SPLIT]);
+    expect(mocks.listCorporateActions).toHaveBeenCalledTimes(1);
+    expect(mocks.listCorporateActions).toHaveBeenCalledWith("prestocks");
+  });
+
+  it("gives every non-issuer Partner an empty list without asking the chain", async () => {
+    mocks.db.partner.findUnique.mockResolvedValue(partnerRow("jupiter"));
+    const detail = await getPartner("jupiter");
+    expect(detail?.corporateActions).toEqual([]);
+    expect(mocks.listCorporateActions).not.toHaveBeenCalled();
   });
 });
 

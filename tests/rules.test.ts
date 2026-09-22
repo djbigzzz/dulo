@@ -45,9 +45,16 @@ describe("PlayRuleSchema — catalogue", () => {
     }
   });
 
+  /**
+   * multiplier_change (the eighth type, 22 Sep) has an engine, a schema and tests
+   * (tests/multiplier-change.test.ts) and, since the same day, one catalogue row: held_through_split
+   * (Held Through a Split, PreStocks). Every rule type has a row again.
+   */
   it("covers every rule type at least once across the catalogue", () => {
     const seen = new Set(SEASON0_PLAYS.map((p) => p.rule.type));
     for (const t of PLAY_RULE_TYPES) expect(seen.has(t), t).toBe(true);
+    expect(PLAY_RULE_TYPES).toHaveLength(8);
+    expect(SEASON0_PLAYS.filter((p) => p.rule.type === "multiplier_change").map((p) => p.key)).toEqual(["held_through_split"]);
   });
 
   it("matches HANDOFF §3.1 keys, points and badges", () => {
@@ -115,6 +122,7 @@ describe("PlayRuleSchema — catalogue", () => {
       "index_holder",
       "sector_spread",
       "pre_ipo_position",
+      "held_through_split",
       "oracle",
       "scout",
       "three_predictions",
@@ -126,15 +134,15 @@ describe("PlayRuleSchema — catalogue", () => {
     ]);
   });
 
-  it("is the 20-row quest catalogue: 8 in-platform, 10 on-chain (9 xStocks + 1 PreStocks), 2 partner quests coming soon", () => {
-    expect(SEASON0_PLAYS).toHaveLength(20);
+  it("is the 21-row quest catalogue: 8 in-platform, 11 on-chain (9 xStocks + 2 PreStocks), 2 partner quests coming soon", () => {
+    expect(SEASON0_PLAYS).toHaveLength(21);
     const live = activePlays();
     const inPlatform = live.filter((p) => p.rule.type === "internal_event");
     const onChain = live.filter((p) => p.rule.type !== "internal_event");
     expect(inPlatform).toHaveLength(8);
-    expect(onChain).toHaveLength(10);
+    expect(onChain).toHaveLength(11);
     expect(inPlatform.reduce((n, p) => n + p.points, 0)).toBe(850);
-    expect(onChain.reduce((n, p) => n + p.points, 0)).toBe(2800);
+    expect(onChain.reduce((n, p) => n + p.points, 0)).toBe(2950);
     // Every in-platform quest files under the hidden house Partner; every live on-chain quest under an
     // issuer Partner, and its fence (Play.assetSource) is that issuer's AssetSource name.
     for (const p of inPlatform) expect(p.partnerSlug, p.key).toBe(HOUSE_PARTNER_SLUG);
@@ -143,7 +151,7 @@ describe("PlayRuleSchema — catalogue", () => {
       expect(playAssetSource(p), p.key).toBe(p.partnerSlug);
     }
     expect(onChain.filter((p) => p.partnerSlug === "xstocks")).toHaveLength(9);
-    expect(onChain.filter((p) => p.partnerSlug === "prestocks").map((p) => p.key)).toEqual(["pre_ipo_position"]);
+    expect(onChain.filter((p) => p.partnerSlug === "prestocks").map((p) => p.key)).toEqual(["pre_ipo_position", "held_through_split"]);
     // Every internal_event the catalogue reads is a known event name.
     for (const p of SEASON0_PLAYS) {
       if (p.rule.type === "internal_event") expect(INTERNAL_EVENT_TYPES as readonly string[], p.key).toContain(p.rule.event);

@@ -238,11 +238,38 @@ export interface PartnerCampaignView {
   plays: PartnerPlayView[];
 }
 
+/**
+ * One Token-2022 ScaledUiAmount change on an issuer's mint (lib/corporate-actions): a split
+ * (integer ratio >= 2) or an adjustment (anything else). It changes the number of tokens shown to
+ * every holder, never the holder's value, and carries no price on purpose. `effective` says
+ * whether the new multiplier is already in force; `effectiveAt` is ISO, null when the chain
+ * reports no date.
+ */
+export interface CorporateActionView {
+  assetId: string;
+  symbol: string;
+  /** AssetSource name ("xstocks", "prestocks"). */
+  source: string;
+  kind: "split" | "adjustment";
+  multiplierBefore: number;
+  multiplierAfter: number;
+  /** multiplierAfter / multiplierBefore, rounded to 8 dp. */
+  ratio: number;
+  effectiveAt: string | null;
+  effective: boolean;
+}
+
 export interface PartnerDetail {
   partner: PartnerSummary & { chainIds: string[] };
   campaigns: PartnerCampaignView[];
   /** `plays` counts every listed Play ("coming soon" included); `completions` sums completed PlayProgress rows. */
   totals: { plays: number; completions: number };
+  /**
+   * Corporate actions on the issuer's mints: only for an issuer Partner whose slug names a
+   * registered AssetSource ("prestocks", "xstocks"); [] for every other Partner and on a chain
+   * read failure (the API never fails over it).
+   */
+  corporateActions: CorporateActionView[];
 }
 
 export type PartnerResponse = PartnerDetail;
@@ -834,6 +861,21 @@ export interface PreviewHoldingView {
   quote: PriceQuoteView;
   /** PreStocks only: the issuer mark when the issuer API has answered; null otherwise (the UI omits the line). */
   issuerMark: IssuerMarkView | null;
+  /**
+   * The corporate action on this holding's mint (a Token-2022 ScaledUiAmount change), when the
+   * mint carries one; null or absent otherwise. The UI prints the arithmetic for a past action only.
+   */
+  action?: PreviewHoldingActionView | null;
+}
+
+/** A holding's corporate action as the wallet check shows it: what kind, by how much, and when. */
+export interface PreviewHoldingActionView {
+  kind: CorporateActionView["kind"];
+  /** multiplierAfter / multiplierBefore. */
+  ratio: number;
+  effectiveAt: string | null;
+  /** True once the new multiplier is in force on the mint. */
+  effective: boolean;
 }
 
 export interface PreviewPlayView {

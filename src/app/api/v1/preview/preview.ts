@@ -30,13 +30,23 @@ import { assetNoun, listAllAssets } from "@/lib/assets/registry";
 import { SOLANA_MAINNET, type Holding, type HoldingsSnapshot, type PriceQuote } from "@/lib/core";
 import { catalogueIndexFrom, earningsCalendar, findCurrentSeason, type CatalogueIndex } from "@/lib/cron/evaluate";
 import { readWalletHoldings, type WalletHoldingsRead } from "@/lib/cron/snapshot";
+import { listCorporateActions } from "@/lib/corporate-actions";
 import { publicWalletLabel } from "@/lib/mirror/public-wallets";
 import { activePlays, playAssetSource, SEASON0_ASSET_SOURCE } from "@/lib/plays/catalogue";
 import { evaluatePlay, type EvalContext, type EvalResult } from "@/lib/plays/engine";
 import { safeParsePlayRule, type PlayRule } from "@/lib/plays/rules";
 import { db } from "@/lib/server/db";
 import { createRateLimiter } from "@/lib/server/rate-limit";
-import type { IssuerMarkView, PreviewHoldingView, PreviewPlayStatus, PreviewPlayView, PreviewResponse, PriceQuoteView } from "@/lib/api-client";
+import type {
+  CorporateActionView,
+  IssuerMarkView,
+  PreviewHoldingActionView,
+  PreviewHoldingView,
+  PreviewPlayStatus,
+  PreviewPlayView,
+  PreviewResponse,
+  PriceQuoteView,
+} from "@/lib/api-client";
 
 const LOG_PREFIX = "[api/preview]";
 
@@ -82,6 +92,7 @@ export function previewKind(rule: PlayRule): PreviewKind {
       return rule.days <= 1 ? "snapshot" : "history";
     case "net_increase_days":
     case "hold_through_date":
+    case "multiplier_change":
       return "history";
     default:
       return "activity";
@@ -172,10 +183,31 @@ export interface BuildPreviewInput {
    * or empty means no mark line on any holding: the UI omits the line rather than printing a dash.
    */
   marks?: ReadonlyMap<string, PreStocksMark>;
+  /**
+   * Corporate actions on record across the registered issuers (listCorporateActions), matched to
+   * holdings by asset id. Omitted or empty means no action line on any holding.
+   */
+  actions?: ReadonlyArray<CorporateActionView>;
 }
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/**
+ * The corporate action on a holding's mint, or null when none is on record. Carries what kind,
+ * the ratio and when: no price, so the wallet check can only print the token arithmetic.
+ */
+export function holdingActionView(h: Pick<Holding, "assetId">, actions: ReadonlyArray<CorporateActionView> | undefined): PreviewHoldingActionView | null {
+  if (!actions || actions.length === 0) return null;
+  const action = actions.find((a) => a && a.assetId === h.assetId);
+  if (!action || typeof action.ratio !== "number" || !Number.isFinite(action.ratio) || action.ratio <= 0) return null;
+  return {
+    kind: action.kind === "split" ? "split" : "adjustment",
+    ratio: action.ratio,
+    effectiveAt: typeof action.effectiveAt === "string" ? action.effectiveAt : null,
+    effective: action.effective === true,
+  };
 }
 
 /**
@@ -212,7 +244,7 @@ function quoteView(h: Holding, q: PriceQuote | undefined): PriceQuoteView {
 }
 
 /** The preview for one live read: holdings (largest first) and every Play's status. No I/O. */
-export function buildPreview({ read, plays, catalogue, earnings, now, marks }: BuildPreviewInput): PreviewResponse {
+export function buildPreview({ read, plays, catalogue, earnings, now, marks, actions }: BuildPreviewInput): PreviewResponse {
   const held = read.holdings.filter((h) => Number.isFinite(h.qty) && h.qty > 0).sort((a, b) => b.usd - a.usd || (a.symbol < b.symbol ? -1 : 1));
   const snapshot: HoldingsSnapshot = { walletId: `preview:${read.address}`, takenAt: read.readAt, holdings: held };
   const ctx: EvalContext = {
@@ -222,6 +254,7 @@ export function buildPreview({ read, plays, catalogue, earnings, now, marks }: B
     earnings,
     sectorOf: catalogue.sectorOf,
     underlyingOf: catalogue.underlyingOf,
+    corporateActions: actions,
   };
 
   const evaluated: Array<{ view: PreviewPlayView; order: number; index: number }> = [];
@@ -269,6 +302,7 @@ export function buildPreview({ read, plays, catalogue, earnings, now, marks }: B
     usd: round2(h.usd),
     quote: quoteView(h, read.quotes.get(h.assetId)),
     issuerMark: issuerMarkView(h, marks, now),
+    action: holdingActionView(h, actions),
   }));
   const qualifying = views.filter((v) => v.status === "qualifies");
 
@@ -334,14 +368,28 @@ async function marksFor(read: WalletHoldingsRead): Promise<ReadonlyMap<string, P
   }
 }
 
+/**
+ * Corporate actions for a read with at least one position, from the 10-minute list the Partner
+ * pages share (one batched mint read, never a throw). An empty wallet never asks.
+ */
+async function actionsFor(read: WalletHoldingsRead): Promise<ReadonlyArray<CorporateActionView>> {
+  if (!read.holdings.some((h) => h.qty > 0)) return [];
+  try {
+    return await listCorporateActions();
+  } catch (e) {
+    console.warn(`${LOG_PREFIX} corporate actions unavailable: ${e instanceof Error ? e.message : String(e)}`);
+    return [];
+  }
+}
+
 /** Read `address` live and preview every Play. Throws when the chain, catalogue or price read fails. */
 export async function getPreview(address: string, now: Date = new Date()): Promise<PreviewResponse> {
   const [{ read, assets }, plays] = await Promise.all([
     readWalletHoldings(address, SOLANA_MAINNET).then(async (read) => ({ read, assets: await listAllAssets() })),
     loadPreviewPlays(now),
   ]);
-  const marks = await marksFor(read);
-  return buildPreview({ read, plays, catalogue: catalogueIndexFrom(assets), earnings: earningsCalendar(), now, marks });
+  const [marks, actions] = await Promise.all([marksFor(read), actionsFor(read)]);
+  return buildPreview({ read, plays, catalogue: catalogueIndexFrom(assets), earnings: earningsCalendar(), now, marks, actions });
 }
 
 // ---------------------------------------------------------------------------

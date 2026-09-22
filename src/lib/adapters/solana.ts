@@ -71,6 +71,12 @@ export interface MintInfo {
   program: TokenProgram | null;
   /** Present only for Token-2022 mints carrying the ScaledUiAmount extension. */
   scaledUi: ScaledUiAmountState | null;
+  /**
+   * True when the mint carries the ScaledUiAmount extension but its multiplier could not be
+   * decoded (or the raw mint bytes failed to decode): the multiplier is UNKNOWN, not 1. Such an
+   * answer is never cached, and getTokenBalances refuses to write it into a balance.
+   */
+  unreadable?: true;
 }
 
 export type SolanaAdapterErrorKind = "rpc" | "timeout" | "invalid_input";
@@ -128,6 +134,13 @@ export interface SolanaAdapter extends ChainAdapter {
   getMintMultiplier(mint: string): Promise<number | null>;
   /** Batched form of getMintMultiplier. Every requested mint is present in the result. */
   getMintMultipliers(mints: Iterable<string>): Promise<Map<string, number | null>>;
+  /**
+   * The raw ScaledUiAmount state per mint (multiplier, pending newMultiplier and its effective
+   * time), batched like getMintMultipliers and served from the same 10-minute cache. Every
+   * requested mint is present: `scaledUi` is null for a mint without the extension, and `program`
+   * is null for a missing account or a non-mint. lib/corporate-actions reads this.
+   */
+  getMintInfos(mints: Iterable<string>): Promise<Map<string, MintInfo>>;
   /** Drop the in-memory multiplier cache (tests, admin tooling). */
   clearMultiplierCache(): void;
   /** Drop the in-memory block-time cache (tests). */
@@ -376,11 +389,28 @@ export function createSolanaAdapter(rpcUrl: string, options: SolanaAdapterOption
     const filtered = mints ? [...spl, ...t22].filter((r) => mints.has(r.mint)) : [...spl, ...t22];
     const merged = mergeByMint(filtered);
 
+    // A Token-2022 balance carries the mint's effective multiplier. A degraded mint read (a null
+    // account from a lagging node, a partial getMultipleParsedAccounts answer, an undecodable
+    // extension) is a FAILED read, never "assume 1": a wrong multiplier written into a snapshot
+    // would look exactly like a corporate action to the Plays engine, so the whole wallet read
+    // fails and the caller skips this tick instead.
     const t22Mints = merged.filter((r) => r.program === "token-2022").map((r) => r.mint);
     if (t22Mints.length > 0) {
-      const multipliers = await getMintMultipliers(t22Mints);
+      const infos = await getMintInfos(t22Mints);
+      const nowSeconds = Math.floor(now() / 1000);
       for (const row of merged) {
-        if (row.program === "token-2022") row.multiplier = multipliers.get(row.mint) ?? 1;
+        if (row.program !== "token-2022") continue;
+        const info = infos.get(row.mint);
+        if (!info || info.program !== "token-2022" || info.unreadable) {
+          const why =
+            !info || info.program === null
+              ? "the mint account could not be read"
+              : info.unreadable
+                ? "its ScaledUiAmount state is unreadable"
+                : `the mint is owned by ${info.program}`;
+          throw new SolanaAdapterError(`Token-2022 balance ${row.mint}: ${why}; refusing to assume multiplier 1`, "getTokenBalances", "rpc");
+        }
+        row.multiplier = multiplierFromInfo(info, nowSeconds) ?? 1;
       }
     }
     return merged;
@@ -414,7 +444,9 @@ export function createSolanaAdapter(rpcUrl: string, options: SolanaAdapterOption
       const expiresAt = now() + multiplierTtlMs;
       chunk.forEach((mint, i) => {
         const info = readMintAccount(mint, values[i] ?? null);
-        mintCache.set(mint, { info, expiresAt });
+        // A missing account or an undecodable state is never cached: a transient answer must
+        // not stand in for the mint for ten minutes.
+        if (info.program !== null && !info.unreadable) mintCache.set(mint, { info, expiresAt });
         result.set(mint, info);
       });
     }
@@ -534,6 +566,7 @@ export function createSolanaAdapter(rpcUrl: string, options: SolanaAdapterOption
     getTokenBalances,
     getMintMultiplier,
     getMintMultipliers,
+    getMintInfos,
     clearMultiplierCache: () => mintCache.clear(),
     getBlockTime,
     clearBlockTimeCache: () => blockTimeCache.clear(),
@@ -562,6 +595,7 @@ export const solana: SolanaAdapter = {
   getTokenBalances: (owner, mints) => live().getTokenBalances(owner, mints),
   getMintMultiplier: (mint) => live().getMintMultiplier(mint),
   getMintMultipliers: (mints) => live().getMintMultipliers(mints),
+  getMintInfos: (mints) => live().getMintInfos(mints),
   clearMultiplierCache: () => defaultAdapter?.clearMultiplierCache(),
   getBlockTime: (slot) => live().getBlockTime(slot),
   clearBlockTimeCache: () => defaultAdapter?.clearBlockTimeCache(),
@@ -635,7 +669,7 @@ function readMintAccount(mint: string, account: AccountInfo<Buffer | ParsedAccou
       const multiplier = toPositiveFinite(cfg.multiplier);
       if (multiplier === null) {
         console.warn(`${LOG_PREFIX} mint ${mint}: unreadable ScaledUiAmount multiplier in raw data; assuming 1`);
-        return { mint, program, scaledUi: null };
+        return { mint, program, scaledUi: null, unreadable: true };
       }
       return {
         mint,
@@ -648,7 +682,7 @@ function readMintAccount(mint: string, account: AccountInfo<Buffer | ParsedAccou
       };
     } catch (e) {
       console.warn(`${LOG_PREFIX} mint ${mint}: could not decode raw Token-2022 mint (${describeError(e)}); assuming 1`);
-      return { mint, program, scaledUi: null };
+      return { mint, program, scaledUi: null, unreadable: true };
     }
   }
 
@@ -658,6 +692,7 @@ function readMintAccount(mint: string, account: AccountInfo<Buffer | ParsedAccou
   const scaledUi = parseScaledUiAmountExtension(extensions);
   if (!scaledUi && hasExtension(extensions, "scaledUiAmountConfig")) {
     console.warn(`${LOG_PREFIX} mint ${mint}: ScaledUiAmount extension present but multiplier unreadable; assuming 1`);
+    return { mint, program, scaledUi, unreadable: true };
   }
   return { mint, program, scaledUi };
 }

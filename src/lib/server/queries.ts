@@ -10,6 +10,7 @@
  */
 
 import { db } from "@/lib/server/db";
+import { issuerSourceForPartner, listCorporateActions } from "@/lib/corporate-actions";
 import type { Prisma } from "@prisma/client";
 import type { AssetId, PriceQuote } from "@/lib/core";
 import { isAssetId } from "@/lib/core";
@@ -496,22 +497,28 @@ export async function listPartners(): Promise<PartnerListItem[]> {
 
 /**
  * One Partner with its Campaigns, listed Plays (live first, then "coming soon") and completion counts.
- * Null when the slug is unknown.
+ * Null when the slug is unknown. An issuer Partner ("prestocks", "xstocks") also carries the
+ * corporate actions on its mints (lib/corporate-actions: cached, never throws, [] on a chain
+ * read failure); every other Partner gets [].
  */
 export async function getPartner(slug: string): Promise<PartnerDetail | null> {
   // The house Partner (Dulo's own games) is not listed, so it has no Partner page either.
   if (!isListedPartnerSlug(slug)) return null;
-  const partner = await db.partner.findUnique({
-    where: { slug },
-    include: {
-      campaigns: {
-        orderBy: [{ startsAt: "asc" }, { title: "asc" }],
-        include: {
-          plays: { orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { key: "asc" }] },
+  const issuerSource = issuerSourceForPartner(slug);
+  const [partner, corporateActions] = await Promise.all([
+    db.partner.findUnique({
+      where: { slug },
+      include: {
+        campaigns: {
+          orderBy: [{ startsAt: "asc" }, { title: "asc" }],
+          include: {
+            plays: { orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { key: "asc" }] },
+          },
         },
       },
-    },
-  });
+    }),
+    issuerSource ? listCorporateActions(issuerSource) : Promise.resolve([]),
+  ]);
   if (!partner) return null;
 
   const keys = partner.campaigns.flatMap((c) => c.plays.map((p) => p.key));
@@ -546,6 +553,7 @@ export async function getPartner(slug: string): Promise<PartnerDetail | null> {
     partner: { ...toPartnerSummary(partner), chainIds: toStringArray(partner.chainIds) },
     campaigns,
     totals: { plays: totalPlays, completions: totalCompletions },
+    corporateActions,
   };
 }
 
