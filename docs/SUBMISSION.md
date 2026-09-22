@@ -28,7 +28,7 @@ The entertainment layer for xStocks, live on Solana mainnet. Predict Friday clos
 
 ## Step 2: Description
 
-### Full Description (Markdown, 5,000 max): 4,264 measured
+### Full Description (Markdown, 5,000 max): 4,266 measured
 
 ````markdown
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
@@ -81,7 +81,7 @@ Players are free. Partners would list on-chain quests and pay per verified compl
 
 ## Team
 
-Built solo. Live since 21 Sep 2026 on Vercel and Neon: no external players yet (one account so far: the founder's), no partner signed and no badge minted, and every count on the site reads zero because it is zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,398 tests, CI on every push.
+Built solo. Live since 21 Sep 2026 on Vercel and Neon: no external players yet (one account so far: the founder's), no partner signed and no badge minted; every count on the site is real, and most of them read zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,398 tests, CI on every push.
 
 Points only, no cash value. Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions. Dulo is independent and not affiliated with xStocks (Backed Finance owns that brand). Original work, written for this hackathon.
 ````
@@ -107,9 +107,15 @@ Built solo. GitHub: `djbigzzz` (the repo owner). No X account exists for the pro
 
 ## Step 5: Bounty Tracks
 
-**None ticked.**
+**Tick one: Best Use of PreStocks.** It is live on production and true today: PreStocks is the second issuer read, priced and scored through the same interfaces as xStocks; the eight pre-IPO tokens are paper-tradable with virtual cash 24/7 on /prestocks; four pre-IPO quests exist (two complete as you play, two verified from the wallet, with a real holder's wallet showing Pre-IPO Position as met); and the corporate-actions feed reads SpaceX's 5-for-1 and OpenAI's x1.4861 adjustments from the mints. No non-PreStocks pre-IPO token is integrated anywhere (tests/prestocks-eligibility.test.ts enforces it).
 
-The main track is the entry. Reasoning lives in `docs/private/BOUNTY-PLAN.md`, which is gitignored.
+Per-track wording, if the form asks:
+
+\text
+Dulo scores PreStocks through the same engine it scores xStocks with: no second code path. The eight pre-IPO tokens are read from Token-2022 balances with the ScaledUiAmount multiplier applied (SpaceX x5, OpenAI x1.4861347, both live), priced by Jupiter with the issuer's own mark shown beside the DEX price as two different numbers, paper-tradable 24/7 with virtual cash in the weekly competition, and scored by four pre-IPO quests with a proof on each. A corporate-actions feed reads every adjustment straight from the mint. Points only, no cash value; no custody; every swap is the user's own, in Jupiter.
+\
+
+Not ticked: Pyth (no API key in production, so the integration is documented and dormant), Tessera (the PreStocks track excludes any project integrating non-PreStocks pre-IPO tokens), Meteora DBC and Clawpump (both require launching a token).
 
 ---
 
@@ -200,6 +206,6 @@ A badge's on-chain name and metadata URI are written at mint time into a supply-
 
 ### Form
 
-- [ ] Bounty Tracks: none ticked.
+- [ ] Bounty Tracks: Best Use of PreStocks ticked; nothing else.
 - [ ] Team: solo.
 - [ ] Both paste blocks pasted whole, with their Markdown intact.
