@@ -11,6 +11,8 @@ export interface SignInBannerProps {
   title: string;
   /** Optional second line; keep it under ~80 characters. */
   hint?: string;
+  /** The Connect button's look: "outline" where the page has another ember action (see ConnectButton). */
+  connectVariant?: "default" | "outline";
   className?: string;
 }
 
@@ -22,7 +24,7 @@ export interface SignInBannerProps {
  * hides the moment a sign-in lands anywhere (header, this banner, a page action). Server
  * and first client render both see `loading`, so it renders nothing until mounted.
  */
-export function SignInBanner({ title, hint, className }: SignInBannerProps) {
+export function SignInBanner({ title, hint, connectVariant = "default", className }: SignInBannerProps) {
   const { session, loading } = useSession();
   if (loading || session) return null;
   return (
@@ -42,7 +44,7 @@ export function SignInBanner({ title, hint, className }: SignInBannerProps) {
           {hint ? <p className="hidden text-sm text-muted-foreground sm:block">{hint}</p> : null}
         </div>
       </div>
-      <ConnectButton size="lg" className="h-10 shrink-0" />
+      <ConnectButton size="lg" variant={connectVariant} className="h-10 shrink-0" />
     </div>
   );
 }

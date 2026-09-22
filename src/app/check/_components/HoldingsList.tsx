@@ -4,12 +4,11 @@ import { Wallet } from "lucide-react";
 import type { PreviewHoldingView, PreviewResponse } from "@/lib/api-client";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PriceChip } from "@/components/common/PriceChip";
-import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
 import { CORPORATE_ACTION_EXPLANATION } from "@/components/common/corporate-actions";
 import { ageSeconds, formatAge, formatUsd } from "@/components/common/format";
 import { isPreIpoSource, unitWordFor } from "@/components/common/issuer";
 import { IssuerPill } from "@/components/common/IssuerPill";
-import { formatMultiplier, formatQty, hasPreIpoHolding, holdingActionLine, issuerMarkLine, multiplierArithmetic } from "@/app/check/_components/check-format";
+import { formatMultiplier, formatQty, holdingActionLine, issuerMarkLine, multiplierArithmetic } from "@/app/check/_components/check-format";
 
 const MULTIPLIER_TITLE = "Token-2022 multiplier applied to the raw balance (splits and dividends)";
 
@@ -67,9 +66,11 @@ export function HoldingRow({ holding: h, now }: { holding: PreviewHoldingView; n
   );
 }
 
-/** The Holdings section of /check/[address]: every position largest first, then the compliance lines a pre-IPO token calls for. */
+/**
+ * The Holdings section of /check/[address]: every position largest first. The compliance pair a
+ * pre-IPO token calls for prints once per page, at the foot of the quests board (PreviewBoard).
+ */
 export function HoldingsList({ data, now }: { data: PreviewResponse; now?: number }) {
-  const preIpo = hasPreIpoHolding(data);
   return (
     <section className="flex min-w-0 flex-col gap-3" aria-labelledby="check-holdings">
       <div className="flex items-baseline justify-between gap-3">
@@ -86,22 +87,11 @@ export function HoldingsList({ data, now }: { data: PreviewResponse; now?: numbe
           description="On-chain quests need an xStock worth $5 or more, or any pre-IPO token. Try one of the real holders instead."
         />
       ) : (
-        <>
-          <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
-            {data.holdings.map((h) => (
-              <HoldingRow key={h.assetId} holding={h} now={now} />
-            ))}
-          </ul>
-          {/* A pre-IPO token on screen: the standard line and the pre-IPO line together, once for the section. */}
-          {preIpo ? (
-            <div className="flex flex-col gap-1">
-              <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p>
-              <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
-                {PRE_IPO_COMPLIANCE_LINE}
-              </p>
-            </div>
-          ) : null}
-        </>
+        <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
+          {data.holdings.map((h) => (
+            <HoldingRow key={h.assetId} holding={h} now={now} />
+          ))}
+        </ul>
       )}
     </section>
   );

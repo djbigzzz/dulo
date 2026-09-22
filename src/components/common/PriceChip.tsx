@@ -25,6 +25,8 @@ export interface PriceChipProps {
   /** Re-render the age text every `tickMs` (0 disables). */
   tickMs?: number;
   className?: string;
+  /** False for assets that quote around the clock (pre-IPO tokens): no US-session tag. Default true. */
+  session?: boolean;
 }
 
 const SOURCE_LABEL: Record<PriceSourceName, string> = {
@@ -38,7 +40,7 @@ export function priceSourceLabel(source: PriceSourceName): string {
   return SOURCE_LABEL[source] ?? source;
 }
 
-export function PriceChip({ quote, symbol, tickMs = 15_000, className }: PriceChipProps) {
+export function PriceChip({ quote, symbol, tickMs = 15_000, className, session = true }: PriceChipProps) {
   // Ticking clock so "12s ago" keeps moving while the quote object stays the same.
   const [now, setNow] = React.useState(() => Date.now());
   React.useEffect(() => {
@@ -61,7 +63,7 @@ export function PriceChip({ quote, symbol, tickMs = 15_000, className }: PriceCh
       title={
         hasPrice
           ? `${symbol ? `${symbol} ` : ""}${formatUsd(quote.price)} from ${priceSourceLabel(quote.source)}, ${formatAge(age)}${
-              quote.marketOpen === false ? " (US market closed)" : ""
+              session && quote.marketOpen === false ? " (US market closed)" : ""
             }`
           : "No price available"
       }
@@ -83,7 +85,7 @@ export function PriceChip({ quote, symbol, tickMs = 15_000, className }: PriceCh
           stale
         </span>
       ) : null}
-      {quote.marketOpen === false && hasPrice ? (
+      {session && quote.marketOpen === false && hasPrice ? (
         <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-px text-xs font-medium tracking-wide text-muted-foreground">
           closed
         </span>

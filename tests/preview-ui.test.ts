@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 // AppShell renders client components; only its pure footer helper is under test.
 vi.mock("@/components/wallet/ConnectButton", () => ({ ConnectButton: () => null }));
@@ -10,7 +12,7 @@ vi.mock("@/components/layout/MobileTabBar", () => ({ MobileTabBar: () => null })
 import { footerLinks } from "@/components/layout/AppShell";
 import { CHECK_INVALID_MESSAGE, SAMPLE_WALLETS, checkHref } from "@/components/landing/check-wallet";
 import { PRACTICE_LEAGUE_TITLE, SEASON_TOP_MIN_ROWS, seasonTopRows } from "@/components/landing/scoreboard-mode";
-import { PUBLIC_WALLETS } from "@/lib/mirror/public-wallets";
+import { PRE_IPO_PUBLIC_WALLETS, PUBLIC_WALLETS, publicWalletLabel } from "@/lib/mirror/public-wallets";
 import { WELCOME_OFFER_LINE } from "@/lib/games/ledger-policy";
 import { NEXT_WEEK_MARKETS_COPY } from "@/components/calls/calls-format";
 import {
@@ -20,18 +22,35 @@ import {
   decidablePlays,
   formatMultiplier,
   formatQty,
+  groupPreviewPlays,
+  inPlatformSummary,
 } from "@/app/check/_components/check-format";
-import { previewApi, type LeaderboardResponse, type PreviewPlayStatus, type PreviewPlayView } from "@/lib/api-client";
+import { NOTHING_QUALIFIES, PreviewBoard } from "@/app/check/_components/PreviewBoard";
+import { STARTER_POINTS, VIRTUAL_CASH_USD } from "@/lib/games/ledger-policy";
+import { previewApi, type LeaderboardResponse, type PreviewPlayStatus, type PreviewPlayView, type PreviewResponse } from "@/lib/api-client";
 
 function repoFile(rel: string): string {
   return readFileSync(path.join(__dirname, "..", rel), "utf8");
 }
 
 describe("landing — check any wallet (M-C) and the three-games hero (C9)", () => {
-  it("offers the first three curated public wallets with their neutral labels", () => {
-    expect(SAMPLE_WALLETS).toHaveLength(3);
-    expect(SAMPLE_WALLETS).toEqual(PUBLIC_WALLETS.slice(0, 3));
-    for (const w of SAMPLE_WALLETS) expect(w.label).toMatch(/^Public holder [A-Z]$/);
+  it("offers the first three curated public wallets with their neutral labels, then the pre-IPO holder with its tag", () => {
+    expect(SAMPLE_WALLETS).toHaveLength(4);
+    expect(SAMPLE_WALLETS.slice(0, 3)).toEqual(PUBLIC_WALLETS.slice(0, 3));
+    for (const w of SAMPLE_WALLETS) expect(w.label).toMatch(/^(Public holder [A-Z]|Pre-IPO holder)$/); // the pre-IPO chip has its own name
+    for (const w of SAMPLE_WALLETS.slice(0, 3)) expect(w.tag).toBeUndefined();
+    // Public holder D (22 Sep): a PreStocks holder, on the check chips only, tagged so the label says why.
+    const preIpo = SAMPLE_WALLETS[3];
+    expect(preIpo).toEqual(PRE_IPO_PUBLIC_WALLETS[0]);
+    expect(preIpo).toMatchObject({ address: "55t97rzPqCLNY1KX4Ypd3BFDCvbKF15i6xzrjLJgWh95", label: "Pre-IPO holder", tag: "pre-IPO" });
+    expect(publicWalletLabel(preIpo.address)).toBe("Pre-IPO holder");
+    // Never on /copy: the copy tool lists PUBLIC_WALLETS only, and this wallet would show an empty xStocks plan there.
+    expect(PUBLIC_WALLETS.some((w) => w.address === preIpo.address)).toBe(false);
+    const box = repoFile("src/components/landing/CheckWalletBox.tsx");
+    expect(box).toContain('data-slot="wallet-tag"');
+    expect(box).toContain("{w.tag}");
+    expect(repoFile("src/lib/mirror/views.ts")).not.toContain("PRE_IPO_PUBLIC_WALLETS");
+    expect(repoFile("src/lib/mirror/public.ts")).not.toContain("PRE_IPO_PUBLIC_WALLETS");
     expect(checkHref(SAMPLE_WALLETS[0].address)).toBe(`/check/${SAMPLE_WALLETS[0].address}`);
     expect(checkHref("a/b")).toBe("/check/a%2Fb");
     expect(CHECK_INVALID_MESSAGE).toMatch(/Solana wallet address/);
@@ -42,9 +61,11 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     const flat = landing.replace(/\s+/g, " ");
     expect(flat).toContain("The entertainment layer for");
     expect(landing).toContain("Predict. Compete. Complete on-chain quests.");
+    // Two sentences (trimmed 22 Sep): the sourced stat, then the one-line frame. The tiles below say what the games are.
     expect(flat).toContain(
-      "800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Dulo gives them three games on one Season leaderboard: Yes or No on Friday&apos;s close, a weekly competition with virtual cash at real xStock and pre-IPO prices, and quests you complete in Dulo or on-chain.",
+      "800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Dulo gives them three games on one Season leaderboard. </p>",
     );
+    expect(flat).not.toContain("Yes or No on Friday&apos;s close, a weekly competition");
     expect(landing).not.toContain("Try the League");
     expect(landing).not.toContain("activity is");
     const connect = landing.indexOf("<ConnectButton");
@@ -188,6 +209,35 @@ describe("mobile layout at 375 px — landing competition preview and the /compe
     // The old fixed-button clearance padding is gone.
     expect(page).not.toContain("pb-24");
   });
+
+  it("hides the Trade button while the sign-in banner is in view, so it never covers the banner's Connect", () => {
+    const page = repoFile("src/app/competition/page.tsx");
+    expect(page).toMatch(/import \{ useInView \} from "@\/hooks\/useInView"/);
+    expect(page).toContain("const bannerInView = useInView(bannerRef, !session);");
+    expect(page).toContain("const hideFab = !session && bannerInView;");
+    expect(page).toMatch(/<div ref=\{bannerRef\} data-slot="league-sign-in"[^>]*>\s*<SignInBanner/);
+    const fab = page.slice(page.indexOf('data-slot="league-trade-fab"'), page.indexOf("<Sheet open="));
+    expect(fab).toContain('hideFab && "pointer-events-none invisible opacity-0"');
+    // Fails open: no observer (server, old browser) means the button shows.
+    const hook = repoFile("src/hooks/useInView.ts");
+    expect(hook).toContain('typeof IntersectionObserver === "undefined"');
+  });
+
+  it("clears the tab bar at the shell level: the whole shell ends above it under lg, on every page", () => {
+    const shell = repoFile("src/components/layout/AppShell.tsx");
+    const wrapper = shell.match(/<div className="relative isolate flex min-h-dvh flex-col ([^"]+)">/);
+    expect(wrapper).not.toBeNull();
+    expect(wrapper![1].split(" ")).toEqual(expect.arrayContaining(["pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]", "lg:pb-0"]));
+    // The footer no longer carries its own clearance (it sits inside the padded shell).
+    expect(shell).toMatch(/<footer className="[^"]*">/);
+    expect(shell.match(/<footer className="([^"]+)">/)![1]).not.toContain("safe-area-inset-bottom");
+    // The tab bar itself: 4rem tall plus the home-indicator inset, fixed, under lg only.
+    const bar = repoFile("src/components/layout/MobileTabBar.tsx");
+    expect(bar).toContain("fixed inset-x-0 bottom-0");
+    expect(bar).toContain("pb-[env(safe-area-inset-bottom)]");
+    expect(bar).toContain("lg:hidden");
+    expect(bar).toContain("grid h-16");
+  });
 });
 
 describe("AppShell footer links", () => {
@@ -251,6 +301,86 @@ describe("/check/[address] formatting", () => {
     expect(card).toContain('import { ProofList } from "@/components/plays/ProofDrawer"');
     expect(card).toContain("<ProofList entries={entries} />");
     expect(card).not.toContain("{e.key}");
+  });
+
+  const preview = (plays: PreviewPlayView[]): PreviewResponse => ({
+    now: "2026-09-22T12:00:00.000Z",
+    address: "preview",
+    chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+    readAt: "2026-09-22T11:59:30.000Z",
+    label: null,
+    totalUsd: 0,
+    holdings: [],
+    plays,
+    qualifying: plays.filter((p) => p.status === "qualifies").length,
+    qualifyingPoints: 0,
+  });
+  const board = (plays: PreviewPlayView[]) =>
+    renderToStaticMarkup(createElement(PreviewBoard, { data: preview(plays), onProof: () => undefined })).replace(/&#x27;/g, "'").replace(/&quot;/g, '"');
+  const groupOf = (html: string, id: string) => {
+    const start = html.indexOf(`data-preview-group="${id}"`);
+    return start < 0 ? "" : html.slice(start, html.indexOf("</section>", start));
+  };
+
+  it("groups the board as a verdict: qualifies, needs daily snapshots, not yet, then the in-platform quests collapsed", () => {
+    const plays = [
+      play("first_position", "qualifies"),
+      play("steady_buyer", "needs_history"),
+      play("diversified", "not_yet"),
+      play("first_prediction", "needs_activity"),
+      play("first_paper_trades", "needs_activity"),
+      play("diamond_hands", "needs_history"),
+    ];
+    const groups = groupPreviewPlays(plays);
+    expect(groups.qualifies.map((p) => p.key)).toEqual(["first_position"]);
+    expect(groups.needsHistory.map((p) => p.key)).toEqual(["steady_buyer", "diamond_hands"]);
+    expect(groups.notYet.map((p) => p.key)).toEqual(["diversified"]);
+    expect(groups.inPlatform.map((p) => p.key)).toEqual(["first_prediction", "first_paper_trades"]);
+    expect(groupPreviewPlays([])).toEqual({ qualifies: [], needsHistory: [], notYet: [], inPlatform: [] });
+
+    const html = board(plays);
+    const qualifies = html.indexOf('data-preview-group="check-qualifies"');
+    const history = html.indexOf('data-preview-group="check-needs-history"');
+    const notYet = html.indexOf('data-preview-group="check-not-yet"');
+    const collapsed = html.indexOf('data-slot="check-in-platform"');
+    expect(qualifies).toBeGreaterThan(-1);
+    expect(history).toBeGreaterThan(qualifies);
+    expect(notYet).toBeGreaterThan(history);
+    expect(collapsed).toBeGreaterThan(notYet);
+    // Each on-chain card sits in its own group; every in-platform card sits behind the one <details>.
+    expect(groupOf(html, "check-qualifies")).toContain("first_position");
+    expect(groupOf(html, "check-qualifies")).not.toContain("diversified");
+    expect(groupOf(html, "check-needs-history")).toContain("diamond_hands");
+    expect(groupOf(html, "check-not-yet")).toContain("diversified");
+    // Every card carries its own rule <details>, so the disclosure runs to the last closing tag.
+    const details = html.slice(collapsed, html.lastIndexOf("</details>"));
+    expect(details).toContain("<summary");
+    expect(details).toContain("first_prediction");
+    expect(details).toContain("first_paper_trades");
+    expect(details).not.toContain("first_position");
+    // The disclosure line says what those quests need and what a new account starts with.
+    expect(details).toContain(inPlatformSummary(2));
+    expect(inPlatformSummary(2)).toBe("2 in-platform quests need a signed-in account: 1,000 starter points and $10,000 of virtual cash to start");
+    expect(inPlatformSummary(1)).toBe("1 in-platform quest needs a signed-in account: 1,000 starter points and $10,000 of virtual cash to start");
+    expect(STARTER_POINTS).toBe(1000);
+    expect(VIRTUAL_CASH_USD).toBe(10_000);
+    // The group headings reuse the status labels, so the pill on a card and the heading above it agree.
+    expect(html).toContain(`>${PREVIEW_STATUS_LABEL.qualifies}<`);
+    expect(html).toContain(`>${PREVIEW_STATUS_LABEL.needs_history}<`);
+    expect(html).toContain(`>${PREVIEW_STATUS_LABEL.not_yet}<`);
+    // No pre-IPO quest or token here: no compliance pair on the board.
+    expect(html).not.toContain('data-slot="pre-ipo-compliance"');
+  });
+
+  it("says so when nothing qualifies, and drops the empty groups and the disclosure", () => {
+    const html = board([play("diversified", "not_yet")]);
+    expect(html).toContain(NOTHING_QUALIFIES);
+    expect(html).toContain('data-preview-group="check-qualifies"');
+    expect(html).not.toContain('data-preview-group="check-needs-history"');
+    expect(html).toContain('data-preview-group="check-not-yet"');
+    expect(html).not.toContain('data-slot="check-in-platform"');
+    const full = board([play("first_position", "qualifies")]);
+    expect(full).not.toContain(NOTHING_QUALIFIES);
   });
 
   it("maps failed checks to copy by status", () => {

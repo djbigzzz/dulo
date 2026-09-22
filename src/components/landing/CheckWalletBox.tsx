@@ -24,7 +24,8 @@ export interface CheckWalletBoxProps {
 
 /**
  * Paste any Solana address and open /check/[address]: its xStocks read live and the Plays it
- * already verifies. Three curated public holders are one tap away for visitors with no wallet.
+ * already verifies. Three curated xStocks holders and one pre-IPO holder are one tap away for
+ * visitors with no wallet.
  */
 export function CheckWalletBox({ className, primary = false, samples = true }: CheckWalletBoxProps) {
   const router = useRouter();
@@ -90,6 +91,11 @@ export function CheckWalletBox({ className, primary = false, samples = true }: C
                   className="group inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border border-white/[0.08] bg-black/25 px-3 py-1.5 text-xs shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] transition-colors duration-300 outline-none hover:border-white/[0.14] hover:bg-white/[0.04] focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
                   <span className="font-medium text-foreground">{w.label}</span>
+                  {w.tag ? (
+                    <span data-slot="wallet-tag" className="inline-flex h-5 shrink-0 items-center rounded-full border border-gold/20 bg-gold/[0.06] px-1.5 text-xs font-medium text-gold">
+                      {w.tag}
+                    </span>
+                  ) : null}
                   <span className="truncate font-mono text-muted-foreground">{truncateAddress(w.address)}</span>
                   <ArrowRight className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transition-none" aria-hidden />
                 </Link>

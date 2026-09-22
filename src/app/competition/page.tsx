@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import { useSession } from "@/hooks/useSession";
+import { useInView } from "@/hooks/useInView";
 import { ArrowLeftRight, Sprout, Trophy } from "lucide-react";
+import { cn } from "cn";
 import { api, leagueApi, type LeagueResponse, type PlaysResponse } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -124,6 +126,11 @@ export default function LeaguePage() {
   const refetchPlays = plays.refetch;
 
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  // The floating Trade button never covers the sign-in banner: while the banner is on screen (signed
+  // out, near the top of the page) the button steps out of the way and comes back as the page scrolls.
+  const bannerRef = React.useRef<HTMLDivElement | null>(null);
+  const bannerInView = useInView(bannerRef, !session);
+  const hideFab = !session && bannerInView;
   // Bumped after every successful load so the trade form re-reads held quantities and cash.
   const [refreshKey, setRefreshKey] = React.useState(0);
   React.useEffect(() => {
@@ -186,7 +193,9 @@ export default function LeaguePage() {
         </p>
       </div>
 
-      <SignInBanner title={`Sign in to trade with ${startingCash} of virtual cash.`} />
+      <div ref={bannerRef} data-slot="league-sign-in" className="empty:hidden">
+        <SignInBanner title={`Sign in to trade with ${startingCash} of virtual cash.`} />
+      </div>
 
       {q.loading ? (
         <LeagueSkeleton />
@@ -276,12 +285,16 @@ export default function LeaguePage() {
             Phones and tablets: a floating Trade button opens a bottom sheet. It is sticky, not fixed: it floats
             1rem above the tab bar while the page scrolls, then comes to rest in its own slot under the last
             section, so it never covers the final leaderboard row or the footer links. Only as wide as the pill
-            (self-end), so rows beside it stay tappable.
+            (self-end), so rows beside it stay tappable. Hidden (not unmounted, so its resting slot stays)
+            while the sign-in banner is in view: the banner's Connect is the action there.
           */}
           <div data-slot="league-trade-fab" className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] z-40 self-end lg:hidden">
             <Button
               size="lg"
-              className="h-11 rounded-full px-4 text-base font-semibold shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_12px_32px_-8px_rgb(255_106_42/0.6),0_4px_12px_rgb(0_0_0/0.5)] md:h-12 md:px-5"
+              className={cn(
+                "h-11 rounded-full px-4 text-base font-semibold shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_12px_32px_-8px_rgb(255_106_42/0.6),0_4px_12px_rgb(0_0_0/0.5)] transition-opacity duration-200 md:h-12 md:px-5",
+                hideFab && "pointer-events-none invisible opacity-0",
+              )}
               onClick={() => setSheetOpen(true)}
               aria-haspopup="dialog"
               aria-expanded={sheetOpen}

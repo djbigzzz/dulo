@@ -68,7 +68,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
 
   return (
-    <div className="relative isolate flex min-h-dvh flex-col">
+    // Under lg the fixed tab bar covers the bottom 4rem (plus the iOS home indicator), so the whole
+    // shell, main and footer alike, ends above it: no page needs its own clearance and no last row or
+    // footer link ever sits behind the bar.
+    <div className="relative isolate flex min-h-dvh flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
       <div className="app-backdrop" aria-hidden />
       <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#0a0908]/70 backdrop-blur-xl backdrop-saturate-150">
         {/* A hairline of ember light along the bottom edge of the header. */}
@@ -102,8 +105,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-10 md:pb-12">{children}</main>
 
-      {/* Visible on phones too (the links matter to judges); bottom padding clears the fixed tab bar and the home-indicator inset. */}
-      <footer className="border-t border-white/[0.06] bg-[#0a0908]/60 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
+      {/* Visible on phones too (the links matter to judges); the shell's own bottom padding keeps it clear of the tab bar. */}
+      <footer className="border-t border-white/[0.06] bg-[#0a0908]/60">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 text-sm text-muted-foreground md:flex-row md:flex-wrap md:items-center md:justify-between">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">

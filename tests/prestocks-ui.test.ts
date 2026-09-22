@@ -29,6 +29,7 @@ import { PlayCard } from "@/components/plays/PlayCard";
 import { PlayGrid } from "@/components/plays/PlayGrid";
 import { PartnerBody, isPreIpoPartner } from "@/components/partners/PartnerView";
 import { HoldingRow, HoldingsList } from "@/app/check/_components/HoldingsList";
+import { PreviewBoard } from "@/app/check/_components/PreviewBoard";
 import { PreviewPlayCard } from "@/app/check/_components/PreviewPlayCard";
 import { ISSUER_MARK_EXPLANATION, formatShortAge, hasPreIpoHolding, hasPreIpoQuest, issuerMarkLine, multiplierArithmetic, positionsHint } from "@/app/check/_components/check-format";
 import { buildPreview, issuerMarkView } from "@/app/api/v1/preview/preview";
@@ -352,11 +353,23 @@ describe("/check/[address] holdings", () => {
     expect(out).not.toContain('data-slot="multiplier-arithmetic"');
   });
 
-  it("prints both compliance lines under the list only when a pre-IPO token is on screen", () => {
-    const withPre = html(createElement(HoldingsList, { data: preview([xHolding(), preHolding()]), now: NOW_MS }));
-    expect(withPre).toContain(COMPLIANCE_LINE);
-    expect(withPre).toContain(PRE_IPO_COMPLIANCE_LINE);
-    const without = html(createElement(HoldingsList, { data: preview([xHolding()]), now: NOW_MS }));
+  it("prints both compliance lines once per page, at the foot of the quests board, when a pre-IPO token or quest is on screen", () => {
+    // The holdings list carries neither line: the board's foot is the one place on /check.
+    const list = html(createElement(HoldingsList, { data: preview([xHolding(), preHolding()]), now: NOW_MS }));
+    expect(list).not.toContain(COMPLIANCE_LINE);
+    expect(list).not.toContain(PRE_IPO_COMPLIANCE_LINE);
+    const onProof = () => undefined;
+    const withPre = html(createElement(PreviewBoard, { data: preview([xHolding(), preHolding()], [previewPlay({ assetSource: "xstocks", key: "first_position" })]), onProof }));
+    expect(withPre.split(COMPLIANCE_LINE)).toHaveLength(2);
+    expect(withPre.split(PRE_IPO_COMPLIANCE_LINE)).toHaveLength(2);
+    expect(withPre.match(/data-slot="pre-ipo-compliance"/g)).toHaveLength(1);
+    // A pre-IPO quest card with no pre-IPO holding still calls for the pair, once.
+    const questOnly = html(createElement(PreviewBoard, { data: preview([xHolding()], [previewPlay()]), onProof }));
+    expect(questOnly.split(PRE_IPO_COMPLIANCE_LINE)).toHaveLength(2);
+    // At the foot: after the last card.
+    expect(questOnly.lastIndexOf(PRE_IPO_COMPLIANCE_LINE)).toBeGreaterThan(questOnly.lastIndexOf("<article"));
+    const without = html(createElement(PreviewBoard, { data: preview([xHolding()], [previewPlay({ assetSource: "xstocks", key: "first_position" })]), onProof }));
+    expect(without).not.toContain(COMPLIANCE_LINE);
     expect(without).not.toContain(PRE_IPO_COMPLIANCE_LINE);
     expect(hasPreIpoHolding(preview([xHolding()]))).toBe(false);
     expect(hasPreIpoHolding(preview([preHolding()]))).toBe(true);
@@ -376,8 +389,10 @@ describe("/check/[address] holdings", () => {
     expect(hasPreIpoQuest(preview([], [previewPlay()]))).toBe(true);
     expect(hasPreIpoQuest(preview([], [previewPlay({ assetSource: "xstocks" })]))).toBe(false);
     const page = repoFile("src/app/check/[address]/page.tsx");
-    expect(page).toContain("{PRE_IPO_COMPLIANCE_LINE}");
     expect(page).toContain("<HoldingsList data={data} />");
+    expect(page).toContain("<PreviewBoard data={data} onProof={openProof} />");
+    expect(page).not.toContain("PRE_IPO_COMPLIANCE_LINE");
+    expect(repoFile("src/app/check/_components/PreviewBoard.tsx")).toContain("{PRE_IPO_COMPLIANCE_LINE}");
   });
 });
 
@@ -396,7 +411,7 @@ describe("quests board and Partner page", () => {
     expect(x).not.toContain('data-slot="issuer-pill"');
   });
 
-  it("prints the pre-IPO line under the on-chain group only when a pre-IPO quest card is visible", () => {
+  it("prints the pre-IPO line at the foot of the board only when a pre-IPO quest card is visible", () => {
     const groups = (plays: PlayView[]): PartnerGroup[] => [{ partner, campaigns: [{ id: "camp-prestocks-season-0", title: "PreStocks · Stocks Season", plays }] }];
     const withPre = html(createElement(PlayGrid, { groups: groups([playView(), prePlay]), signedIn: false }));
     expect(withPre).toContain(COMPLIANCE_LINE);

@@ -9,7 +9,6 @@ import { previewApi, type PreviewPlayView } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddressChip } from "@/components/common/AddressChip";
-import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -18,9 +17,10 @@ import { formatPoints, formatUsd } from "@/components/common/format";
 import { useApiQuery } from "@/components/common/useApiQuery";
 import { CheckWalletBox } from "@/components/landing/CheckWalletBox";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
-import { CONNECT_CTA_TITLE, checkErrorCopy, decidablePlays, hasPreIpoHolding, hasPreIpoQuest, positionsHint } from "@/app/check/_components/check-format";
+import { CONNECT_CTA_TITLE, checkErrorCopy, decidablePlays, hasPreIpoHolding, positionsHint } from "@/app/check/_components/check-format";
 import { HoldingsList } from "@/app/check/_components/HoldingsList";
-import { PreviewPlayCard, PreviewProofSheet } from "@/app/check/_components/PreviewPlayCard";
+import { PreviewBoard } from "@/app/check/_components/PreviewBoard";
+import { PreviewProofSheet } from "@/app/check/_components/PreviewPlayCard";
 
 const ENTER = "animate-in fade-in-0 slide-in-from-bottom-2 duration-500 motion-reduce:animate-none";
 
@@ -128,7 +128,6 @@ export default function CheckWalletPage() {
   const decidable = decidablePlays(data);
   // A pre-IPO token in the wallet changes the nouns: "Holdings value" over N positions, and the header names both issuers.
   const preIpo = hasPreIpoHolding(data);
-  const preIpoQuest = hasPreIpoQuest(data);
   const stats: Stat[] = [
     { label: preIpo ? "Holdings value" : "xStocks value", value: formatUsd(data.totalUsd), hint: positionsHint(data) },
     { label: "Verified now", value: `${data.qualifying} of ${decidable}`, tone: data.qualifying > 0 ? "ember" : "default", hint: "on-chain quests" },
@@ -164,27 +163,8 @@ export default function CheckWalletPage() {
         <div className="flex min-w-0 flex-col gap-8">
           <HoldingsList data={data} />
 
-          <section className="flex min-w-0 flex-col gap-3" aria-labelledby="check-plays">
-            <h2 id="check-plays" className="text-lg font-semibold tracking-tight">
-              Quests
-            </h2>
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {data.plays.map((play) => (
-                <li key={play.key} className="min-w-0">
-                  <PreviewPlayCard play={play} onProof={openProof} />
-                </li>
-              ))}
-            </ul>
-            {/* A pre-IPO quest card on screen carries the pre-IPO line next to the standard one, as the quests board does. */}
-            {preIpoQuest && !data.holdings.some((h) => h.source === "prestocks") ? (
-              <div className="flex flex-col gap-1">
-                <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p>
-                <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
-                  {PRE_IPO_COMPLIANCE_LINE}
-                </p>
-              </div>
-            ) : null}
-          </section>
+          {/* Grouped as a verdict; the compliance pair prints once, at its foot, when a pre-IPO quest or token is on screen. */}
+          <PreviewBoard data={data} onProof={openProof} />
         </div>
 
         {/* Sticky lives on a wrapper: .border-gradient sets position: relative on the card itself. */}

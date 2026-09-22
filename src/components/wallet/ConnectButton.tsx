@@ -44,7 +44,17 @@ const menuItemClass =
  * Session state comes from the shared <SessionProvider> (useSession reads the context), so
  * this button, every SignInBanner and the page data all move together on sign-in/out.
  */
-export function ConnectButton({ className, size = "lg" }: { className?: string; size?: "sm" | "default" | "lg" }) {
+export interface ConnectButtonProps {
+  className?: string;
+  size?: "sm" | "default" | "lg";
+  /**
+   * "default" is the ember button. Pass "outline" where another control is the view's one ember
+   * action (the /prestocks sign-in banner sits beside the trade form's own Connect).
+   */
+  variant?: "default" | "outline";
+}
+
+export function ConnectButton({ className, size = "lg", variant = "default" }: ConnectButtonProps) {
   const { connected, connecting, publicKey, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
   const { session, user, loading, signingIn, walletMismatch, signIn, signOut } = useSession();
@@ -80,7 +90,7 @@ export function ConnectButton({ className, size = "lg" }: { className?: string; 
 
   if (!mounted || (!connected && !connecting)) {
     return (
-      <Button size={size} className={cn("font-semibold", className)} onClick={openModal} disabled={!mounted}>
+      <Button size={size} variant={variant} className={cn("font-semibold", className)} onClick={openModal} disabled={!mounted}>
         <WalletIcon data-icon="inline-start" />
         Connect<span className="-ml-0.5 hidden sm:inline">wallet</span>
       </Button>
@@ -150,7 +160,7 @@ export function ConnectButton({ className, size = "lg" }: { className?: string; 
   if (!signedIn) {
     return (
       <div className={cn("inline-flex items-center gap-1", className)}>
-        <Button size={size} className="font-semibold" onClick={() => void signIn()} disabled={signingIn}>
+        <Button size={size} variant={variant} className="font-semibold" onClick={() => void signIn()} disabled={signingIn}>
           {signingIn ? <Loader2Icon className="animate-spin" data-icon="inline-start" /> : <WalletIcon data-icon="inline-start" />}
           {signingIn ? "Signing" : "Sign in"}
         </Button>

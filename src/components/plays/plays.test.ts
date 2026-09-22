@@ -607,11 +607,14 @@ describe("play-meta", () => {
       expect(html).toContain("Kamino Collateral");
     });
 
-    it("prints the compliance line once under the on-chain group and never in the in-platform group", () => {
+    it("prints the compliance line once, at the foot of the board, and inside no group", () => {
       const html = render(board);
       expect(count(html, COMPLIANCE_LINE)).toBe(1);
-      expect(count(section(html, "quests-on-chain"), COMPLIANCE_LINE)).toBe(1);
+      expect(count(section(html, "quests-on-chain"), COMPLIANCE_LINE)).toBe(0);
       expect(count(section(html, "quests-in-platform"), COMPLIANCE_LINE)).toBe(0);
+      // After every group, the coming-soon list included.
+      expect(html.indexOf('data-slot="board-compliance"')).toBeGreaterThan(html.indexOf(COMING_SOON_HEADING));
+      expect(html.indexOf(COMPLIANCE_LINE)).toBeGreaterThan(html.lastIndexOf("</section>"));
       // Only in-platform quests on screen: no compliance line at all.
       expect(count(render(board, "in_platform"), COMPLIANCE_LINE)).toBe(0);
       expect(count(render([group("dulo", "Dulo games", games)]), COMPLIANCE_LINE)).toBe(0);

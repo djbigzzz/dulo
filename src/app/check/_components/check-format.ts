@@ -1,6 +1,8 @@
-import type { PreviewHoldingView, PreviewPlayStatus, PreviewResponse } from "@/lib/api-client";
+import type { PreviewHoldingView, PreviewPlayStatus, PreviewPlayView, PreviewResponse } from "@/lib/api-client";
 import { corporateActionLabel } from "@/components/common/corporate-actions";
-import { ageSeconds, formatDateUtc, formatUsd } from "@/components/common/format";
+import { ageSeconds, formatDateUtc, formatPoints, formatUsd } from "@/components/common/format";
+import { formatUsdWhole } from "@/components/league/format";
+import { STARTER_POINTS, VIRTUAL_CASH_USD } from "@/lib/games/ledger-policy";
 import { isPreIpoSource, issuerLabel } from "@/components/common/issuer";
 import { priceSourceLabel } from "@/components/common/PriceChip";
 
@@ -30,6 +32,35 @@ export function formatQty(qty: number): string {
 export function formatMultiplier(multiplier: number): string | null {
   if (!Number.isFinite(multiplier) || Math.abs(multiplier - 1) < 1e-9) return null;
   return `×${qtyFmt(6).format(multiplier)}`;
+}
+
+/**
+ * The board of /check/[address], grouped so the page reads as a verdict and not a catalogue:
+ * what the wallet already meets, what needs daily snapshots once connected, what one read
+ * decided against, and (collapsed) the in-platform quests no wallet read can decide.
+ */
+export interface PreviewGroups {
+  qualifies: PreviewPlayView[];
+  needsHistory: PreviewPlayView[];
+  notYet: PreviewPlayView[];
+  inPlatform: PreviewPlayView[];
+}
+
+export function groupPreviewPlays(plays: readonly PreviewPlayView[]): PreviewGroups {
+  const out: PreviewGroups = { qualifies: [], needsHistory: [], notYet: [], inPlatform: [] };
+  for (const play of plays) {
+    if (play.status === "qualifies") out.qualifies.push(play);
+    else if (play.status === "needs_history") out.needsHistory.push(play);
+    else if (play.status === "not_yet") out.notYet.push(play);
+    else out.inPlatform.push(play);
+  }
+  return out;
+}
+
+/** The one line the collapsed in-platform group shows: what those quests need, and what a new account starts with. */
+export function inPlatformSummary(count: number): string {
+  const quests = count === 1 ? "in-platform quest needs" : "in-platform quests need";
+  return `${count} ${quests} a signed-in account: ${formatPoints(STARTER_POINTS)} starter points and ${formatUsdWhole(VIRTUAL_CASH_USD)} of virtual cash to start`;
 }
 
 /** Holdings Plays a single read can decide (the denominator of "2 of 2 verified now"). */

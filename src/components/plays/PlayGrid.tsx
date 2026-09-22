@@ -43,15 +43,15 @@ interface KindGroup {
   plays: PlayView[];
   /** Listed Partners whose quests sit in this group, in board order (the house Partner has no page). */
   partners: PartnerSummary[];
-  /** Print the investment-advice / U.S. persons line once under the group. */
-  compliance: boolean;
 }
 
 /**
  * The /quests board, grouped by quest kind:
  *  1. In-platform quests (points and virtual cash), completed inside Dulo;
- *  2. On-chain quests verified from the wallet, with the compliance line printed once under the group;
- *  3. every partner quest still coming soon, folded into one compact list at the bottom.
+ *  2. On-chain quests verified from the wallet;
+ *  3. every partner quest still coming soon, folded into one compact list at the bottom;
+ * then, once for the whole board, the compliance line (and the pre-IPO line beside it when a quest
+ * fenced to PreStocks is on screen), whenever an on-chain quest is shown.
  * A coming-soon quest that was completed before it was retired stays as an on-chain card, so
  * earned points remain visible. No card links to a buy.
  */
@@ -83,7 +83,6 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
       icon: Gamepad2,
       plays: inPlatform,
       partners: [],
-      compliance: false,
     },
     {
       id: "quests-on-chain",
@@ -91,7 +90,6 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
       icon: WalletCards,
       plays: onChain,
       partners: onChainPartners,
-      compliance: true,
     },
   ].filter((g) => g.plays.length > 0);
 
@@ -151,14 +149,6 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
               </li>
             ))}
           </ul>
-          {/* On-chain quests read xStocks held in the wallet: the compliance line prints once for the group,
-              and the pre-IPO line beside it whenever the group shows a quest fenced to PreStocks. */}
-          {group.compliance ? <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p> : null}
-          {group.compliance && group.plays.some(isPreIpoQuest) ? (
-            <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
-              {PRE_IPO_COMPLIANCE_LINE}
-            </p>
-          ) : null}
         </section>
       ))}
 
@@ -210,6 +200,19 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
             ))}
           </ul>
         </section>
+      ) : null}
+
+      {/* On-chain quests read tokens held in the wallet: the compliance line prints once for the board,
+          at its foot, and the pre-IPO line beside it whenever a quest fenced to PreStocks is on screen. */}
+      {onChain.length > 0 ? (
+        <div data-slot="board-compliance" className="flex flex-col gap-1">
+          <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p>
+          {onChain.some(isPreIpoQuest) ? (
+            <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
+              {PRE_IPO_COMPLIANCE_LINE}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

@@ -43,7 +43,7 @@ import { PRESTOCKS_STATIC } from "@/lib/assets/prestocks";
 import { activePlays } from "@/lib/plays/catalogue";
 import { TradeForm, groupSymbols } from "@/components/league/TradeForm";
 import { isPreIpoSymbol, symbolSource } from "@/components/league/symbol-source";
-import { PreIpoBoard, PreIpoCard } from "@/components/prestocks/PreIpoBoard";
+import { LIST, PreIpoBoard, PreIpoRow, ROW, ROW_GRID } from "@/components/prestocks/PreIpoBoard";
 import { PRE_IPO_PAGE_DESCRIPTION, PRE_IPO_PAGE_TITLE, PreStocksView, preIpoQuests } from "@/components/prestocks/PreStocksView";
 import {
   PRE_IPO_QUEST_KEYS,
@@ -232,9 +232,9 @@ describe("pre-IPO token facts (client-safe copy of the issuer catalogue)", () =>
 });
 
 describe("the board", () => {
-  it("shows every pre-IPO token as a card: logo, name, symbol, DEX price with source and age, issuer mark with its age, 24h move, Jupiter link", () => {
+  it("shows every pre-IPO token as a row: logo, name, symbol, DEX price with source and age, issuer mark with its age, 24h move, Jupiter link", () => {
     const h = html(createElement(PreIpoBoard, { symbols: [TSLAX, NVDAX, ...EIGHT], actions: [SPACEX_SPLIT] }));
-    expect(h.match(/data-slot="pre-ipo-card"/g)).toHaveLength(8);
+    expect(h.match(/data-slot="pre-ipo-row"/g)).toHaveLength(8);
     expect(h).not.toContain("TSLAx");
     expect(h).toContain("SpaceX PreStocks");
     expect(h).toContain('data-logo="https://www.prestocks.com/logos/spacex.png"');
@@ -256,9 +256,28 @@ describe("the board", () => {
     expect(h.indexOf(PRE_IPO_TOKEN_2022_NOTE)).toBeLessThan(h.indexOf("Open in Jupiter"));
   });
 
+  it("lays the rows out on one grid: glass rows with a column header from md, a card each under md, no horizontal scroll", () => {
+    const h = html(createElement(PreIpoBoard, { symbols: EIGHT, actions: [] }));
+    // One header row (from md) and eight rows share ROW_GRID, so the columns line up down the board.
+    expect(h).toContain('data-slot="pre-ipo-board-header"');
+    expect(h.match(new RegExp(`class="${ROW_GRID.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g"))).toHaveLength(8);
+    expect(ROW_GRID).toContain("grid-cols-2");
+    expect(ROW_GRID).toMatch(/md:grid-cols-\[minmax\(0,[\d.]+fr\)_minmax\(0,[\d.]+fr\)_minmax\(0,[\d.]+fr\)_auto\]/);
+    // Under md every row is its own glass card; from md the list is one glass panel of hairline rows.
+    for (const cls of ["max-md:rounded-2xl", "max-md:border", "max-md:bg-card", "md:border-t", "md:border-white/[0.05]"]) expect(ROW).toContain(cls);
+    for (const cls of ["md:rounded-2xl", "md:border", "md:bg-card", "md:overflow-hidden"]) expect(LIST).toContain(cls);
+    expect(LIST).not.toContain("overflow-x");
+    expect(h).not.toMatch(/overflow-x-auto|min-w-\[/);
+    // Every cell shrinks (min-w-0), so a 390px phone never scrolls sideways; the cell labels read on the card and hide from md.
+    expect(h.match(/md:sr-only/g)).toHaveLength(8 * 3);
+    // Every Jupiter link is outline: the page's one ember action is the trade form's submit.
+    expect(h.match(/Open in Jupiter/g)).toHaveLength(8);
+    expect(h).not.toContain("bg-[linear-gradient(180deg,#ff8a4c");
+  });
+
   it("prints the two prices as two labelled numbers and never a gap, a percentage between them or a security word", () => {
     const [row] = preIpoBoardRows([preIpo("SPACEX", 200)], [SPACEX_SPLIT]);
-    const h = html(createElement(PreIpoCard, { row }));
+    const h = html(createElement(PreIpoRow, { row }));
     const t = text(h);
     expect(t).toContain("$200.00");
     expect(t).toContain("$250.00");
@@ -268,9 +287,10 @@ describe("the board", () => {
     // The only percentage on a card is Jupiter's 24h move on the DEX price.
     expect(t.match(/%/g)).toHaveLength(1);
     expect(t).toMatch(/\+3\.2% Jupiter/);
-    // The issuer mark chip carries no percentage at all.
-    const mark = h.slice(h.indexOf('data-slot="issuer-mark"'), h.indexOf("24h move"));
+    // The issuer mark chip carries no percentage at all (the 24h move sits under the DEX price, before it).
+    const mark = h.slice(h.indexOf('data-slot="issuer-mark"'), h.indexOf("Open in Jupiter"));
     expect(mark).not.toContain("%");
+    expect(h.indexOf("24h move")).toBeLessThan(h.indexOf('data-slot="issuer-mark"'));
     // The badge names the adjustment, never a price.
     expect(h).toContain("5-for-1 adjustment");
     expect(h).not.toMatch(/\$[\d.]+[^<]*adjustment/);
@@ -278,7 +298,7 @@ describe("the board", () => {
 
   it("degrades honestly: no price, no mark, no 24h move, no action", () => {
     const [row] = preIpoBoardRows([preIpo("KALSHI", null)], []);
-    const h = html(createElement(PreIpoCard, { row }));
+    const h = html(createElement(PreIpoRow, { row }));
     const t = text(h);
     expect(t).toContain("No price");
     expect(t).toContain("No issuer mark");
@@ -316,7 +336,7 @@ describe("the trade form lists both issuers on /competition and pre-IPO tokens o
     expect(h).not.toContain(PRE_IPO_COMPLIANCE_LINE);
   });
 
-  it("fenced to prestocks it lists the eight only, labels the select Pre-IPO token and prints the pre-IPO line", () => {
+  it("fenced to prestocks it lists the eight only, labels the select Pre-IPO token and prints the pre-IPO line unless the page carries it", () => {
     const h = html(createElement(TradeForm, { league: WEEK, signedIn: true, serverNow: NOW, sources: ["prestocks"], symbolLabel: "Pre-IPO token" }));
     expect(h).not.toContain("<optgroup");
     expect(h).not.toContain("TSLAx");
@@ -325,6 +345,10 @@ describe("the trade form lists both issuers on /competition and pre-IPO tokens o
     expect(h).toContain("Paper buy ANDURIL");
     expect(h).toContain(PRE_IPO_COMPLIANCE_LINE);
     expect(text(h)).not.toMatch(SECURITY_WORDS);
+    // /prestocks prints the line once in its header, so its form turns the notice off.
+    const quiet = html(createElement(TradeForm, { league: WEEK, signedIn: true, serverNow: NOW, sources: ["prestocks"], symbolLabel: "Pre-IPO token", preIpoNotice: false }));
+    expect(quiet).toContain("Paper buy ANDURIL");
+    expect(quiet).not.toContain(PRE_IPO_COMPLIANCE_LINE);
   });
 
   it("with an older payload that carries no source tag, every symbol is an xStock", () => {
@@ -338,17 +362,57 @@ describe("the trade form lists both issuers on /competition and pre-IPO tokens o
 });
 
 describe("/prestocks page", () => {
-  it("has the header, the session chip, and both compliance lines in the details", () => {
+  it("has the header, the session chip, and both compliance lines visible at the foot, once per page", () => {
     const h = html(createElement(PreStocksView));
     expect(PRE_IPO_PAGE_TITLE).toBe("Pre-IPO tokens, 24/7");
     expect(PRE_IPO_PAGE_DESCRIPTION).toBe("Trade them with virtual cash in this week's competition, complete pre-IPO quests, and see what the mint says.");
     expect(h).toContain(">PreStocks</p>");
     expect(h).toContain(PRE_IPO_PAGE_TITLE);
     expect(h).toContain(PRE_IPO_PAGE_DESCRIPTION);
-    const details = h.slice(h.indexOf("<details"), h.indexOf("</details>"));
-    expect(details).toContain(COMPLIANCE_LINE);
-    expect(details).toContain(PRE_IPO_COMPLIANCE_LINE);
+    // Visible without opening the details: the pair sits at the foot of the page (data-slot="board-compliance").
+    const foot = h.slice(h.lastIndexOf("data-slot=\"board-compliance\""));
+    expect(foot).toContain(COMPLIANCE_LINE);
+    expect(foot).toContain(PRE_IPO_COMPLIANCE_LINE);
+    // Once: not under the quests, not under the fenced trade form (preIpoNotice off), not in the details, not anywhere else.
+    expect(h.split(PRE_IPO_COMPLIANCE_LINE)).toHaveLength(2);
+    expect(h.split(COMPLIANCE_LINE)).toHaveLength(2);
     expect(h).toContain("US market");
+  });
+
+  it("keeps one ember action on the page (the trade form's submit) and every other control outline or ghost", () => {
+    mocks.session.session = { userId: "u1" };
+    loaded({ league: { data: leagueResponse({ signedIn: true }), error: null, loading: false }, plays: { data: playsResponse(undefined, true), error: null, loading: false } });
+    const h = html(createElement(PreStocksView));
+    const ember = h.match(/bg-\[linear-gradient\(180deg,#ff8a4c/g) ?? [];
+    expect(ember).toHaveLength(1);
+    const button = h.slice(h.lastIndexOf("<button", h.indexOf("bg-[linear-gradient(180deg,#ff8a4c")), h.indexOf("</button>", h.indexOf("bg-[linear-gradient(180deg,#ff8a4c")));
+    expect(button).toContain('type="submit"');
+    expect(button).toContain("Paper buy");
+    // Signed out, the banner's Connect is outline (the form's own Connect is the action); the source says so.
+    const view = repoFile("src/components/prestocks/PreStocksView.tsx");
+    expect(view).toMatch(/<SignInBanner[\s\S]{0,300}connectVariant="outline"/);
+    expect(view).toContain("preIpoNotice={false}");
+    expect(repoFile("src/components/common/SignInBanner.tsx")).toContain("variant={connectVariant}");
+    const connect = repoFile("src/components/wallet/ConnectButton.tsx");
+    expect(connect.match(/variant=\{variant\}/g)).toHaveLength(2);
+  });
+
+  it("puts the trade section before the board under lg (CSS order) while the DOM keeps board, trade, quests, actions", () => {
+    const h = html(createElement(PreStocksView));
+    const trade = h.match(/<section aria-labelledby="pre-ipo-trade" data-slot="pre-ipo-trade" class="([^"]+)"/);
+    expect(trade).not.toBeNull();
+    expect(trade![1].split(" ")).toEqual(expect.arrayContaining(["order-first", "lg:order-none"]));
+    const board = h.match(/<section aria-labelledby="pre-ipo-board" class="([^"]+)"/);
+    expect(board).not.toBeNull();
+    expect(board![1]).not.toContain("order-");
+    // Inside the trade section the form card leads on a phone and sits in the right column from lg.
+    const form = h.match(/<section class="([^"]+)" aria-labelledby="pre-ipo-trade-form"/);
+    expect(form).not.toBeNull();
+    expect(form![1].split(" ")).toEqual(expect.arrayContaining(["order-first", "lg:order-none", "lg:col-start-2", "border-gradient", "bg-card"]));
+    // Section eyebrows in gold.
+    for (const eyebrow of ["The board", "Weekly competition (virtual cash)", "Quests"]) {
+      expect(h).toContain(`<p class="text-xs font-medium tracking-[0.14em] text-gold uppercase">${eyebrow}</p>`);
+    }
   });
 
   it("renders the four sections in order: board, trade, quests, corporate actions", () => {
@@ -362,14 +426,15 @@ describe("/prestocks page", () => {
     expect(quests).toBeGreaterThan(trade);
     expect(actions).toBeGreaterThan(quests);
     // Board: eight cards. Quests: the four pre-IPO cards and no other.
-    expect(h.match(/data-slot="pre-ipo-card"/g)).toHaveLength(8);
+    expect(h.match(/data-slot="pre-ipo-row"/g)).toHaveLength(8);
     const questsHtml = h.slice(quests, actions);
     expect(questsHtml.match(/data-play-key="/g)).toHaveLength(4);
     for (const key of PRE_IPO_QUEST_KEYS) expect(questsHtml).toContain(`data-play-key="${key}"`);
     expect(questsHtml).not.toContain('data-play-key="scout"');
     expect(questsHtml).not.toContain('data-play-key="first_position"');
-    expect(questsHtml).toContain(COMPLIANCE_LINE);
-    expect(questsHtml).toContain(PRE_IPO_COMPLIANCE_LINE);
+    // The compliance pair lives at the foot of the page, once per page: nothing under the quests.
+    expect(questsHtml).not.toContain(COMPLIANCE_LINE);
+    expect(questsHtml).not.toContain(PRE_IPO_COMPLIANCE_LINE);
     // Corporate actions: the shared section from the Partner page.
     expect(h).toContain("Corporate actions");
     expect(h).toContain("5-for-1 adjustment");
@@ -495,8 +560,9 @@ describe("nav and landing", () => {
     expect(landing).toContain("<GameTiles");
     expect(landing.match(/href="\/prestocks"/g)).toHaveLength(1);
     // The competition copy names both price sets, on the landing and the /competition metadata.
+    // The hero paragraph is two sentences now (22 Sep); the Competition tile still names both price sets.
     const flat = landing.replace(/\s+/g, " ");
-    expect(flat.match(/real xStock and pre-IPO prices/g)).toHaveLength(2);
+    expect(flat.match(/real xStock and pre-IPO prices/g)).toHaveLength(1);
     expect(flat).not.toContain("real xStock prices");
     expect(repoFile("src/app/competition/layout.tsx")).toContain("real xStock and pre-IPO prices");
   });

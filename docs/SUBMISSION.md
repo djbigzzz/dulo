@@ -81,7 +81,7 @@ Players are free. Partners would list on-chain quests and pay per verified compl
 
 ## Team
 
-Built solo. Live since 21 Sep 2026 on Vercel and Neon: no players yet, no partner signed and no badge minted, and every count on the site reads zero because it is zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,297 tests, CI on every push.
+Built solo. Live since 21 Sep 2026 on Vercel and Neon: no players yet, no partner signed and no badge minted, and every count on the site reads zero because it is zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,398 tests, CI on every push.
 
 Points only, no cash value. Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions. Dulo is independent and not affiliated with xStocks (Backed Finance owns that brand). Original work, written for this hackathon.
 ````
@@ -163,7 +163,7 @@ Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), confir
 - [ ] `git status --ignored` shows `!! docs/private/`, and `git ls-files docs/private` prints nothing. No tracked file cites a path inside it.
 - [ ] Secret grep over tracked files is clean: `git grep -nIE "(-----BEGIN|api[_-]?key[\"' ]*[:=]|api-key=|postgres(ql)?://[^ ]*:[^ @]*@)" -- ':!*.example' ':!docs/*'` returns only variable names, never a value.
 - [ ] No keypair, `.env` or wallet file is tracked.
-- [ ] CI is green on the default branch. `npx vitest run` printed **1,297** on 22 Sep; re-read it on the day and make the Full Description and the README say the same number.
+- [ ] CI is green on the default branch. `npx vitest run` printed **1,398** on 22 Sep; re-read it on the day and make the Full Description and the README say the same number.
 - [ ] The repo is public, MIT, with the README's disclosure section intact.
 
 ### Badge names (gate: do this before a badge can ever mint)

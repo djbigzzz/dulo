@@ -25,6 +25,8 @@ export interface PublicWallet {
   label: string;
   /** ISO date the wallet was last checked against the criteria above. */
   checkedAt: string;
+  /** A small tag beside the label on the "Try a real holder" chips ("pre-IPO"); none for an xStocks holder. */
+  tag?: string;
 }
 
 const CHECKED_AT = "2026-09-15";
@@ -49,9 +51,21 @@ export const PUBLIC_WALLETS: readonly PublicWallet[] = Object.freeze([
   { address: "NubBLzV4kG1mu9u9XRQ7bHfEMm9pEduyMisBfj9L2pd", label: "Public holder J", checkedAt: CHECKED_AT },
 ]);
 
-const LABELS: ReadonlyMap<string, string> = new Map(PUBLIC_WALLETS.map((w) => [w.address, w.label]));
+/**
+ * A public holder of PreStocks pre-IPO tokens (22 Sep 2026), offered on the /check chips as
+ * "Public holder D · pre-IPO" so a visitor with no wallet can see a pre-IPO read and the
+ * Pre-IPO Position quest verified live. Kept OFF /copy on purpose: the copy tool plans xStocks
+ * legs, and this wallet would show an empty plan there. Same rules as above: not a Dulo player,
+ * never scored, neutral label, removable on request.
+ */
+export const PRE_IPO_PUBLIC_WALLETS: readonly PublicWallet[] = Object.freeze([
+  { address: "55t97rzPqCLNY1KX4Ypd3BFDCvbKF15i6xzrjLJgWh95", label: "Pre-IPO holder", tag: "pre-IPO", checkedAt: "2026-09-22" },
+]);
 
-/** The curated label for an address, null when it is not on the list. */
+/** Every curated wallet: the /copy list and the check-only pre-IPO holder. */
+const LABELS: ReadonlyMap<string, string> = new Map([...PUBLIC_WALLETS, ...PRE_IPO_PUBLIC_WALLETS].map((w) => [w.address, w.label]));
+
+/** The curated label for an address, null when it is not on either list. */
 export function publicWalletLabel(address: string): string | null {
   return LABELS.get(address) ?? null;
 }

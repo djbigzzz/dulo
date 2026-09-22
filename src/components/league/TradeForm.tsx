@@ -33,6 +33,11 @@ export interface TradeFormProps {
   sources?: readonly LeagueSymbolSource[];
   /** The label over the select. Default "Symbol" when more than one issuer is listed, else the issuer's noun. */
   symbolLabel?: string;
+  /**
+   * Print the pre-IPO compliance line under the button while a pre-IPO token is selected (default).
+   * /prestocks passes false: its page header carries the line once for the whole page.
+   */
+  preIpoNotice?: boolean;
   className?: string;
 }
 
@@ -82,7 +87,7 @@ const LABEL = "text-xs font-medium tracking-[0.14em] text-muted-foreground upper
  * toasts any Play the trade completed ("Quest complete: First Paper Trades · +50 pts"). The page can render two of these
  * (desktop panel + mobile sheet), so every id comes from useId.
  */
-export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "", onPlaced, sources, symbolLabel, className }: TradeFormProps) {
+export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "", onPlaced, sources, symbolLabel, preIpoNotice = true, className }: TradeFormProps) {
   const symbols = useApiQuery((signal) => leagueApi.symbols({ signal }), `${refreshKey}:${signedIn ? "in" : "out"}`, { refetchOnFocus: false });
   const sourceKey = sources ? sources.join(",") : "";
   const list = React.useMemo(() => {
@@ -180,7 +185,7 @@ export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "",
           </select>
           <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         </div>
-        {selected ? <PriceChip quote={selected.quote} className="self-start" /> : null}
+        {selected ? <PriceChip quote={selected.quote} className="self-start" session={!selectedPreIpo} /> : null}
       </div>
 
       <div className={cn(WELL, "grid grid-cols-2 gap-1 p-1")} role="group" aria-label="Side">
@@ -271,7 +276,7 @@ export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "",
         {weekend ? <p className="text-center text-xs text-muted-foreground">{WEEKEND_TRADES_COPY}.</p> : null}
         {symbols.error ? <p className="text-xs text-rose-400">{symbols.error}</p> : null}
         {/* A pre-IPO token on screen carries the pre-IPO line; the standard line sits in the footer of every page. */}
-        {selectedPreIpo ? (
+        {preIpoNotice && selectedPreIpo ? (
           <p data-slot="pre-ipo-compliance" className="text-xs leading-relaxed text-pretty text-muted-foreground">
             {PRE_IPO_COMPLIANCE_LINE}
           </p>

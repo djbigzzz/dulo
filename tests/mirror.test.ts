@@ -63,7 +63,7 @@ import {
   readPublicWallet,
   resetPublicReadCache,
 } from "@/lib/mirror/public";
-import { PUBLIC_WALLETS, isCuratedPublicWallet, publicWalletLabel } from "@/lib/mirror/public-wallets";
+import { PRE_IPO_PUBLIC_WALLETS, PUBLIC_WALLETS, isCuratedPublicWallet, publicWalletLabel } from "@/lib/mirror/public-wallets";
 import { getMirrorIndex, publicReadApiError } from "@/lib/mirror/views";
 import { ApiError } from "@/lib/server/api";
 import { MIRROR_COMPLIANCE_LINE, parseWalletInput, toleranceCopy } from "@/components/mirror/mirror-format";
@@ -918,6 +918,18 @@ describe("curated public wallets", () => {
       expect(isCuratedPublicWallet(w.address)).toBe(true);
     }
     expect(publicWalletLabel(PUBLIC_ADDR)).toBeNull();
+  });
+
+  it("keeps the pre-IPO holder off the /copy list but labelled and curated for /check", () => {
+    expect(PRE_IPO_PUBLIC_WALLETS).toHaveLength(1);
+    const [w] = PRE_IPO_PUBLIC_WALLETS;
+    expect(w).toMatchObject({ label: "Pre-IPO holder", tag: "pre-IPO" });
+    const key = new PublicKey(w.address);
+    expect(PublicKey.isOnCurve(key.toBytes())).toBe(true);
+    expect(w.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(PUBLIC_WALLETS.some((p) => p.address === w.address)).toBe(false);
+    expect(publicWalletLabel(w.address)).toBe(w.label);
+    expect(isCuratedPublicWallet(w.address)).toBe(true);
   });
 });
 
