@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // How the adapter builds its web3.js Connection (docs/REVIEW-2026-09-14.md M2, L12): rate-limit
 // retries stay with the adapter's own bounded backoff, and an RPC url (which may carry the
@@ -31,13 +31,26 @@ vi.mock("@solana/web3.js", async (importOriginal) => {
 const TSLAX = "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB";
 const KEYED_URL = "https://mainnet.helius-rpc.com/?api-key=SECRET-KEY-VALUE";
 
+/**
+ * The first import of the adapter pulls in the real @solana/web3.js through the mock factory,
+ * which can take seconds on a loaded machine. Doing that inside a test put it under vitest's
+ * 5-second per-test budget: under load the first test timed out mid-import, the runner moved on,
+ * and the first test's straggling continuation constructed its "confirmed" Connection inside the
+ * second test's window -- so both failed, one run in five, only in the full suite. Importing once
+ * in beforeAll (with its own generous budget) keeps each test measuring only adapter behaviour.
+ */
+let mod: typeof import("@/lib/adapters/solana");
+beforeAll(async () => {
+  mod = await import("@/lib/adapters/solana");
+}, 60_000);
+
 beforeEach(() => {
   ctor.calls.length = 0;
 });
 
 describe("createSolanaAdapter Connection", () => {
   it("disables web3.js's built-in 429 retry so a rate-limited wallet fails fast into the adapter's own backoff", async () => {
-    const { createSolanaAdapter } = await import("@/lib/adapters/solana");
+    const { createSolanaAdapter } = mod;
     const adapter = createSolanaAdapter(KEYED_URL, { sleep: async () => {} });
     await adapter.getMintMultiplier(TSLAX);
     expect(ctor.calls).toHaveLength(1);
@@ -45,14 +58,14 @@ describe("createSolanaAdapter Connection", () => {
   });
 
   it("honours a custom commitment while keeping the retry switch", async () => {
-    const { createSolanaAdapter } = await import("@/lib/adapters/solana");
+    const { createSolanaAdapter } = mod;
     const adapter = createSolanaAdapter(KEYED_URL, { commitment: "finalized", sleep: async () => {} });
     await adapter.getMintMultiplier(TSLAX);
     expect(ctor.calls[0]?.[1]).toEqual({ commitment: "finalized", disableRetryOnRateLimit: true });
   });
 
   it("names only the host, never the url, when the RPC url is rejected", async () => {
-    const { createSolanaAdapter, SolanaAdapterError } = await import("@/lib/adapters/solana");
+    const { createSolanaAdapter, SolanaAdapterError } = mod;
     const err = await createSolanaAdapter("ws://mainnet.helius-rpc.com/?api-key=SECRET-KEY-VALUE")
       .getMintMultiplier(TSLAX)
       .catch((e: unknown) => e);
