@@ -22,8 +22,8 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 | | |
 |---|---|
 | **Live app** | **https://dulo-iota.vercel.app** |
-| **Pitch video** | _to come_ |
-| **Technical video** | _to come_ |
+| **Pitch video** | _recording this week_ |
+| **Technical video** | _recording this week_ |
 | **Hackathon** | [Stocklana](https://hackathons.solana.com/hackathons/stocklana) — submissions close Fri 25 Sep 2026, 16:00 ET, and judging runs to 2 Oct |
 | **Licence** | [MIT](LICENSE) |
 
@@ -31,7 +31,7 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 
 ---
 
-## Judge quick path (5 minutes to run it, then 90 seconds of clicking)
+## Judge quick path (90 seconds, nothing to install)
 
 **Open https://dulo-iota.vercel.app — nothing to install.** Or run it yourself in about 5 minutes: [Run locally](#run-locally). Every chain read goes to Solana mainnet, so nothing here is a testnet mock. You do not need to hold an xStock: starter points and virtual cash cover everything except the on-chain quests.
 
@@ -469,7 +469,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 ## Known limitations
 
-- **Not deployed.** There is no hosted instance yet, so there are no players, no live leaderboard and no minted badge. Everything in this README runs from the repo against mainnet.
+- **Brand new.** Live at https://dulo-iota.vercel.app since 21 Sep 2026 with no players yet, so the Season leaderboard is empty and no badge has been minted. It runs on Vercel's free plan: the five-minute tick comes from a GitHub Actions pinger with Vercel's daily run as backstop, and without a Helius or Jupiter key the public RPC and keyless Jupiter rate-limit under load.
 - **No Pyth key.** Pyth Hermes needs a key and Season 0 runs without one. Jupiter Price v3 therefore prices the competition and settles the predictions, and the source and age are printed on every chip and card. Outside the US session a price is Jupiter's last quote; after 6 hours it is marked stale.
 - **Predictions stay open until the Friday close.** A late entry can win points from the house-bot pools at little risk. The planned fix is to close entries earlier and open next week's questions at that moment.
 - **Throwaway accounts.** Someone can put a throwaway account's starter points on the side that is about to lose, which moves those points to their main account as Season points. A new-account limit of 20 an hour per network only slows this down, and it lives in memory on each server instance. The planned fix weights accounts by account or wallet age, never by holdings.

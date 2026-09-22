@@ -2,7 +2,7 @@
 
 Paste-ready copy for the submit form at https://hackathons.solana.com/hackathons/stocklana. The headings below follow the form's own steps.
 
-- **Status:** rewritten 16 Sep 2026 for the three games (predictions first, then the virtual-cash competition, then quests), starter points and the Season points rule. Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), confirmed 17 Sep from the page countdown and header, and judging runs to 2 Oct.
+- **Status:** updated 22 Sep 2026 for the live deployment at https://dulo-iota.vercel.app (Vercel + Neon, since 21 Sep). Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct.
 - **No placeholders.** Everything inside a paste block is true today. Anything that depends on a thing that does not exist yet (the live URL, the videos, a minted badge, player numbers) is listed under "Add once it exists" in the Links step, outside the blocks.
 - **Limits:** Short Description 280 characters, Full Description 5,000 characters, Pitch Video 3:00, Technical Video 5:00, at least one link.
 
@@ -20,20 +20,22 @@ node -e "const s=require('fs').readFileSync('docs/SUBMISSION.md','utf8');for(con
 
 Dulo
 
-### Short Description (280 max): 266 measured
+### Short Description (280 max): 277 measured
 
 ````text
-The entertainment layer for xStocks. Predict Friday closes. Compete with $10,000 of virtual cash. Complete quests, in-app or verified from your Solana wallet. Three games, one Season leaderboard, and 1,000 starter points on first sign-in. Points only, no cash value.
+The entertainment layer for xStocks, live on Solana mainnet. Predict Friday closes. Compete with $10,000 of virtual cash. Complete quests, in-app or verified from your own wallet. Three games, one Season leaderboard, 1,000 starter points on sign-in. Points only, no cash value.
 ````
 
 ## Step 2: Description
 
-### Full Description (Markdown, 5,000 max): 3,672 measured
+### Full Description (Markdown, 5,000 max): 3,984 measured
 
 ````markdown
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
 
 Predict. Compete. Complete on-chain quests.
+
+**Live at https://dulo-iota.vercel.app**, reading Solana mainnet. Check any wallet without an account; sign one message to play. There is no transaction.
 
 ## The problem
 
@@ -79,39 +81,29 @@ Players are free. Partners would list on-chain quests and pay per verified compl
 
 ## Team
 
-Built solo. Next.js 15, TypeScript and Postgres, no Anchor program, 1,176 tests, CI on every push.
+Built solo. Live since 21 Sep 2026 on Vercel and Neon: no players yet, no partner signed and no badge minted, and every count on the site reads zero because it is zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,176 tests, CI on every push.
 
 Points only, no cash value. Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions. Dulo is independent and not affiliated with xStocks (Backed Finance owns that brand). Original work, written for this hackathon.
 ````
 
 ## Step 3: Links
 
-Every field takes a full `https://` URL, and the form wants at least one. **Nothing is published yet**, so today this step is empty: fill Step 1, Step 2, Step 4 and Step 5 and press **Save Draft**.
+Every field takes a full `https://` URL, and the form wants at least one. Two are live today; the videos go in once recorded.
 
-The order things become linkable:
-
-1. **GitHub**, the moment the org is registered and the repo is flipped public. This is the gate for the hedge submission on Thu 17 Sep: one working link is enough to press Submit Project.
-2. **Demo URL**, after the first production deploy.
-3. **Pitch Video** and **Technical Video**, after they are recorded.
-
-### Add once it exists
-
-| Field | What goes in, and when |
+| Field | Value |
 |---|---|
-| GitHub | `https://github.com/djbigzzz/dulo` — public, pushed 21 Sep 2026. |
-| Demo URL | The production origin. The Vercel `https://<project>.vercel.app` URL until dulo.fun resolves. |
-| Pitch Video | Unlisted YouTube, 3:00 or shorter. Script: `docs/HANDOFF.md` section 6. |
-| Technical Video | Unlisted YouTube, 5:00 or shorter. Script: `docs/HANDOFF.md` section 6b. |
+| GitHub | `https://github.com/djbigzzz/dulo` |
+| Demo URL | `https://dulo-iota.vercel.app` |
+| Pitch Video | Unlisted YouTube, 3:00 or shorter. Script: `docs/HANDOFF.md` section 6. Add when recorded. |
+| Technical Video | Unlisted YouTube, 5:00 or shorter. Script: `docs/HANDOFF.md` section 6b. Add when recorded. |
 
-Also waiting on the same facts, outside the form: the README's live link, video links and screenshots, the X and GitHub handles in Step 4, and any mainnet transaction link (no badge has been minted yet, so no proof link is claimed anywhere).
+No badge has been minted, so no transaction link is claimed anywhere. dulo.fun is not registered; the Vercel URL is the public origin.
 
 ## Step 4: Team
 
 **Solo.**
 
-Built solo.
-
-Add the X and GitHub handles to this step once those accounts are registered.
+Built solo. GitHub: `djbigzzz` (the repo owner). No X account exists for the project; leave that field empty rather than inventing a handle.
 
 ## Step 5: Bounty Tracks
 
