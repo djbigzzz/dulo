@@ -15,8 +15,9 @@
  *               exempt, otherwise a sub-$10 remainder could never be sold.
  * Accounts      one LeagueAccount per (league, user), created on the first trade with
  *               STARTING_CASH_USD and positions {} keyed by CAIP-19 asset id.
- * Trades        placeTrade quotes through lib/price (getPriceBySymbol, fenced to xStocks:
- *               LEAGUE_ASSET_SOURCE; a pre-IPO token is refused), fills at the quote
+ * Trades        placeTrade quotes through lib/price (getPriceBySymbol, fenced to the allowlist
+ *               LEAGUE_ASSET_SOURCES: xStocks and, since 22 Sep, PreStocks pre-IPO tokens; any
+ *               other symbol is refused), fills at the quote
  *               +/- SPREAD (0.1%) and applies cash / position / LeagueTrade writes in ONE
  *               interactive transaction that locks and re-reads the account row
  *               (SELECT ... FOR UPDATE), so two concurrent trades can never both spend the
@@ -51,8 +52,10 @@
  *               is cheap because lib/price caches quotes for 30s.
  * Bots          15 seeded accounts (BOT_HANDLES) so the board is never empty. Deterministic
  *               user ids (bot-league-<n>) and wallets (Keypair.fromSeed(sha256(handle))),
- *               3-8 trades each from a seeded PRNG, priced from lib/price at seed time with
- *               a fixed fallback table so seeding works offline. Idempotent per League.
+ *               3-8 trades each from a seeded PRNG over TRADABLE_SYMBOLS only (xStocks; the
+ *               seed-time lookup is fenced to BOT_ASSET_SOURCE, so a bot never holds a pre-IPO
+ *               token), priced from lib/price at seed time with a fixed fallback table so
+ *               seeding works offline. Idempotent per League.
  *               Every seedBots run first converges existing bot Users on BOT_HANDLES
  *               (syncBotIdentities: handle + wallet address, only where they differ, never
  *               touching accounts or trades), so renaming a handle reaches a seeded database.
@@ -71,7 +74,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import type { AssetId, GameModule, PriceQuote } from "@/lib/core";
 import { SOLANA_MAINNET, isAssetId, solanaTokenAssetId } from "@/lib/core";
 import { XSTOCKS_FALLBACK } from "@/lib/assets/xstocks";
-import { SEASON0_ASSET_SOURCE } from "@/lib/plays/catalogue";
+import { PRESTOCKS_ASSET_SOURCE, SEASON0_ASSET_SOURCE } from "@/lib/plays/catalogue";
 import { UnknownAssetError, getPriceBySymbol, getPrices, getPricesBySymbols } from "@/lib/price";
 import { ApiError } from "@/lib/server/api";
 import { db } from "@/lib/server/db";
@@ -102,12 +105,16 @@ export const QTY_DECIMALS = 6;
 /** GET /api/v1/league recomputes equity when the last recompute is older than this. */
 export const RECOMPUTE_MIN_INTERVAL_MS = 60_000;
 /**
- * The only AssetSource the competition trades. lib/price resolves symbols across every
- * registered issuer (xStocks and PreStocks), so placeTrade fences its quote to this source and a
- * pre-IPO token is refused as an unknown xStock: a paper trade never holds, values or scores one.
+ * The AssetSources the competition trades (founder decision, 22 Sep 2026): xStocks and PreStocks
+ * pre-IPO tokens, in one $10,000 virtual-cash account, 24/7, on one weekly board. lib/price
+ * resolves symbols across every registered issuer, so placeTrade fences its quote to this
+ * allowlist and a symbol only another issuer knows is refused: a paper trade never holds, values
+ * or scores anything outside it.
  */
-export const LEAGUE_ASSET_SOURCE = SEASON0_ASSET_SOURCE;
-/** The fixed tradable list (bots trade these; users can also trade any xStock lib/price knows, and only an xStock: LEAGUE_ASSET_SOURCE). */
+export const LEAGUE_ASSET_SOURCES: readonly string[] = Object.freeze([SEASON0_ASSET_SOURCE, PRESTOCKS_ASSET_SOURCE]);
+/** The only source house bots trade. botQuotes fences its lookup to it, so a bot never plans a pre-IPO trade. */
+export const BOT_ASSET_SOURCE = SEASON0_ASSET_SOURCE;
+/** The fixed tradable list (bots trade these; users can also trade any symbol of a LEAGUE_ASSET_SOURCES issuer that lib/price knows). */
 export const TRADABLE_SYMBOLS: readonly string[] = Object.freeze([
   "TSLAx",
   "NVDAx",
@@ -514,12 +521,12 @@ export async function placeTrade(input: PlaceTradeInput, now: Date = new Date(),
   const league = await ensureLeague(seasonId, now, client);
   assertTradingOpen(league, now);
 
-  // Fenced to LEAGUE_ASSET_SOURCE: a symbol only another issuer knows (a pre-IPO token) is unknown here.
+  // Fenced to LEAGUE_ASSET_SOURCES: a symbol only an issuer outside the allowlist knows is unknown here.
   let quote: PriceQuote;
   try {
-    quote = await getPriceBySymbol(symbol, { source: LEAGUE_ASSET_SOURCE });
+    quote = await getPriceBySymbol(symbol, { sources: LEAGUE_ASSET_SOURCES });
   } catch (e) {
-    if (e instanceof UnknownAssetError) throw new ApiError(`Unknown xStock: ${symbol}`, 400);
+    if (e instanceof UnknownAssetError) throw new ApiError(`Unknown xStock or pre-IPO token: ${symbol}`, 400);
     throw e;
   }
   if (quote.price === null || !(quote.price > 0)) throw new ApiError(`No price for ${quote.symbol} right now`, 400);
@@ -886,11 +893,15 @@ function fallbackAssetId(symbol: string): string | null {
   return entry ? solanaTokenAssetId(entry.mint, SOLANA_MAINNET) : null;
 }
 
-/** Seed-time quotes for the tradable list: lib/price when it answers, the fallback table otherwise. */
+/**
+ * Seed-time quotes for the tradable list: lib/price when it answers, the fallback table otherwise.
+ * Fenced to BOT_ASSET_SOURCE and read back by TRADABLE_SYMBOLS only, so whatever lib/price knows,
+ * a bot's plan holds xStocks alone.
+ */
 export async function botQuotes(): Promise<BotQuote[]> {
   let live: PriceQuote[] = [];
   try {
-    live = (await getPricesBySymbols(TRADABLE_SYMBOLS)).quotes;
+    live = (await getPricesBySymbols(TRADABLE_SYMBOLS, { source: BOT_ASSET_SOURCE })).quotes;
   } catch (e) {
     console.warn(`${LOG_PREFIX} seed pricing failed; using the fallback table: ${e instanceof Error ? e.message : String(e)}`);
   }

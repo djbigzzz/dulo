@@ -664,20 +664,26 @@ function evalMirrorMatch(rule: MirrorMatchRule, c: Ctx): EvalResult {
 export const MIRROR_MIN_TOTAL_USD = 1;
 
 /**
- * internal_event { event, count, distinctBy? }
- * Number of ctx.events with type === event is >= count. Scope fields are ignored (events are
- * not holdings). completedAt = ts of the count-th event. Proof lists the last 5 refs.
+ * internal_event { event, count, distinctBy?, assetSymbols? }
+ * Number of ctx.events with type === event is >= count. Events are not holdings, so the issuer
+ * fence and assetIds / partnerAssetIds are ignored; assetSymbols (22 Sep) is the one scope field
+ * that applies: when it is non-empty only events whose meta.symbol (trimmed, upper-cased) is in
+ * the list count, an event without a symbol is skipped, and the proof echoes the list as
+ * `symbols`. Without it every event of the type counts and the proof is exactly the 16 Sep
+ * shape. completedAt = ts of the count-th event. Proof lists the last 5 refs.
  *
  * With distinctBy, the matching events (ascending by ts) are reduced to the FIRST event per key
  * (see distinctKey) and the rule counts keys instead: complete when the number of distinct keys
  * reaches count, completedAt = ts of the count-th first occurrence, proof.refs = the last 5
- * distinct keys. Progress units: "days" (day), "xStocks" (symbol), "questions" (call_placed by
- * ref), else "items". The incomplete reason stays not_enough_events.
+ * distinct keys. Progress units: "days" (day), "xStocks" (symbol under the Season 0 issuer or no
+ * issuer; "assets" for any other issuer, which the UI names by its noun), "questions"
+ * (call_placed by ref), else "items". The incomplete reason stays not_enough_events.
  */
 function evalInternalEvent(rule: InternalEventRule, c: Ctx): EvalResult {
   const count = Math.max(1, Math.floor(numOr(rule.count, 1)));
-  if (rule.distinctBy !== undefined) return evalInternalEventDistinct(rule, rule.distinctBy, count, c);
-  const matches = c.events.filter((e) => e.type === rule.event);
+  const symbols = eventSymbolScope(rule);
+  if (rule.distinctBy !== undefined) return evalInternalEventDistinct(rule, rule.distinctBy, count, c, symbols);
+  const matches = c.events.filter((e) => e.type === rule.event && inSymbolScope(e, symbols));
   const n = matches.length;
   const proof: Record<string, unknown> = {
     event: rule.event,
@@ -687,9 +693,23 @@ function evalInternalEvent(rule: InternalEventRule, c: Ctx): EvalResult {
   };
   const lastEv = last(matches);
   if (lastEv) proof.lastAt = iso(lastEv.ts);
+  if (symbols) proof.symbols = [...(rule.assetSymbols as string[])];
   const progress = { current: Math.min(n, count), target: count, unit: "events" };
   if (n < count) return incomplete("not_enough_events", proof, progress);
   return { complete: true, proof, progress, completedAt: iso(matches[count - 1].ts) };
+}
+
+/** The upper-cased symbol set an internal_event rule is scoped to, or null when it has none. */
+function eventSymbolScope(rule: InternalEventRule): ReadonlySet<string> | null {
+  if (!Array.isArray(rule.assetSymbols) || rule.assetSymbols.length === 0) return null;
+  return new Set(rule.assetSymbols.map((s) => String(s).trim().toUpperCase()).filter((s) => s.length > 0));
+}
+
+/** True when the rule has no symbol scope, or the event's meta.symbol (upper-cased) is in it. */
+function inSymbolScope(e: InternalEvent, symbols: ReadonlySet<string> | null): boolean {
+  if (symbols === null) return true;
+  const key = distinctKey(e, "symbol");
+  return key !== null && symbols.has(key);
 }
 
 type DistinctByKey = NonNullable<InternalEventRule["distinctBy"]>;
@@ -717,20 +737,22 @@ function distinctKey(e: InternalEvent, by: DistinctByKey): string | null {
   }
 }
 
-function distinctUnit(event: string, by: DistinctByKey): string {
+function distinctUnit(event: string, by: DistinctByKey, assetSource: string | null): string {
   if (by === "day") return "days";
-  if (by === "symbol") return "xStocks";
+  // The Season 0 issuer (or no Play context) keeps the 16 Sep unit; another issuer's quest counts
+  // "assets", which the UI labels with that issuer's noun (pre-IPO tokens) rather than "xStocks".
+  if (by === "symbol") return assetSource === null || assetSource === DEFAULT_ASSET_SOURCE ? "xStocks" : "assets";
   if (by === "ref" && event === "call_placed") return "questions";
   return "items";
 }
 
-function evalInternalEventDistinct(rule: InternalEventRule, by: DistinctByKey, count: number, c: Ctx): EvalResult {
+function evalInternalEventDistinct(rule: InternalEventRule, by: DistinctByKey, count: number, c: Ctx, symbols: ReadonlySet<string> | null): EvalResult {
   // c.events is already ascending by ts (cleanEvents), so the first event seen per key is its first occurrence.
   const firsts: Array<{ key: string; ts: Date }> = [];
   const seen = new Set<string>();
   let lastEv: InternalEvent | undefined;
   for (const e of c.events) {
-    if (e.type !== rule.event) continue;
+    if (e.type !== rule.event || !inSymbolScope(e, symbols)) continue;
     const key = distinctKey(e, by);
     if (key === null) continue;
     // lastAt: the latest event that carried a key, repeats included (a second trade in NVDAx still counts as activity).
@@ -748,7 +770,8 @@ function evalInternalEventDistinct(rule: InternalEventRule, by: DistinctByKey, c
     refs: firsts.slice(-5).map((f) => f.key),
   };
   if (lastEv) proof.lastAt = iso(lastEv.ts);
-  const progress = { current: Math.min(n, count), target: count, unit: distinctUnit(rule.event, by) };
+  if (symbols) proof.symbols = [...(rule.assetSymbols as string[])];
+  const progress = { current: Math.min(n, count), target: count, unit: distinctUnit(rule.event, by, c.assetSource) };
   if (n < count) return incomplete("not_enough_events", proof, progress);
   return { complete: true, proof, progress, completedAt: iso(firsts[count - 1].ts) };
 }

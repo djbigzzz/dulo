@@ -261,6 +261,10 @@ describe("plain names — no retired vocabulary in user-facing copy", () => {
     expect(labels).toContain("Predictions");
     expect(labels).toContain("Copy a portfolio");
     expect(labels).toContain("Leaderboard");
+    // Desktop only (22 Sep): Pre-IPO sits between Quests and Copy a portfolio; the phone keeps five tabs.
+    expect(NAV_ITEMS.map((item) => item.label)).toEqual(["Predictions", "Competition", "Quests", "Pre-IPO", "Copy a portfolio", "Leaderboard"]);
+    expect(MOBILE_TABS).toHaveLength(5);
+    expect(MOBILE_TABS.map((item) => item.label)).not.toContain("Pre-IPO");
     expect(labels).not.toContain("Rewards");
     expect(labels).not.toContain("Paper trading");
     for (const label of labels) for (const { re } of BANNED) expect(re.test(label), label).toBe(false);

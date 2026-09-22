@@ -13,7 +13,7 @@
 
 ---
 
-Three games on one Season leaderboard: points-only **predictions** on Friday closes, a weekly **competition** with $10,000 of virtual cash at real xStock prices, and **quests**, some completed in the app and some verified from your own Solana wallet with the proof attached. Every new player starts with 1,000 starter points. Points only, no cash value.
+Three games on one Season leaderboard: points-only **predictions** on Friday closes, a weekly **competition** with $10,000 of virtual cash at real xStock and pre-IPO prices, and **quests**, some completed in the app and some verified from your own Solana wallet with the proof attached. Every new player starts with 1,000 starter points. Points only, no cash value.
 
 > [!NOTE]
 > [!NOTE]
@@ -41,7 +41,8 @@ The landing opens on this week's live prediction cards, the three game tiles (Pr
 2. **Welcome.** Your first sign-in writes 1,000 starter points to the ledger, and the toast says so: 1,000 starter points for predictions and $10,000 of virtual cash for this week's competition. The account menu shows a points balance of 1,000 and Season points of 0, "Not ranked yet", because starter points never count toward rank.
 3. **Predict.** On `/predictions`, put points on Yes or No: will NVDA, TSLA or SPY close above the strike on Friday? The dialog defaults to 100 points. First Prediction (+50) completes in the same request, and you are on the Season leaderboard with 50 Season points. The 100 points you put in only count once the prediction settles.
 4. **Compete.** On `/competition` (the weekly competition, virtual cash), place paper trades in three different xStocks with virtual cash at Jupiter prices, with a $10 minimum per trade. First Paper Trades (+50) and Paper Portfolio (+75) complete in the same requests. Your rank updates live against the labelled house bots, and weekend trades count too.
-5. **Quests.** On `/quests`, filter by All, In-platform, On-chain or Badges. In-platform quests show your next steps (Ten Paper Trades, Five Predictions and the rest). On-chain quests each describe a wallet state and open a proof once complete. If your wallet holds $5 or more of any xStock, First Position usually lands within seconds of sign-in.
+5. **Pre-IPO.** On `/prestocks`, paper trade one of the eight PreStocks pre-IPO tokens with the same virtual cash, around the clock. First Pre-IPO Trade (+50) completes in the same request, and paper trades in three different pre-IPO tokens complete Pre-IPO Trio (+100). The issuer's mark and Jupiter's pool quote show as two separate numbers.
+6. **Quests.** On `/quests`, filter by All, In-platform, On-chain or Badges. In-platform quests show your next steps (Ten Paper Trades, Five Predictions and the rest). On-chain quests each describe a wallet state and open a proof once complete. If your wallet holds $5 or more of any xStock, First Position usually lands within seconds of sign-in.
 
 Two more things to try, and the first needs no sign-in:
 
@@ -63,14 +64,14 @@ Predict. Compete. Complete on-chain quests.
 Dulo gives those holders, and anyone curious about xStocks, three games that share one Season leaderboard:
 
 - **Predictions.** Points-only Yes or No on Friday closes.
-- **Competition.** A weekly trading competition with $10,000 of virtual cash at real xStock prices. It is not real money, not real trading and not swaps.
+- **Competition.** A weekly trading competition with $10,000 of virtual cash at real xStock and pre-IPO prices. It is not real money, not real trading and not swaps.
 - **Quests.** Verified actions. In-platform quests are completed with virtual cash and points. On-chain quests are verified from your own wallet: Dulo reads it from Solana, checks the JSON rule, keeps the proof and scores it in a **Season**. Projects list on-chain quests as rows.
 
 Copy a portfolio is a tool, not a fourth game. Season 0, the Stocks Season, reads xStocks on Solana mainnet.
 
 ### Pages
 
-The nav reads Predictions · Competition · Quests · Copy a portfolio · Leaderboard, and the phone tab bar reads Predict · Compete · Quests · Board · Profile.
+The nav reads Predictions · Competition · Quests · Pre-IPO · Copy a portfolio · Leaderboard, and the phone tab bar reads Predict · Compete · Quests · Board · Profile (five tabs; Pre-IPO is reached from the header and the competition).
 
 | Page | What it shows | Sign-in |
 |---|---|---|
@@ -78,6 +79,7 @@ The nav reads Predictions · Competition · Quests · Copy a portfolio · Leader
 | `/predictions` | Predictions: points-only Yes or No on Friday closes | to predict |
 | `/competition` | Weekly competition (virtual cash): trade form, positions and the board with labelled house bots | to trade |
 | `/quests` | Quests: in-platform, on-chain and coming soon, with a proof on every completed on-chain quest | to earn |
+| `/prestocks` | Pre-IPO: the eight PreStocks pre-IPO tokens, each with a Jupiter price chip (source and age) and the issuer's mark as a separate number, and paper trades with the competition's virtual cash, 24/7 | to trade |
 | `/copy`, `/copy/<wallet>` | Copy a portfolio: pick a wallet, see its allocation, open one Jupiter link per leg | to verify |
 | `/check`, `/check/<address>` | Check any wallet: a live read of its xStocks and the on-chain quests it meets, nothing stored | no |
 | `/leaderboard` | The Season leaderboard, ranked by Season points, real players only | no |
@@ -108,7 +110,7 @@ Points only, no cash value. Points live in an append-only `PointsEvent` ledger w
 - **$10,000 of virtual cash per competition week.** It is neither real money nor points. Your competition account opens with your first paper trade, and the app never adds cash and points into one number.
 - **Season points = quests + weekly finishes (top 10 with 3+ trades) + settled prediction results.** Starter points, house seed rows and points in open predictions are left out. A prediction counts once it settles: the points back if it settles your way, minus the points you put in if it does not, and zero on a refund.
 - **Weekly finishes.** Ranks 1 to 10 by virtual portfolio value earn 1,000 / 700 / 500 / 300 / 200 / 100 / 100 / 100 / 100 / 100 points. Only real accounts with at least 3 trades that week are paid, so a place held by a house bot pays nobody.
-- **Quests.** The 8 in-platform quests are worth 850 points and use virtual cash and points. The 11 on-chain quests are worth 2,950 points and are verified from your wallet: nine read xStocks and two, Pre-IPO Position and Held Through a Split, read PreStocks pre-IPO tokens. Each on-chain quest describes a wallet state and never tells anyone to buy anything. Partner quests (Kamino Collateral, Jupiter Recurring) are listed as coming soon and cannot be verified yet.
+- **Quests.** The 10 in-platform quests are worth 1,000 points and use virtual cash and points; two of them, First Pre-IPO Trade and Pre-IPO Trio, count paper trades in PreStocks pre-IPO tokens. The 11 on-chain quests are worth 2,950 points and are verified from your wallet: nine read xStocks and two, Pre-IPO Position and Held Through a Split, read PreStocks pre-IPO tokens. Each on-chain quest describes a wallet state and never tells anyone to buy anything. Partner quests (Kamino Collateral, Jupiter Recurring) are listed as coming soon and cannot be verified yet.
 - **Points balance and Season points.** Your points balance is what you can put into predictions: your Season points, plus your starter points, minus the points in your open predictions. The leaderboard ranks Season points. A player with 0 Season points or fewer reads "Not ranked yet".
 - **Points cannot be bought, cashed out or sent to another player.** Points only move between players through a shared prediction pool.
 - **What partners would pay for.** The plan is that partners list on-chain quests and pay per verified completion. It is only a plan: nothing is billed, no partner has signed and there is no billing code.
@@ -125,7 +127,7 @@ Points only, no cash value. Points live in an append-only `PointsEvent` ledger w
 | Prediction settles against you | no new row | none | The points you put in already left your balance, and from settlement on they count against Season points. |
 | Refund: no usable price within 24 hours, or nobody on the other side | exactly what you put in | `call:<marketId>:refund:<userId>:<side>` | Once per player per side per question. Nets to zero. |
 | House bot seed for a prediction pool | each bot's planned points in | `admin:seed:<marketId>:<botUserId>` | House bots only. Never scores, and bots never appear on the Season leaderboard. |
-| Paper trade | 0 | none (a competition trade row) | $10,000 of virtual cash per week, $10 minimum, 0.1% virtual spread. Counts toward in-platform quests. |
+| Paper trade | 0 | none (a competition trade row) | $10,000 of virtual cash per week, $10 minimum, 0.1% virtual spread, in an xStock or a pre-IPO token. Counts toward in-platform quests. |
 | Copy a portfolio | 0 | none | Portfolio Match pays +500 once the next snapshot verifies the wallet state. |
 | Buy, cash out or send points | not possible | none | Points only, no cash value. |
 
@@ -148,8 +150,9 @@ The full ledger table, with every limit and the code that enforces it, is in [`d
 
 ### 2. Competition (virtual cash)
 
-- A weekly trading competition with $10,000 of virtual cash at real xStock prices. It is not real money and places no real trades.
+- A weekly trading competition with $10,000 of virtual cash at real xStock and pre-IPO prices. It is not real money and places no real trades.
 - Fills use lib/price plus a 0.1% virtual spread, and the smallest trade is $10.
+- Since 22 Sep the eight PreStocks pre-IPO tokens trade in the same competition from `/prestocks`, with the same virtual cash, around the clock, and count on the weekly board (`LEAGUE_ASSET_SOURCES` in `src/lib/games/league.ts`; a symbol no registered issuer knows is refused). House bots trade xStocks only.
 - The week runs Monday 00:00 to Friday 20:00 UTC and settles on its own. Weekend trades count toward next week's competition.
 - Ranks 1 to 10 earn 1,000 / 700 / 500 / 300 / 200 / 100 / 100 / 100 / 100 / 100 points, but only real accounts with 3 or more trades that week are paid.
 - Fifteen house bot accounts keep the board alive. They are labelled and ranked, but never paid, never snapshotted and never shown on the Season leaderboard.
@@ -158,7 +161,7 @@ The full ledger table, with every limit and the code that enforces it, is in [`d
 
 A quest is a JSON rule on a database row, validated by a zod schema with eight rule types. Adding a quest means adding a row, not code. No quest tells anyone to buy a security: an on-chain quest describes the wallet state to reach, and its proof shows that the wallet reached it.
 
-**In-platform quests: points and virtual cash** (850 points). The prediction and trade routes check these as they run, so the toast arrives in the same response.
+**In-platform quests: points and virtual cash** (1,000 points). The prediction and trade routes check these as they run, so the toast arrives in the same response.
 
 | Quest | Rule | What completes it | Points |
 |---|---|---|---|
@@ -170,6 +173,8 @@ A quest is a JSON rule on a database row, validated by a zod schema with eight r
 | Five-Stock Paper Portfolio | `league_trade` × 5, one per xStock | Paper trades in five different xStocks | 150 |
 | Three Game Days | `game_action` × 3, one per UTC day | A paper trade or a new prediction on three different days | 150 |
 | Five Predictions | `call_placed` × 5, one per question | Predictions on five different questions, over several weeks | 150 |
+| First Pre-IPO Trade | `league_trade` × 1, pre-IPO symbols only | Your first paper trade in a PreStocks pre-IPO token, with virtual cash | 50 |
+| Pre-IPO Trio | `league_trade` × 3, one per pre-IPO token | Paper trades in three different pre-IPO tokens, from any week | 100 |
 
 **On-chain quests, verified from your wallet** (2,950 points: nine fenced to xStocks, two to PreStocks pre-IPO tokens).
 
@@ -331,7 +336,7 @@ Rules the codebase keeps:
 
 **How Dulo relates to xPoints.** They are complementary: an issuer's own points reward activity in its own venues, while Dulo scores verified behaviour across apps and issuers and routes holders to the apps that list a quest.
 
-**Issuer scope.** Season 0 scores xStocks, and since 22 Sep it also reads a second issuer. PreStocks pre-IPO tokens are eight more Token-2022 mints (`src/lib/assets/prestocks.ts`), registered beside xStocks in `src/lib/assets/registry.ts`. The snapshot reads the union of both mint sets in the same batched RPC calls it already made, so the second issuer costs zero extra RPC calls; each holding is tagged with the source that resolved it; the price layer sends only xStocks symbols to Pyth, so a pre-IPO token is Jupiter-priced and never a Hermes call; and the engine fences every quest to the issuer on its `Play.assetSource`. Two quests, Pre-IPO Position and Held Through a Split, are fenced to `prestocks`; the nine xStocks quests evaluate identically with or without pre-IPO tokens in the wallet (`tests/second-issuer-regression.test.ts`). Another issuer later is another implementation behind the same interface, not a rewrite.
+**Issuer scope.** Season 0 scores xStocks, and since 22 Sep it also reads, and paper-trades, a second issuer. PreStocks pre-IPO tokens are eight more Token-2022 mints (`src/lib/assets/prestocks.ts`), registered beside xStocks in `src/lib/assets/registry.ts`. The snapshot reads the union of both mint sets in the same batched RPC calls it already made, so the second issuer costs zero extra RPC calls; each holding is tagged with the source that resolved it; the price layer sends only xStocks symbols to Pyth, so a pre-IPO token is Jupiter-priced and never a Hermes call; and the engine fences every quest to the issuer on its `Play.assetSource`. Two quests, Pre-IPO Position and Held Through a Split, are fenced to `prestocks`; the nine xStocks quests evaluate identically with or without pre-IPO tokens in the wallet (`tests/second-issuer-regression.test.ts`). The same registry feeds the competition: `LEAGUE_ASSET_SOURCES` lets a paper trade quote either issuer through `lib/price`, while house bots stay on xStocks. Another issuer later is another implementation behind the same interface, not a rewrite.
 
 ## Points only
 
@@ -482,7 +487,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 - **The `bigint: Failed to load bindings, pure JS will be used` warning is expected.** A transitive Solana dependency prints it during tests and builds, and it is harmless.
 - **Check any wallet is one live read.** On-chain quests that need daily history (Diamond Hands, Steady Buyer, Earnings Holder) show "Needs daily snapshots". The per-IP and per-instance rate limits live in memory.
 - **The Jupiter Recurring and Kamino quests are coming soon.** They are listed but cannot be verified yet.
-- **PreStocks pre-IPO tokens trade on thin pools and are Jupiter-only priced.** None of the eight has a Pyth feed, so a pre-IPO price is always Jupiter's quote from a thin Meteora pool, with its source and age shown. The issuer's mark (`markPrice` from the PreStocks API) is a separate number and not a tradeable quote; the app never presents the gap between the two as a discount. Pre-IPO Position is therefore count-based, and the competition and the copy tool stay xStocks-only.
+- **PreStocks pre-IPO tokens trade on thin pools and are Jupiter-only priced.** None of the eight has a Pyth feed, so a pre-IPO price is always Jupiter's quote from a thin Meteora pool, with its source and age shown. The issuer's mark (`markPrice` from the PreStocks API) is a separate number and not a tradeable quote; the app never presents the gap between the two as a discount. Pre-IPO Position is therefore count-based, and the copy tool stays xStocks-only. Since 22 Sep the competition does trade them, with virtual cash, and a pool that thin means a virtual-cash trade fills at a quote that a real trade of the same size would move, so a paper fill there is not a price a real trade would get. Points only, so nobody rational moves a market for them, and house bots do not trade them.
 - **Held Through a Split cannot have completed yet.** Both PreStocks adjustments on record (SpaceX's 5-for-1, effective 10 Jun 2026, and OpenAI's x1.4861, effective 17 Jul 2026, read from each mint's ScaledUiAmount config) predate Dulo's first production snapshot on 21 Sep 2026, so no wallet on record held through either. The quest completes on the next adjustment, and its copy says so. An adjustment changes the number of tokens shown, not the holder's value, and the app never presents one as a price signal.
 - **More in the handoff.** The full list, with a planned fix for each, is in `docs/HANDOFF.md` §3.9.
 

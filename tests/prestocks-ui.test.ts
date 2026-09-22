@@ -195,8 +195,9 @@ describe("quest sentences with the pre-IPO noun", () => {
     expect(ruleToHint({ type: "hold_any", minUsd: 5 })).toBe("Any xStock worth $5+ in your wallet");
     expect(ruleToHint({ type: "hold_any", minUsd: 5 }, "xstocks")).toBe("Any xStock worth $5+ in your wallet");
     expect(ruleToHint({ type: "net_increase_days", count: 3, window: 14 }, "xstocks")).toBe("xStocks balance up on 3 separate days in any 14-day window");
-    // The competition is xStocks-only whatever the fence says.
-    expect(ruleToHint({ type: "internal_event", event: "league_trade", count: 3, distinctBy: "symbol" }, "prestocks")).toBe("Make paper trades in 3 different xStocks");
+    // 22 Sep: pre-IPO tokens are tradable in the competition, so a paper-trade hint under the prestocks fence names them.
+    expect(ruleToHint({ type: "internal_event", event: "league_trade", count: 3, distinctBy: "symbol" }, "prestocks")).toBe("Make paper trades in 3 different pre-IPO tokens");
+    expect(ruleToHint({ type: "internal_event", event: "league_trade", count: 3, distinctBy: "symbol" }, "xstocks")).toBe("Make paper trades in 3 different xStocks");
   });
 
   it("never calls a pre-IPO token a share, a stock or equity, and never tells anyone to buy", () => {
@@ -428,10 +429,24 @@ describe("quests board and Partner page", () => {
 });
 
 describe("frozen surfaces", () => {
-  it("keeps PreStocks off the landing first screen, the nav, the tabs and the game tiles", () => {
-    for (const rel of ["src/app/page.tsx", "src/components/layout/nav.ts", "src/components/landing/ScoreboardPreview.tsx"]) {
-      expect(repoFile(rel), rel).not.toMatch(/prestocks|pre-ipo/i);
-    }
+  /**
+   * Founder decision, 22 Sep: pre-IPO tokens join the virtual-cash competition, the desktop nav gains
+   * "Pre-IPO" (/prestocks) and the landing gets ONE hook line beside the market-session chip. The
+   * game tiles, the headline, the three verbs, the welcome line, POSITIONING and the five mobile
+   * tabs stay as they were.
+   */
+  it("keeps PreStocks off the game tiles, the mobile tabs and the landing's headline, verbs and welcome line", () => {
+    expect(repoFile("src/components/landing/ScoreboardPreview.tsx")).not.toMatch(/prestocks|pre-ipo/i);
+    const landing = repoFile("src/app/page.tsx");
+    // Exactly one hook, and it is a link to the feature page beside the session chip.
+    expect(landing.match(/prestocks|pre-ipo/gi)?.filter((m) => m.toLowerCase() === "prestocks")).toHaveLength(1);
+    expect(landing).toContain('href="/prestocks"');
+    expect(landing).toContain("Pre-IPO tokens trade 24/7");
+    expect(landing).toContain("Predict. Compete. Complete on-chain quests.");
+    expect(landing).toContain("{WELCOME_OFFER_LINE}");
+    const nav = repoFile("src/components/layout/nav.ts");
+    const tabs = nav.slice(nav.indexOf("export const MOBILE_TABS"));
+    expect(tabs).not.toMatch(/prestocks|pre-ipo/i);
     expect(POSITIONING).toBe("The entertainment layer for xStocks. Compete, predict and get rewarded, for points.");
   });
 

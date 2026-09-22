@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { CopyIcon, MedalIcon, TargetIcon, TrophyIcon, UserIcon, ZapIcon } from "lucide-react";
+import { CopyIcon, MedalIcon, RocketIcon, TargetIcon, TrophyIcon, UserIcon, ZapIcon } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -9,13 +9,14 @@ export interface NavItem {
 
 /**
  * Desktop header navigation (lg and up). Plain names, games first: Predictions, Competition, Quests,
- * then the Copy a portfolio tool and the Leaderboard. Partners left the header on 16 Sep; it stays in
- * the footer and on the landing page.
+ * then Pre-IPO (the PreStocks feature page, 22 Sep), the Copy a portfolio tool and the Leaderboard.
+ * Partners left the header on 16 Sep; it stays in the footer and on the landing page.
  */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/predictions", label: "Predictions", icon: TargetIcon },
   { href: "/competition", label: "Competition", icon: TrophyIcon },
   { href: "/quests", label: "Quests", icon: ZapIcon },
+  { href: "/prestocks", label: "Pre-IPO", icon: RocketIcon },
   { href: "/copy", label: "Copy a portfolio", icon: CopyIcon },
   { href: "/leaderboard", label: "Leaderboard", icon: MedalIcon },
 ];

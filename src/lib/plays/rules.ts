@@ -42,8 +42,11 @@ const usdSchema = z.number().finite().nonnegative();
 /**
  * Fields every rule type may carry.
  *  - assetIds: restrict the rule to these assets (CAIP-19). Omit = any in-scope asset.
- *  - assetSymbols: UI convenience only — the xStocks symbols to show in hints (e.g. ["NVDAx"]).
- *    The engine keys on assetIds; symbols are never used to select holdings.
+ *  - assetSymbols: the symbols the rule is scoped to, matched case-insensitively (e.g. ["NVDAx"]).
+ *    Holding rules use it only when assetIds is absent (engine scopeOf) and hints name it. On an
+ *    internal_event rule (22 Sep) it narrows the counted events to those whose meta.symbol is in
+ *    the list, so an in-platform quest can be fenced to a symbol set (the eight pre-IPO tokens,
+ *    say) with no new field: an internal_event rule without it counts every event as before.
  *  - partnerAssetIds: evaluate against these partner receipt / obligation assets (CAIP-19)
  *    instead of xStocks. An empty array means "partner listing pending": the engine must
  *    treat it as never satisfied.
@@ -149,6 +152,8 @@ export const MirrorMatchRuleSchema = z.strictObject({
 /**
  * `count` internal events of type `event` (league_trade, call_placed, game_action, ...) for the user.
  * With `distinctBy`, `count` distinct keys instead (see DISTINCT_BY_KEYS); absent = every event counts.
+ * With `assetSymbols`, only events whose meta.symbol is in the list count (upper-cased match; an
+ * event without a symbol is skipped); absent or empty = every event of the type counts.
  */
 export const InternalEventRuleSchema = z.strictObject({
   type: z.literal("internal_event"),

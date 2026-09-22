@@ -76,7 +76,7 @@ import { ApiError } from "@/lib/server/api";
 import {
   BOT_HANDLES,
   CLOSED_MESSAGE,
-  LEAGUE_ASSET_SOURCE,
+  LEAGUE_ASSET_SOURCES,
   MIN_TRADE_MESSAGE,
   MIN_TRADE_USD,
   RANK_POINTS,
@@ -356,23 +356,23 @@ describe("placeTrade", () => {
     mocks.getPriceBySymbol.mockResolvedValue({ ...quote(TSLAX_ID, "TSLAx", null, "none"), stale: true });
     await expectApiError(placeTrade({ userId: "u_me", symbol: "TSLAx", side: "buy", qty: 1 }, MON), 400, /No price for TSLAx/);
     mocks.getPriceBySymbol.mockRejectedValue(new UnknownAssetError("FOOx"));
-    await expectApiError(placeTrade({ userId: "u_me", symbol: "FOOx", side: "buy", qty: 1 }, MON), 400, /Unknown xStock: FOOx/);
+    await expectApiError(placeTrade({ userId: "u_me", symbol: "FOOx", side: "buy", qty: 1 }, MON), 400, /Unknown xStock or pre-IPO token: FOOx/);
     expect(mocks.db.$transaction).not.toHaveBeenCalled();
   });
 
-  it("fences the quote to xStocks: a pre-IPO token symbol is refused with 400 and nothing is written", async () => {
-    expect(LEAGUE_ASSET_SOURCE).toBe("xstocks");
-    // Mirror lib/price: the registry knows SPACEX (PreStocks), so an unfenced lookup would quote it,
-    // and the xstocks fence reports it unknown. Any call without the fence fails the test.
-    mocks.getPriceBySymbol.mockImplementation(async (symbol: string, options?: { source?: string }) => {
-      if (options?.source !== "xstocks") throw new Error(`placeTrade must fence its quote to xstocks, got ${JSON.stringify(options)}`);
-      if (symbol.toUpperCase() === "SPACEX") throw new UnknownAssetError(symbol);
+  it("fences the quote to the allowlist (xStocks and PreStocks, 22 Sep): a symbol outside it is refused with 400 and nothing is written", async () => {
+    expect(LEAGUE_ASSET_SOURCES).toEqual(["xstocks", "prestocks"]);
+    // Mirror lib/price: a lookup fenced to the allowlist reports any other issuer's symbol unknown.
+    // Any call without the fence fails the test. tests/league-preipo.test.ts covers the pre-IPO fills.
+    mocks.getPriceBySymbol.mockImplementation(async (symbol: string, options?: { sources?: readonly string[] }) => {
+      if (!options?.sources || options.sources !== LEAGUE_ASSET_SOURCES) throw new Error(`placeTrade must fence its quote to the allowlist, got ${JSON.stringify(options)}`);
+      if (symbol.toUpperCase().startsWith("T-")) throw new UnknownAssetError(symbol);
       return quote(TSLAX_ID, "TSLAx", 100);
     });
 
-    for (const symbol of ["SPACEX", "spacex"]) {
-      await expectApiError(placeTrade({ userId: "u_me", symbol, side: "buy", qty: 1 }, MON), 400, new RegExp(`Unknown xStock: ${symbol}`));
-      expect(mocks.getPriceBySymbol).toHaveBeenLastCalledWith(symbol, { source: LEAGUE_ASSET_SOURCE });
+    for (const symbol of ["T-SPACEX", "t-openai"]) {
+      await expectApiError(placeTrade({ userId: "u_me", symbol, side: "buy", qty: 1 }, MON), 400, new RegExp(`Unknown xStock or pre-IPO token: ${symbol}`));
+      expect(mocks.getPriceBySymbol).toHaveBeenLastCalledWith(symbol, { sources: LEAGUE_ASSET_SOURCES });
     }
     expect(mocks.db.$transaction).not.toHaveBeenCalled();
     expect(mocks.db.leagueTrade.create).not.toHaveBeenCalled();
@@ -380,7 +380,7 @@ describe("placeTrade", () => {
 
     // An xStock still fills through the same fence.
     await placeTrade({ userId: "u_me", symbol: "TSLAx", side: "buy", qty: 1 }, MON);
-    expect(mocks.getPriceBySymbol).toHaveBeenLastCalledWith("TSLAx", { source: "xstocks" });
+    expect(mocks.getPriceBySymbol).toHaveBeenLastCalledWith("TSLAx", { sources: ["xstocks", "prestocks"] });
     expect(mocks.db.leagueTrade.create).toHaveBeenCalledTimes(1);
     expect(mocks.db.leagueTrade.create.mock.calls[0][0].data).toMatchObject({ symbol: "TSLAx" });
   });

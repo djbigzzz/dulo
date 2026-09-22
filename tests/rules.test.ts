@@ -131,17 +131,20 @@ describe("PlayRuleSchema — catalogue", () => {
       "paper_portfolio_five",
       "game_days",
       "five_predictions",
+      "first_preipo_trade",
+      "preipo_trio",
     ]);
   });
 
-  it("is the 21-row quest catalogue: 8 in-platform, 11 on-chain (9 xStocks + 2 PreStocks), 2 partner quests coming soon", () => {
-    expect(SEASON0_PLAYS).toHaveLength(21);
+  it("is the 23-row quest catalogue: 10 in-platform, 11 on-chain (9 xStocks + 2 PreStocks), 2 partner quests coming soon", () => {
+    expect(SEASON0_PLAYS).toHaveLength(23);
     const live = activePlays();
     const inPlatform = live.filter((p) => p.rule.type === "internal_event");
     const onChain = live.filter((p) => p.rule.type !== "internal_event");
-    expect(inPlatform).toHaveLength(8);
+    expect(inPlatform).toHaveLength(10);
     expect(onChain).toHaveLength(11);
-    expect(inPlatform.reduce((n, p) => n + p.points, 0)).toBe(850);
+    // 22 Sep: +50 First Pre-IPO Trade, +100 Pre-IPO Trio (850 -> 1,000).
+    expect(inPlatform.reduce((n, p) => n + p.points, 0)).toBe(1000);
     expect(onChain.reduce((n, p) => n + p.points, 0)).toBe(2950);
     // Every in-platform quest files under the hidden house Partner; every live on-chain quest under an
     // issuer Partner, and its fence (Play.assetSource) is that issuer's AssetSource name.
@@ -525,8 +528,10 @@ describe("Season 0 partners", () => {
       "paper_portfolio_five",
       "game_days",
       "five_predictions",
+      "first_preipo_trade",
+      "preipo_trio",
     ]);
-    expect(housePlays.map((p) => p.sortOrder)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(housePlays.map((p) => p.sortOrder)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
     for (const p of housePlays) expect(p.campaignTitle).toBe("Dulo games · Stocks Season");
     expect(playByKey("mirror")).toMatchObject({ partnerSlug: "xstocks", campaignTitle: "xStocks · Stocks Season" });
     expect(SEASON0_PLAYS.some((p) => p.key.startsWith("stocklana_builder"))).toBe(false);

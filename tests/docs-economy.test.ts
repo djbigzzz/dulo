@@ -123,8 +123,10 @@ describe("docs economy — starter points, virtual cash, points only", () => {
       expect(how, needle).toContain(needle);
     }
     // The approved totals, so a catalogue change is a deliberate docs change too (22 Sep: +100 for
-    // Pre-IPO Position and +150 for Held Through a Split, the two PreStocks quests; 2,800 -> 2,950).
-    expect(total(inPlatform)).toBe(850);
+    // Pre-IPO Position and +150 for Held Through a Split, the two PreStocks quests; 2,800 -> 2,950.
+    // Also 22 Sep: +50 for First Pre-IPO Trade and +100 for Pre-IPO Trio, the two pre-IPO
+    // paper-trade quests under the house partner; 850 -> 1,000).
+    expect(total(inPlatform)).toBe(1000);
     expect(total(onChain)).toBe(2950);
     expect(total(comingSoon)).toBe(500);
     const economy = pasteBlock("Full Description").body;
@@ -142,13 +144,14 @@ describe("docs economy — starter points, virtual cash, points only", () => {
 
   it("the judge path goes connect, welcome, predict, compete, quests, on the new routes", () => {
     const quick = section(README, "## Judge quick path");
-    const order = ["**Connect.**", "**Welcome.**", "`/predictions`", "`/competition`", "`/quests`"].map((s) => quick.indexOf(s));
+    // 22 Sep: the Pre-IPO step (`/prestocks`) sits between the competition and the quests board.
+    const order = ["**Connect.**", "**Welcome.**", "`/predictions`", "`/competition`", "`/prestocks`", "`/quests`"].map((s) => quick.indexOf(s));
     for (const i of order) expect(i).toBeGreaterThanOrEqual(0);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(quick).toContain('press "I\'ve done my swaps"');
 
     const judge = section(SUBMISSION, "## Judge path");
-    const subOrder = ["**Connect**", "**Welcome.**", "`/predictions`", "`/competition`", "`/quests`"].map((s) => judge.indexOf(s));
+    const subOrder = ["**Connect**", "**Welcome.**", "`/predictions`", "`/competition`", "`/prestocks`", "`/quests`"].map((s) => judge.indexOf(s));
     for (const i of subOrder) expect(i).toBeGreaterThanOrEqual(0);
     expect([...subOrder].sort((a, b) => a - b)).toEqual(subOrder);
 
@@ -202,9 +205,10 @@ describe("docs economy — the HANDOFF catalogue, economy and known limits", () 
       });
   }
 
-  it("§3.1 is the 21-row catalogue, row for row", () => {
+  it("§3.1 is the 23-row catalogue, row for row", () => {
     const rows = catalogueRows();
-    expect(SEASON0_PLAYS).toHaveLength(21);
+    // 22 Sep: 19 + the two PreStocks on-chain quests + the two pre-IPO paper-trade quests.
+    expect(SEASON0_PLAYS).toHaveLength(23);
     expect(rows.map((r) => r.key).sort()).toEqual(SEASON0_PLAYS.map((p) => p.key).sort());
     for (const play of SEASON0_PLAYS) {
       const row = rows.find((r) => r.key === play.key)!;
@@ -380,8 +384,11 @@ describe("docs economy — honest claims across every doc", () => {
     for (const needle of [
       "Play (code) -> a quest",
       '"Weekly competition (virtual cash)"',
-      "Nav order: Predictions · Competition · Quests · Copy a portfolio · Leaderboard.",
+      // 22 Sep: "Pre-IPO" (/prestocks) joined the desktop nav between Quests and Copy a portfolio; the mobile tabs did not change.
+      "Nav order: Predictions · Competition · Quests · Pre-IPO · Copy a portfolio · Leaderboard",
+      "Mobile tabs: Predict · Compete · Quests · Board · Profile",
       "/predictions, /competition, /quests, /copy",
+      "/prestocks",
       "(/plays, /rewards, /league, /paper-trading, /calls, /mirror)",
     ]) {
       expect(BRIEF, needle).toContain(needle);

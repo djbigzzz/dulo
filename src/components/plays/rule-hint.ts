@@ -1,5 +1,5 @@
 import type { PlayRule } from "@/lib/plays/rules";
-import { assetNounFor, type IssuerNoun } from "@/components/common/issuer";
+import { assetNounFor, isPreIpoSource, type IssuerNoun } from "@/components/common/issuer";
 
 /**
  * One-line hints for quest rules, shown under quest titles and in the proof drawer.
@@ -10,7 +10,8 @@ import { assetNounFor, type IssuerNoun } from "@/components/common/issuer";
  *
  * The asset noun follows the quest's issuer fence (Play.assetSource): "xStock" for the Season 0
  * default, "pre-IPO token" for a quest fenced to PreStocks ("Any pre-IPO token worth $5+ in your
- * wallet"). Competition hints stay xStocks: the competition is xStocks-only.
+ * wallet"). Competition hints follow it too since 22 Sep, when pre-IPO tokens joined the virtual-cash
+ * competition: a paper-trade quest fenced to PreStocks says "Make a paper trade in a pre-IPO token".
  *
  *   hold_any            -> "Any xStock worth $5+ in your wallet"
  *   diversified         -> "3+ xStocks across 2+ sectors in your wallet"
@@ -71,14 +72,16 @@ function worth(rule: PlayRule): string {
 
 type DistinctBy = "ref" | "symbol" | "day";
 
+const XSTOCK_NOUN: IssuerNoun = assetNounFor(null);
+
 /** The hint for a rule that counts distinct keys, or null to fall back to the plain count. */
-function distinctHint(event: string, count: number, distinctBy: DistinctBy): string | null {
+function distinctHint(event: string, count: number, distinctBy: DistinctBy, noun: IssuerNoun): string | null {
   switch (distinctBy) {
     case "ref":
       if (event === "call_placed") return `Make predictions on ${plural(count, "different question")}`;
       return null;
     case "symbol":
-      if (event === "league_trade") return `Make paper trades in ${plural(count, "different xStock")}`;
+      if (event === "league_trade") return `Make paper trades in ${plural(count, `different ${noun.singular}`, `different ${noun.plural}`)}`;
       return null;
     case "day":
       if (event === "game_action") return `Be active on ${plural(count, "different day")} (UTC)`;
@@ -88,14 +91,20 @@ function distinctHint(event: string, count: number, distinctBy: DistinctBy): str
   }
 }
 
-export function eventHint(event: string, count: number, distinctBy?: DistinctBy): string {
+/**
+ * `noun` is the quest's asset noun (xStocks by default). A paper-trade hint names it only when the
+ * quest is fenced to pre-IPO tokens: the plain competition hint stays "Make a paper trade".
+ */
+export function eventHint(event: string, count: number, distinctBy?: DistinctBy, noun: IssuerNoun = XSTOCK_NOUN, fenced = false): string {
   if (distinctBy) {
-    const hint = distinctHint(event, count, distinctBy);
+    const hint = distinctHint(event, count, distinctBy, noun);
     if (hint) return hint;
   }
   switch (event) {
-    case "league_trade":
-      return count === 1 ? "Make a paper trade" : `Make ${plural(count, "paper trade")}`;
+    case "league_trade": {
+      const scope = fenced ? (count === 1 ? ` in a ${noun.singular}` : ` in ${noun.plural}`) : "";
+      return count === 1 ? `Make a paper trade${scope}` : `Make ${plural(count, "paper trade")}${scope}`;
+    }
     case "call_placed":
       return count === 1 ? "Make a prediction" : `Make ${plural(count, "prediction")}`;
     case "game_action":
@@ -134,7 +143,7 @@ export function ruleToHint(rule: PlayRule, assetSource?: string | null): string 
     case "mirror_match":
       return `Wallet allocation within ${Math.round(rule.tolerance * 100)}% of a portfolio you copied`;
     case "internal_event":
-      return eventHint(rule.event, rule.count, rule.distinctBy);
+      return eventHint(rule.event, rule.count, rule.distinctBy, noun, isPreIpoSource(assetSource));
     case "multiplier_change":
       // A split or an issuer adjustment changes the number of tokens shown, never the holder's value.
       return `${lead(noun.singular)} held across an on-chain adjustment (same raw balance, new multiplier)`;

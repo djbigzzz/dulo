@@ -5,10 +5,13 @@
  * (ISO dates, plain numbers) so the route handlers hand it straight to ok().
  * The pure helpers (toQuoteView, toLeagueView, buildAccountView) take plain rows.
  */
-import type { PriceQuote } from "@/lib/core";
+import type { AssetInfo, PriceQuote } from "@/lib/core";
+import { mintFromAssetId } from "@/lib/core";
+import { getPreStocksMarks, prestocks, type PreStocksMark } from "@/lib/assets/prestocks";
 import { evaluateUser } from "@/lib/cron/evaluate";
 import { safeParsePlayRule } from "@/lib/plays/rules";
 import { getPricesBySymbols } from "@/lib/price";
+import { fetchJupiterPrices } from "@/lib/prices/jupiter";
 import { db } from "@/lib/server/db";
 import { pickDisplayWallet } from "@/lib/server/queries";
 import type {
@@ -17,6 +20,7 @@ import type {
   LeaguePositionView,
   LeagueResponse,
   LeagueSettledView,
+  LeagueSymbolView,
   LeagueSymbolsResponse,
   LeagueTradeResponse,
   LeagueTradeView,
@@ -257,19 +261,113 @@ export async function getLeagueOverview(userId: string | null, now: Date = new D
   return { ...base, league: toLeagueView(league, now), me, leaderboard, quotes: quotes.list, lastSettled };
 }
 
-/** The trade form's symbol list: the fixed tradable list plus whatever the caller holds, with quotes. */
+// ---------------------------------------------------------------------------
+// Pre-IPO symbols on the trade form (22 Sep)
+// ---------------------------------------------------------------------------
+
+/**
+ * The issuer marks and the Jupiter 24h changes for the pre-IPO symbols are read at most once
+ * per PRE_IPO_EXTRAS_TTL_MS per instance: the trade form refetches the symbols after every
+ * trade, and keyless Jupiter allows about 0.5 requests a second.
+ */
+export const PRE_IPO_EXTRAS_TTL_MS = 60_000;
+
+interface PreIpoExtras {
+  at: number;
+  /** Issuer marks by upper-cased symbol. */
+  marks: ReadonlyMap<string, PreStocksMark>;
+  /** Jupiter priceChange24h (percent) by upper-cased symbol; only finite numbers are kept. */
+  change24h: ReadonlyMap<string, number>;
+}
+
+let preIpoExtras: PreIpoExtras | null = null;
+
+/** Test hook: forget the cached marks and 24h changes. */
+export function resetLeagueSymbolsCache(): void {
+  preIpoExtras = null;
+}
+
+/** The pre-IPO catalogue as the issuer source serves it (static eight plus anything the live API added); empty on failure. */
+async function loadPreIpoAssets(): Promise<AssetInfo[]> {
+  try {
+    const list = await prestocks.listAssets();
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    console.warn(`${LOG_PREFIX} pre-IPO catalogue unavailable: ${e instanceof Error ? e.message : String(e)}`);
+    return [];
+  }
+}
+
+/** Marks and 24h changes for the pre-IPO assets, cached; never throws (an upstream failure reads as "none"). */
+async function loadPreIpoExtras(assets: readonly AssetInfo[], now: Date): Promise<PreIpoExtras> {
+  if (preIpoExtras && now.getTime() - preIpoExtras.at < PRE_IPO_EXTRAS_TTL_MS) return preIpoExtras;
+  const mintBySymbol = new Map<string, string>();
+  for (const a of assets) {
+    try {
+      mintBySymbol.set(a.symbol.toUpperCase(), mintFromAssetId(a.assetId));
+    } catch {
+      // A malformed id has no mint to ask Jupiter about; the quote itself still comes from lib/price.
+    }
+  }
+  const describe = (e: unknown) => (e instanceof Error ? e.message : String(e));
+  const [rawMarks, jupiter] = await Promise.all([
+    getPreStocksMarks().catch((e: unknown) => {
+      console.warn(`${LOG_PREFIX} issuer marks unavailable: ${describe(e)}`);
+      return new Map<string, PreStocksMark>();
+    }),
+    fetchJupiterPrices([...mintBySymbol.values()]).catch((e: unknown) => {
+      console.warn(`${LOG_PREFIX} Jupiter 24h change unavailable: ${describe(e)}`);
+      return new Map<string, { priceChange24h?: number }>();
+    }),
+  ]);
+  const marks = new Map<string, PreStocksMark>();
+  for (const [symbol, mark] of rawMarks) marks.set(symbol.toUpperCase(), mark);
+  const change24h = new Map<string, number>();
+  for (const [symbol, mint] of mintBySymbol) {
+    const change = jupiter.get(mint)?.priceChange24h;
+    if (typeof change === "number" && Number.isFinite(change)) change24h.set(symbol, change);
+  }
+  preIpoExtras = { at: now.getTime(), marks, change24h };
+  return preIpoExtras;
+}
+
+/**
+ * The trade form's symbol list: the fixed tradable xStocks, then every pre-IPO token the issuer
+ * source lists, then whatever else the caller holds, each with its lib/price quote and its
+ * source. A pre-IPO entry also carries the issuer's own mark (null when the issuer gave none)
+ * and Jupiter's 24h change (null when unavailable); an xStock entry carries neither key. The
+ * quote lookup is not fenced: a held symbol of either issuer is always quoted.
+ */
 export async function getLeagueSymbols(userId: string | null, now: Date = new Date()): Promise<LeagueSymbolsResponse> {
   const seasonId = await findCurrentSeasonId(now);
   const league = seasonId ? await ensureLeague(seasonId, now) : null;
-  const account =
+  const [account, preIpoAssets] = await Promise.all([
     league && userId
-      ? await db.leagueAccount.findUnique({ where: { leagueId_userId: { leagueId: league.id, userId } }, select: { cashUsd: true, positions: true } })
-      : null;
+      ? db.leagueAccount.findUnique({ where: { leagueId_userId: { leagueId: league.id, userId } }, select: { cashUsd: true, positions: true } })
+      : Promise.resolve(null),
+    loadPreIpoAssets(),
+  ]);
   const positions = account ? parsePositions(account.positions) : {};
   const heldByAssetId = new Map(Object.entries(positions).map(([assetId, p]) => [assetId, p.qty]));
-  const quotes = await loadQuotes(Object.values(positions).map((p) => p.symbol));
+  const preIpoSymbols = new Set(preIpoAssets.map((a) => a.symbol.toUpperCase()));
+  const [quotes, extras] = await Promise.all([
+    loadQuotes([...preIpoAssets.map((a) => a.symbol), ...Object.values(positions).map((p) => p.symbol)]),
+    loadPreIpoExtras(preIpoAssets, now),
+  ]);
+  const symbols: LeagueSymbolView[] = quotes.list.map((q) => {
+    const key = q.symbol.toUpperCase();
+    const base = { symbol: q.symbol, assetId: q.assetId, quote: q, held: heldByAssetId.get(q.assetId) ?? 0 };
+    if (!preIpoSymbols.has(key)) return { ...base, source: "xstocks" };
+    const mark = extras.marks.get(key);
+    return {
+      ...base,
+      source: "prestocks",
+      issuerMark: mark && mark.markPrice !== null && mark.markPrice > 0 ? { price: mark.markPrice, publishedAt: mark.fetchedAt.toISOString() } : null,
+      change24h: extras.change24h.get(key) ?? null,
+    };
+  });
   return {
-    symbols: quotes.list.map((q) => ({ symbol: q.symbol, assetId: q.assetId, quote: q, held: heldByAssetId.get(q.assetId) ?? 0 })),
+    symbols,
     open: league ? isTradingOpen(league, now) : false,
     cashUsd: account ? toNumber(account.cashUsd) : null,
     spread: SPREAD,

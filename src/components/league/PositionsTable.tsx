@@ -13,20 +13,15 @@ import { LEAGUE_PANEL } from "@/components/league/LeagueLeaderboard";
 
 export interface PositionsTableProps {
   positions: LeaguePositionView[];
+  /** The empty state's sentence. The /prestocks page names pre-IPO tokens instead of xStocks. */
+  emptyDescription?: string;
   className?: string;
 }
 
 /** Symbol / Qty / Avg / Last (price chip) / Value / P&L. The Table wraps itself in overflow-x-auto. */
-export function PositionsTable({ positions, className }: PositionsTableProps) {
+export function PositionsTable({ positions, emptyDescription = "Open Paper trade and paper-buy any xStock with your virtual cash.", className }: PositionsTableProps) {
   if (positions.length === 0) {
-    return (
-      <EmptyState
-        icon={<Briefcase aria-hidden />}
-        title="No positions yet."
-        description="Open Paper trade and paper-buy any xStock with your virtual cash."
-        className={className}
-      />
-    );
+    return <EmptyState icon={<Briefcase aria-hidden />} title="No positions yet." description={emptyDescription} className={className} />;
   }
   return (
     <div className={cn(LEAGUE_PANEL, className)}>

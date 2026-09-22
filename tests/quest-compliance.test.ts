@@ -100,7 +100,7 @@ describe("quest compliance — every quest", () => {
 
   it("in-platform quests say virtual cash or points, never real money at risk", () => {
     const inPlatform = SEASON0_PLAYS.filter((p) => p.rule.type === "internal_event");
-    expect(inPlatform).toHaveLength(8);
+    expect(inPlatform).toHaveLength(10);
     for (const play of inPlatform) {
       expect(play.desc, play.key).not.toMatch(PURCHASE_WORDS);
       if (play.rule.type === "internal_event" && play.rule.event === "league_trade") {
@@ -110,13 +110,13 @@ describe("quest compliance — every quest", () => {
     }
   });
 
-  it("live points: in-platform 850, on-chain 2,950 (2,700 xStocks + 250 PreStocks)", () => {
+  it("live points: in-platform 1,000 (850 + the two pre-IPO paper-trade quests, 22 Sep), on-chain 2,950 (2,700 xStocks + 250 PreStocks)", () => {
     const live = activePlays();
     const total = (kind: "in-platform" | "on-chain") =>
       live.filter((p) => questKind({ rule: p.rule, comingSoon: p.comingSoon === true }) === kind).reduce((n, p) => n + p.points, 0);
-    expect(total("in-platform")).toBe(850);
+    expect(total("in-platform")).toBe(1000);
     expect(total("on-chain")).toBe(2950);
-    expect(live.reduce((n, p) => n + p.points, 0)).toBe(3800);
+    expect(live.reduce((n, p) => n + p.points, 0)).toBe(3950);
   });
 
   it("the only quests coming soon are the two partner quests, seeded inactive with no asset to read yet", () => {

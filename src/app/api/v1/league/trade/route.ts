@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 15;
 
 const Body = z.object({
-  /** xStocks symbol, e.g. "TSLAx". */
+  /** An xStocks symbol ("TSLAx") or, since 22 Sep, a pre-IPO token symbol ("SPACEX"): LEAGUE_ASSET_SOURCES. */
   symbol: z.string().trim().min(1).max(16),
   side: z.enum(["buy", "sell"]),
   /** Positive, up to 6 decimals (rounded server-side). */

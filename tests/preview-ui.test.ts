@@ -43,7 +43,7 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(flat).toContain("The entertainment layer for");
     expect(landing).toContain("Predict. Compete. Complete on-chain quests.");
     expect(flat).toContain(
-      "800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Dulo gives them three games on one Season leaderboard: Yes or No on Friday&apos;s close, a weekly competition with virtual cash at real xStock prices, and quests you complete in Dulo or on-chain.",
+      "800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Dulo gives them three games on one Season leaderboard: Yes or No on Friday&apos;s close, a weekly competition with virtual cash at real xStock and pre-IPO prices, and quests you complete in Dulo or on-chain.",
     );
     expect(landing).not.toContain("Try the League");
     expect(landing).not.toContain("activity is");
@@ -71,6 +71,9 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     const landing = repoFile("src/app/page.tsx");
     const hero = landing.slice(landing.indexOf('aria-labelledby="hero-title"'), landing.indexOf("<GameTiles"));
     expect(hero).toContain("<MarketSessionChip />");
+    // The one pre-IPO hook on the landing (22 Sep) sits beside the chip, at the trust line's size; nothing else moved.
+    expect(hero).toMatch(/<MarketSessionChip \/>[\s\S]{0,400}href="\/prestocks"[\s\S]{0,300}Pre-IPO tokens trade 24\/7/);
+    expect(hero.indexOf('href="/prestocks"')).toBeLessThan(hero.indexOf("TRUST.map("));
     expect(hero).toContain("TRUST.map(");
     expect(hero).toContain("{COMPLIANCE_LINE}");
     expect(landing).toMatch(/import \{[^}]*\bCOMPLIANCE_LINE\b[^}]*\} from "@\/components\/common\/compliance"/);
@@ -113,7 +116,7 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(landing).not.toContain("PLAY_KINDS");
     for (const chip of ['"Hold"', '"Diversify"', '"DCA"', '"Earnings"']) expect(landing).not.toContain(chip);
     expect(landing).not.toMatch(/\b(paid|pays?|earn\w*) (points )?(for|by) (holding|buying)/i);
-    expect(landing).toContain("A fresh week every Monday with virtual cash at real xStock prices. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.");
+    expect(landing).toContain("A fresh week every Monday with virtual cash at real xStock and pre-IPO prices. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.");
     expect(landing).toContain("In-platform quests with points and virtual cash, and on-chain quests verified from your wallet.");
     expect(landing).toContain("See a leader's allocation and open the same legs in Jupiter from your own wallet.");
     // Closing CTA: Connect plus "Make a prediction".

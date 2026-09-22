@@ -154,11 +154,20 @@ export async function getPrice(assetId: AssetId): Promise<PriceQuote> {
 
 /**
  * Options for the symbol lookups. `source` fences the lookup to one AssetSource by name
- * ("xstocks"): a symbol another source knows (a PreStocks pre-IPO token, say) then counts as
- * unknown, exactly as if no source knew it. The weekly competition uses this to stay xStocks-only.
+ * ("xstocks"); `sources` to an allowlist of names (the weekly competition passes its
+ * LEAGUE_ASSET_SOURCES, xStocks and PreStocks). The fence is the union of both: a symbol only a
+ * source outside it knows counts as unknown, exactly as if no source knew it. Blank names are
+ * ignored, and no names at all means no fence.
  */
 export interface PriceSymbolOptions {
   source?: string;
+  sources?: readonly string[];
+}
+
+/** The set of source names a lookup is fenced to, or null for no fence. */
+function fenceOf(options: PriceSymbolOptions): ReadonlySet<string> | null {
+  const names = [options.source ?? "", ...(options.sources ?? [])].map((s) => (typeof s === "string" ? s.trim() : "")).filter(Boolean);
+  return names.length > 0 ? new Set(names) : null;
 }
 
 /** Quote by symbol (e.g. "TSLAx", "SPACEX") from whichever AssetSource knows it. Throws UnknownAssetError when none does. */
@@ -168,7 +177,7 @@ export async function getPriceBySymbol(symbol: string, options: PriceSymbolOptio
   return quotes[0];
 }
 
-/** Batch quote by symbol. Unknown symbols (including those outside `options.source`) are reported, not thrown. */
+/** Batch quote by symbol. Unknown symbols (including those outside the `source` / `sources` fence) are reported, not thrown. */
 export async function getPricesBySymbols(
   symbols: readonly string[],
   options: PriceSymbolOptions = {},
@@ -176,11 +185,11 @@ export async function getPricesBySymbols(
   const unique = [...new Set(symbols.map((s) => s.trim()).filter(Boolean))];
   const unknown: string[] = [];
   const idBySymbol = new Map<string, AssetId>();
-  const fence = typeof options.source === "string" && options.source.trim() ? options.source.trim() : null;
+  const fence = fenceOf(options);
   await Promise.all(
     unique.map(async (sym) => {
       const hit = await safeResolveAssetBySymbol(sym);
-      if (hit && (fence === null || hit.source === fence)) idBySymbol.set(sym, hit.info.assetId);
+      if (hit && (fence === null || fence.has(hit.source))) idBySymbol.set(sym, hit.info.assetId);
       else unknown.push(sym);
     }),
   );

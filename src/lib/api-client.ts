@@ -607,12 +607,32 @@ export interface LeagueResponse {
   spread: number;
 }
 
+/** The issuer a competition symbol belongs to (lib/assets/registry names). */
+export type LeagueSymbolSource = "xstocks" | "prestocks";
+
+/**
+ * The issuer's own published mark for a pre-IPO token. It is a second number beside the DEX
+ * quote, shown as what the issuer publishes; the UI never frames one against the other.
+ */
+export interface LeagueIssuerMarkView {
+  /** USD, as the issuer publishes it. */
+  price: number;
+  /** ISO time the mark was read from the issuer. */
+  publishedAt: string;
+}
+
 export interface LeagueSymbolView {
   symbol: string;
   assetId: string;
   quote: PriceQuoteView;
   /** Quantity the caller holds (0 when none / signed out). */
   held: number;
+  /** Which issuer quotes this symbol (22 Sep). Absent on an older payload means "xstocks". */
+  source?: LeagueSymbolSource;
+  /** Pre-IPO entries only: the issuer mark, null when the issuer gave none. Absent on an xStock. */
+  issuerMark?: LeagueIssuerMarkView | null;
+  /** Pre-IPO entries only: Jupiter's 24h price change in percent, null when unavailable. Absent on an xStock. */
+  change24h?: number | null;
 }
 
 export interface LeagueSymbolsResponse {

@@ -142,12 +142,19 @@ export interface PlayRowInput {
   sortOrder: number;
   /** false = listed but not verifiable yet ("coming soon"). Defaults to true when absent. */
   isActive?: boolean;
+  /** Play.assetSource, the issuer the quest is fenced to ("xstocks", "prestocks"); sent to the UI when present (22 Sep). */
+  assetSource?: string | null;
   campaign: {
     id: string;
     title: string;
     startsAt: Date;
     partner: { slug: string; name: string; logoUrl: string | null; blurb: string; links: unknown; sortOrder: number };
   };
+}
+
+/** `{ assetSource }` when the row names an issuer, else nothing: older callers and payloads keep their exact shape. */
+function assetSourceField(row: { assetSource?: string | null }): { assetSource?: string } {
+  return typeof row.assetSource === "string" && row.assetSource.trim() ? { assetSource: row.assetSource.trim() } : {};
 }
 
 export interface ProgressRowInput {
@@ -229,6 +236,7 @@ export function toPlayView(row: PlayRowInput, progress: ProgressRowInput | null,
     proof: signedIn && progress ? (progress.proof ?? null) : null,
     completions,
     comingSoon,
+    ...assetSourceField(row),
   };
 }
 
@@ -545,6 +553,7 @@ export async function getPartner(slug: string): Promise<PartnerDetail | null> {
         rule: toPlayRule(p.rule),
         completions: done,
         comingSoon: !p.isActive,
+        ...assetSourceField(p),
       };
     }),
   }));

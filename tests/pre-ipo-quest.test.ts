@@ -114,13 +114,16 @@ describe("Pre-IPO Position: the one PreStocks quest", () => {
     expect(activePlays().map((p) => p.key)).toContain("pre_ipo_position");
   });
 
-  it("shares the prestocks fence with Held Through a Split only; every other row keeps the Season 0 default", () => {
+  it("shares the prestocks fence with Held Through a Split and the two pre-IPO paper-trade quests only; every other row keeps the Season 0 default", () => {
     const split = playByKey("held_through_split")!;
     expect(split.assetSource).toBe(PRESTOCKS_ASSET_SOURCE);
     expect(split.partnerSlug).toBe("prestocks");
     expect(split.sortOrder).toBe(play.sortOrder + 1);
+    // 22 Sep: the in-platform pre-IPO quests carry the fence for their noun (hint, pill, proof labels); the
+    // engine ignores it for events, so it cannot change what they count (tests/internal-event-symbols.test.ts).
+    for (const key of ["first_preipo_trade", "preipo_trio"]) expect(playByKey(key)!.assetSource, key).toBe(PRESTOCKS_ASSET_SOURCE);
     for (const p of SEASON0_PLAYS) {
-      if (p.key === "pre_ipo_position" || p.key === "held_through_split") continue;
+      if (["pre_ipo_position", "held_through_split", "first_preipo_trade", "preipo_trio"].includes(p.key)) continue;
       expect(p.assetSource, p.key).toBeUndefined();
       expect(playAssetSource(p), p.key).toBe(SEASON0_ASSET_SOURCE);
     }

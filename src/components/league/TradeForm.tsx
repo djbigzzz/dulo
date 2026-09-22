@@ -4,16 +4,18 @@ import * as React from "react";
 import { ChevronDown, Loader2Icon, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
-import { errorMessage, leagueApi, type LeagueSymbolView, type LeagueTradeSide, type LeagueView } from "@/lib/api-client";
+import { errorMessage, leagueApi, type LeagueSymbolSource, type LeagueSymbolView, type LeagueTradeSide, type LeagueView } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
 import { PriceChip } from "@/components/common/PriceChip";
 import { useApiQuery } from "@/components/common/useApiQuery";
 import { formatUsd } from "@/components/common/format";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { LEAGUE_MIN_TRADE_USD, WEEKEND_TRADES_COPY, formatQty, isBelowMinTrade, isPreWeek } from "@/components/league/format";
 import { completedPlayTitle, type LeagueTradeResult } from "@/components/league/scout";
+import { symbolSource } from "@/components/league/symbol-source";
 
 export interface TradeFormProps {
   league: LeagueView | null;
@@ -24,7 +26,32 @@ export interface TradeFormProps {
   refreshKey?: string;
   /** Called after a fill was accepted (the page refetches the overview and Scout progress). */
   onPlaced?: (result: LeagueTradeResult) => void;
+  /**
+   * Issuers to list (22 Sep): the /prestocks page passes ["prestocks"] so its form offers pre-IPO
+   * tokens only. Omitted, every symbol the endpoint lists is offered, grouped by issuer.
+   */
+  sources?: readonly LeagueSymbolSource[];
+  /** The label over the select. Default "Symbol" when more than one issuer is listed, else the issuer's noun. */
+  symbolLabel?: string;
   className?: string;
+}
+
+/** The select's group headings, one per issuer, in the order the groups are shown. */
+export const SYMBOL_GROUP_LABEL: Readonly<Record<LeagueSymbolSource, string>> = Object.freeze({
+  xstocks: "xStocks",
+  prestocks: "Pre-IPO tokens",
+});
+
+const GROUP_ORDER: readonly LeagueSymbolSource[] = ["xstocks", "prestocks"];
+
+/**
+ * The listed symbols split by issuer, in GROUP_ORDER, empty groups dropped. Exported for tests:
+ * the competition form shows an xStocks group and a Pre-IPO tokens group, the /prestocks form one group.
+ */
+export function groupSymbols(list: readonly LeagueSymbolView[]): { source: LeagueSymbolSource; label: string; symbols: LeagueSymbolView[] }[] {
+  return GROUP_ORDER.map((source) => ({ source, label: SYMBOL_GROUP_LABEL[source], symbols: list.filter((s) => symbolSource(s) === source) })).filter(
+    (g) => g.symbols.length > 0,
+  );
 }
 
 const QTY_DECIMALS = 6;
@@ -55,26 +82,33 @@ const LABEL = "text-xs font-medium tracking-[0.14em] text-muted-foreground upper
  * toasts any Play the trade completed ("Quest complete: First Paper Trades · +50 pts"). The page can render two of these
  * (desktop panel + mobile sheet), so every id comes from useId.
  */
-export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "", onPlaced, className }: TradeFormProps) {
+export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "", onPlaced, sources, symbolLabel, className }: TradeFormProps) {
   const symbols = useApiQuery((signal) => leagueApi.symbols({ signal }), `${refreshKey}:${signedIn ? "in" : "out"}`, { refetchOnFocus: false });
-  const list = React.useMemo(() => symbols.data?.symbols ?? [], [symbols.data]);
+  const sourceKey = sources ? sources.join(",") : "";
+  const list = React.useMemo(() => {
+    const all = symbols.data?.symbols ?? [];
+    if (!sourceKey) return all;
+    const allowed = new Set(sourceKey.split(","));
+    return all.filter((s) => allowed.has(symbolSource(s)));
+  }, [symbols.data, sourceKey]);
+  const groups = React.useMemo(() => groupSymbols(list), [list]);
+  const label = symbolLabel ?? (groups.length === 1 ? (groups[0].source === "prestocks" ? "Pre-IPO token" : "xStock") : "Symbol");
 
   const uid = React.useId();
   const symbolId = `${uid}-symbol`;
   const qtyId = `${uid}-qty`;
   const qtyHintId = `${uid}-qty-hint`;
 
-  const [symbol, setSymbol] = React.useState<string>("");
+  const [chosen, setSymbol] = React.useState<string>("");
   const [side, setSide] = React.useState<LeagueTradeSide>("buy");
   const [qtyText, setQtyText] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Default to the first symbol once the list is in; keep the choice across refetches.
-  React.useEffect(() => {
-    if (!symbol && list.length > 0) setSymbol(list[0].symbol);
-  }, [list, symbol]);
+  // The first listed symbol until the player picks one; the pick survives refetches while it stays listed.
+  const symbol = list.some((s) => s.symbol === chosen) ? chosen : (list[0]?.symbol ?? "");
 
   const selected: LeagueSymbolView | null = list.find((s) => s.symbol === symbol) ?? null;
+  const selectedPreIpo = selected !== null && symbolSource(selected) === "prestocks";
   const spread = symbols.data?.spread ?? 0.001;
   const cash = symbols.data?.cashUsd ?? null;
   const open = league?.open ?? false;
@@ -128,17 +162,21 @@ export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "",
     <form onSubmit={submit} className={cn("flex flex-col gap-4", className)} aria-label="Place a paper trade">
       <div className="flex flex-col gap-2">
         <label htmlFor={symbolId} className={LABEL}>
-          xStock
+          {label}
         </label>
         <div className="relative">
           <select id={symbolId} className={selectClass} value={symbol} onChange={(e) => setSymbol(e.target.value)} disabled={list.length === 0}>
             {list.length === 0 ? <option value="">No symbols available</option> : null}
-            {list.map((s) => (
-              <option key={s.assetId} value={s.symbol}>
-                {s.symbol}
-                {s.held > 0 ? ` · held ${formatQty(s.held)}` : ""}
-              </option>
-            ))}
+            {/* One issuer: a flat list. Two: an optgroup per issuer, so a pre-IPO token is never mistaken for an xStock. */}
+            {groups.length === 1
+              ? groups[0].symbols.map((s) => <SymbolOption key={s.assetId} s={s} />)
+              : groups.map((g) => (
+                  <optgroup key={g.source} label={g.label}>
+                    {g.symbols.map((s) => (
+                      <SymbolOption key={s.assetId} s={s} />
+                    ))}
+                  </optgroup>
+                ))}
           </select>
           <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         </div>
@@ -232,8 +270,23 @@ export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "",
         )}
         {weekend ? <p className="text-center text-xs text-muted-foreground">{WEEKEND_TRADES_COPY}.</p> : null}
         {symbols.error ? <p className="text-xs text-rose-400">{symbols.error}</p> : null}
+        {/* A pre-IPO token on screen carries the pre-IPO line; the standard line sits in the footer of every page. */}
+        {selectedPreIpo ? (
+          <p data-slot="pre-ipo-compliance" className="text-xs leading-relaxed text-pretty text-muted-foreground">
+            {PRE_IPO_COMPLIANCE_LINE}
+          </p>
+        ) : null}
       </div>
     </form>
+  );
+}
+
+function SymbolOption({ s }: { s: LeagueSymbolView }) {
+  return (
+    <option value={s.symbol}>
+      {s.symbol}
+      {s.held > 0 ? ` · held ${formatQty(s.held)}` : ""}
+    </option>
   );
 }
 

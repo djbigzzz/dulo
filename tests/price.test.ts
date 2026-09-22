@@ -519,6 +519,27 @@ describe("symbols", () => {
     expect(open.unknown).toEqual([]);
     expect(open.quotes.map((q) => q.symbol)).toEqual(["TSLAx", "SPACEX"]);
   });
+
+  it("an allowlist of sources fences to their union: the competition's xstocks + prestocks quotes both, and nothing else", async () => {
+    vi.setSystemTime(CLOSED_NOW);
+    jupGet.mockResolvedValue(
+      quotes([
+        [TSLAX_ID, 249.9, CLOSED_NOW],
+        [SPACEX_ID, 310.5, CLOSED_NOW],
+      ]),
+    );
+    const both = await getPricesBySymbols(["TSLAx", "SPACEX", "NOPEx"], { sources: ["xstocks", "prestocks"] });
+    expect(both.unknown).toEqual(["NOPEx"]);
+    expect(both.quotes.map((q) => q.symbol)).toEqual(["TSLAx", "SPACEX"]);
+    expect((await getPriceBySymbol("spacex", { sources: ["xstocks", "prestocks"] })).symbol).toBe("SPACEX");
+    // One entry behaves exactly like `source`; a list of sources nobody registered fences everything out.
+    await expect(getPriceBySymbol("SPACEX", { sources: ["xstocks"] })).rejects.toBeInstanceOf(UnknownAssetError);
+    await expect(getPriceBySymbol("TSLAx", { sources: ["tessera"] })).rejects.toBeInstanceOf(UnknownAssetError);
+    // `source` and `sources` combine; blanks are ignored; an empty list is no fence.
+    expect((await getPricesBySymbols(["TSLAx", "SPACEX"], { source: "xstocks", sources: ["prestocks"] })).quotes.map((q) => q.symbol)).toEqual(["TSLAx", "SPACEX"]);
+    expect((await getPricesBySymbols(["TSLAx", "SPACEX"], { sources: [" ", ""] })).quotes.map((q) => q.symbol)).toEqual(["TSLAx", "SPACEX"]);
+    expect((await getPricesBySymbols(["TSLAx", "SPACEX"], { sources: [] })).unknown).toEqual([]);
+  });
 });
 
 describe("a pre-IPO token never reaches Pyth", () => {

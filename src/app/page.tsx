@@ -9,6 +9,7 @@ import {
   EyeIcon,
   GiftIcon,
   KeyRoundIcon,
+  RocketIcon,
   ScaleIcon,
   ShieldCheckIcon,
   TargetIcon,
@@ -66,7 +67,7 @@ const GAMES: Tile[] = [
     title: "Competition",
     icon: TrophyIcon,
     stat: `${VIRTUAL_CASH} virtual cash`,
-    body: `A fresh week every Monday with virtual cash at real xStock prices. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.`,
+    body: `A fresh week every Monday with virtual cash at real xStock and pre-IPO prices. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.`,
   },
   {
     href: "/quests",
@@ -211,7 +212,7 @@ export default function Home() {
             <p className="max-w-2xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg lg:text-base">
               800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Dulo gives them three
               games on one Season leaderboard: Yes or No on Friday&apos;s close, a weekly competition with virtual cash at real
-              xStock prices, and quests you complete in Dulo or on-chain.
+              xStock and pre-IPO prices, and quests you complete in Dulo or on-chain.
             </p>
             {/* The welcome offer, stated before sign-in. */}
             <p className="flex max-w-xl items-start gap-2.5 rounded-xl border border-gold/20 bg-gold/[0.06] px-3.5 py-2 text-sm leading-snug lg:mt-1 lg:py-1.5 text-pretty text-foreground/90 shadow-[inset_0_1px_0_rgb(255_245_230/0.05)] sm:w-fit">
@@ -233,6 +234,15 @@ export default function Home() {
           <div className="flex min-w-0 flex-col gap-2 lg:col-span-2 lg:row-start-2">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               <MarketSessionChip />
+              {/* The one pre-IPO hook on the landing (22 Sep): the same size as the trust line, beside the session chip. */}
+              <Link
+                href="/prestocks"
+                className="group/preipo flex items-center gap-1.5 text-xs text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
+              >
+                <RocketIcon className="size-3.5 text-gold/80" aria-hidden />
+                Pre-IPO tokens trade 24/7
+                <ArrowRightIcon className="size-3 transition-transform duration-300 group-hover/preipo:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+              </Link>
               <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
                 {TRUST.map(({ icon: Icon, label, sr }) => (
                   <li key={label} className="flex items-center gap-1.5">

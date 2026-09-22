@@ -4,11 +4,12 @@ import { HOUSE_PARTNER_SLUG, SEASON0_PARTNERS, partnerBySlug } from "./partners"
 /**
  * Season 0 quest catalogue (docs/HANDOFF.md §3.1). Code name: Play.
  *
- * 21 rows: 8 in-platform quests (internal_event rules, completed with starter points and
- * virtual cash), 11 on-chain quests (verified from the user's wallet snapshots; each description
- * is the wallet state to reach, never an instruction to buy: 9 fenced to xStocks and, since
- * 22 Sep, 2 fenced to PreStocks pre-IPO tokens) and 2 partner quests marked coming soon.
- * Live totals: 850 in-platform points, 2,950 on-chain points.
+ * 23 rows: 10 in-platform quests (internal_event rules, completed with starter points and
+ * virtual cash; since 22 Sep two of them count paper trades in pre-IPO tokens only), 11 on-chain
+ * quests (verified from the user's wallet snapshots; each description is the wallet state to
+ * reach, never an instruction to buy: 9 fenced to xStocks and, since 22 Sep, 2 fenced to
+ * PreStocks pre-IPO tokens) and 2 partner quests marked coming soon.
+ * Live totals: 1,000 in-platform points, 2,950 on-chain points.
  *
  * This is the source of truth the seed writes to the Play table. Rules are pure JSON
  * (PlayRuleSchema); presentation flags such as `comingSoon` live on the catalogue entry,
@@ -63,6 +64,13 @@ const XSTOCKS = campaignTitleFor("xstocks");
 const PRESTOCKS = campaignTitleFor("prestocks");
 /** The AssetSource name of the second issuer (lib/assets/registry); its quest is fenced to it. */
 export const PRESTOCKS_ASSET_SOURCE = "prestocks";
+/**
+ * The eight PreStocks pre-IPO token symbols (lib/assets/prestocks PRESTOCKS_STATIC, 22 Sep 2026),
+ * the symbol set the two pre-IPO paper-trade quests count. Listed here, not imported, so this
+ * file stays client-safe; tests/internal-event-symbols.test.ts pins it equal to the static
+ * catalogue, so the two cannot drift.
+ */
+export const PRE_IPO_SYMBOLS: readonly string[] = Object.freeze(["ANDURIL", "ANTHROPIC", "FIGUREAI", "KALSHI", "NEURALINK", "OPENAI", "POLYMARKET", "SPACEX"]);
 /** In-platform quests (competition, predictions) sit under the hidden house Partner, not under a listed one. */
 const DULO_GAMES = campaignTitleFor(HOUSE_PARTNER_SLUG);
 
@@ -284,6 +292,32 @@ export const SEASON0_PLAYS: readonly CataloguePlay[] = [
     points: 150,
     rule: { type: "internal_event", event: "call_placed", count: 5, distinctBy: "ref" },
     sortOrder: 7,
+  },
+  // Pre-IPO tokens trade in the same virtual-cash competition since 22 Sep. These two count only
+  // league_trade events whose symbol is one of the eight (assetSymbols on an internal_event rule),
+  // and carry the PreStocks fence so every hint, pill and proof label says "pre-IPO token", never
+  // "stock". Points only, no cash value, and never an instruction to buy a real asset.
+  {
+    key: "first_preipo_trade",
+    partnerSlug: HOUSE_PARTNER_SLUG,
+    campaignTitle: DULO_GAMES,
+    title: "First Pre-IPO Trade",
+    desc: "Place your first paper trade in a pre-IPO token with virtual cash. Points only, never real money.",
+    points: 50,
+    rule: { type: "internal_event", event: "league_trade", count: 1, assetSymbols: [...PRE_IPO_SYMBOLS] },
+    sortOrder: 8,
+    assetSource: PRESTOCKS_ASSET_SOURCE,
+  },
+  {
+    key: "preipo_trio",
+    partnerSlug: HOUSE_PARTNER_SLUG,
+    campaignTitle: DULO_GAMES,
+    title: "Pre-IPO Trio",
+    desc: "Place paper trades in three different pre-IPO tokens with virtual cash. Trades from any week count, and sells count too.",
+    points: 100,
+    rule: { type: "internal_event", event: "league_trade", count: 3, distinctBy: "symbol", assetSymbols: [...PRE_IPO_SYMBOLS] },
+    sortOrder: 9,
+    assetSource: PRESTOCKS_ASSET_SOURCE,
   },
 
   // --- Partner on-chain quests, coming soon ----------------------------------
