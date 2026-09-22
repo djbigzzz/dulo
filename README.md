@@ -453,7 +453,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 **[docs/DEPLOY.md](docs/DEPLOY.md) is the short version: a free Vercel + Neon deploy in about twenty minutes, with one command for the database.** What follows is the paid, long-term setup.
 
-1. **Scheduling.** `vercel.json` pins functions to `iad1` and schedules `/api/cron/tick` once a day at 20:10 UTC, five minutes after the Friday settle, because Hobby refuses any cron that runs more than once a day. `.github/workflows/tick.yml` carries the real 5-minute cadence for free once `TICK_PINGER_ENABLED` is set, and the daily Vercel run is the backstop if it is ever down. Both send `CRON_SECRET` as the Bearer header, and the tick route allows up to 300 seconds. On Pro, raise the `vercel.json` schedule to `*/5 * * * *` and the pinger becomes redundant.
+1. **Scheduling.** `vercel.json` pins functions to `iad1` and schedules `/api/cron/tick` once a day at 21:10 UTC, after the Friday settle in both summer and winter time, because Hobby refuses any cron that runs more than once a day. `.github/workflows/tick.yml` carries the real 5-minute cadence for free once `TICK_PINGER_ENABLED` is set, and the daily Vercel run is the backstop if it is ever down. Both send `CRON_SECRET` as the Bearer header, and the tick route allows up to 300 seconds. On Pro, raise the `vercel.json` schedule to `*/5 * * * *` and the pinger becomes redundant.
 2. **Supabase in us-east-1**, next to `iad1`:
    - `DATABASE_URL` is the transaction pooler: `postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&connect_timeout=5`
    - `DIRECT_URL` is the session pooler on port 5432 of the same host, not `db.<ref>.supabase.co`.

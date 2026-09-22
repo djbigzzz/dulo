@@ -1,6 +1,6 @@
 {
   "regions": ["iad1"],
   "crons": [
-    { "path": "/api/cron/tick", "schedule": "10 20 * * *" }
+    { "path": "/api/cron/tick", "schedule": "10 21 * * *" }
   ]
 }

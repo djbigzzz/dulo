@@ -46,12 +46,14 @@ describe("vercel.json", () => {
    * The deployment is on Hobby, which refuses any cron that runs more than once a day, so Vercel
    * keeps a single daily tick and .github/workflows/tick.yml carries the 5-minute cadence.
    *
-   * 20:10 UTC is not arbitrary: Friday's markets settle at 20:05 UTC, so the daily run lands five
-   * minutes after that, inside the void window, and settles the week even if the pinger is down.
+   * 21:10 UTC is chosen for the whole year, not just September: the Friday settle is 20:05 UTC
+   * while EDT holds and 21:05 UTC after clocks fall back, so 21:10 lands five minutes after settle in
+   * winter and an hour after it in summer -- both inside the 24-hour void window, so the week settles
+   * even if the pinger is down. 20:10 would have fired BEFORE the winter settle.
    */
   it("keeps one daily tick that lands just after the Friday settle (Hobby: the Actions pinger runs every 5 min)", () => {
     const cfg = JSON.parse(read("vercel.json")) as { crons: { path: string; schedule: string }[] };
-    expect(cfg.crons).toEqual([{ path: "/api/cron/tick", schedule: "10 20 * * *" }]);
+    expect(cfg.crons).toEqual([{ path: "/api/cron/tick", schedule: "10 21 * * *" }]);
   });
 
   it("pins functions to iad1, next to the us-east-1 Supabase", () => {
