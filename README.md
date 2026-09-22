@@ -23,7 +23,7 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 |---|---|
 | **Live app** | **https://dulo-iota.vercel.app** |
 | **Pitch video** | _recording this week_ |
-| **Technical video** | _recording this week_ |
+| **Technical video** | [Platform walkthrough on Loom](https://www.loom.com/share/0cb82389e1214dddb84027beecd1d008) (4:59) |
 | **Hackathon** | [Stocklana](https://hackathons.solana.com/hackathons/stocklana) — submissions close Fri 25 Sep 2026, 16:00 ET, and judging runs to 2 Oct |
 | **Licence** | [MIT](LICENSE) |
 

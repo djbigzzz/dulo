@@ -88,14 +88,14 @@ Points only, no cash value. Not investment advice. xStocks are not available to 
 
 ## Step 3: Links
 
-Every field takes a full `https://` URL, and the form wants at least one. Two are live today; the videos go in once recorded.
+Every field takes a full `https://` URL, and the form wants at least one. Three exist today; the pitch video goes in once it is re-recorded under 3:00.
 
 | Field | Value |
 |---|---|
 | GitHub | `https://github.com/djbigzzz/dulo` |
 | Demo URL | `https://dulo-iota.vercel.app` |
-| Pitch Video | Unlisted YouTube, 3:00 or shorter. Script: `docs/HANDOFF.md` section 6. Add when recorded. |
-| Technical Video | Unlisted YouTube, 5:00 or shorter. Script: `docs/HANDOFF.md` section 6b. Add when recorded. |
+| Pitch Video | **Not yet.** The 22 Sep Loom take (https://www.loom.com/share/c9daffe0bcaf472d838f2cea4e9f2c6e) runs 4:59 against the 3:00 limit and says "real money" at 2:09, so it must not be submitted. Re-record from `docs/HANDOFF.md` section 6 (388 words, about 2:55) and paste the link here. |
+| Technical Video | `https://www.loom.com/share/0cb82389e1214dddb84027beecd1d008` (Loom, public link, 4:59, recorded 22 Sep: the platform walkthrough through predictions, the competition, quests and pre-IPO). |
 
 No badge has been minted, so no transaction link is claimed anywhere. dulo.fun is not registered; the Vercel URL is the public origin.
 
