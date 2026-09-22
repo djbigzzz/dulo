@@ -62,9 +62,15 @@ openssl rand -hex 16
 ```
 
 `NEXT_PUBLIC_APP_URL` must not be a localhost address: a production build fails without a real
-origin, and it is baked into badge metadata at mint time. You will not know the Vercel URL until
-the first deploy, so set it to the project's expected `https://<project>.vercel.app`, and if the
-first build fails on it, correct the value and redeploy.
+origin, and it is baked into badge metadata at mint time. **The URL is not what you expect**: a
+project named `dulo` did not get `dulo.vercel.app` (taken), it got `https://dulo-iota.vercel.app`.
+Read the real production domain off the project's Domains tab after the first deploy, then correct
+the variable and redeploy.
+
+**Set the two `NEXT_PUBLIC_*` variables as type Config, not Secret.** Vercel's paste box defaults
+every variable to Secret. A public-prefixed Secret is flagged "needs attention", its edit form will
+not save, and a Secret can never be changed to Config -- the only way out is delete and re-create.
+The database URLs and the two secrets are correctly Secret.
 
 **`JUPITER_API_KEY` is the one key worth the two minutes.** Keyless Jupiter throttles to about half
 a request per second and starts returning 429s under normal click-through, which shows up as prices
@@ -76,6 +82,12 @@ from Jupiter with the source shown on every card, and badges read "Minting soon"
 server wallet exists.
 
 ## 4. Fill the database
+
+Run `npm run db:neon` on the block Neon gives you (it maps their names onto Prisma's and adds the
+pooler parameters), then `npm run env:vercel -- <url>` writes `vercel.env.txt` for the Vercel paste.
+That file is disposable: the deployment is the source of truth for secrets. Never paste the whole
+file back into Vercel later -- `JWT_SECRET` was rotated once before the script learned to reuse
+values, so the deployed one is not the one on disk, and re-pasting would sign out every session.
 
 Create `.env.production.local` in the repo (it is gitignored) with the same two database URLs:
 
