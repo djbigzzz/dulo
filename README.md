@@ -5,7 +5,7 @@
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
 
 [![CI](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-1%2C398%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
+[![Tests](https://img.shields.io/badge/tests-1%2C418%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
 [![Solana](https://img.shields.io/badge/Solana-mainnet-ff6a2a?style=flat&labelColor=0a0908)](#why-solana)
 [![Licence](https://img.shields.io/badge/licence-MIT-a9a299?style=flat&labelColor=0a0908)](LICENSE)
 
@@ -108,7 +108,7 @@ Dulo is independent and not affiliated with xStocks. Backed Finance owns that br
 | **Real user and problem** | 800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Holders need a reason to keep holding after the first buy, and apps need a way to reach them. On-chain quests pay points for holding, diversifying, buying steadily and holding through earnings, never for trading volume. Newcomers who hold nothing still get a full game: starter points for predictions and virtual cash for the competition. A listed project's on-chain quests are JSON rows on its campaign, and its page shows the verified completions it drove. Season 0 partners are seeded by hand and no project has signed up yet, so every count reads zero. |
 | **Working end-to-end demo** | Reads Solana mainnet. Anyone can check any wallet without signing in. A SIWS sign-in grants starter points and starts scoring. In-platform quests complete in the same request as the trade or prediction. On-chain quests are verified at sign-in and by a 5-minute cron. The weekly competition and the weekly points-only predictions both settle and roll over on their own. Copying a portfolio hands off to prefilled Jupiter swaps, and quests that carry a badge queue a soulbound Token-2022 badge mint (see [Proof on mainnet](#proof-on-mainnet)). It keeps working with US markets closed. |
 | **Why Solana** | Holdings are public state, so an on-chain quest is checked from RPC, not claimed by a broker. Token-2022 ScaledUiAmount gives multiplier-correct holdings. Jupiter quotes and swaps the xStock mint itself. Badges are NonTransferable Token-2022 mints. A second Token-2022 issuer, PreStocks pre-IPO tokens, is read, priced and scored through the same interfaces with zero extra RPC calls. See [Why Solana](#why-solana). |
-| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,398 tests across 68 files pass today (`npx vitest run`, 22 Sep 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
+| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,418 tests across 70 files pass today (`npx vitest run`, 30 Sep 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
 
 ## How points work
 
@@ -236,10 +236,33 @@ flowchart TD
   queue["Badge row queued, mint empty"]
   mint["Token-2022 mint<br/>NonTransferable + MetadataPointer, supply 1"]
 
+  hook["Solami webhook, optional<br/>/api/hooks/solami: a signed transfer event for a player's wallet<br/>triggers runForUser within seconds"]
+
   cron --> adapter
   fast --> adapter
+  hook --> fast
   adapter --> assets --> price --> snap --> engine --> ledger --> queue --> mint
 ```
+
+### Seconds, not minutes: Solami webhooks
+
+Without help, an on-chain quest completes at sign-in, on Refresh, or at the next 5-minute tick. With a [Solami](https://solami.dev) key, one Solami webhook watches every real player's linked wallets (never a house bot's), filtered server-side to token transfers of the xStocks and PreStocks mints, and POSTs each matching transaction to `/api/hooks/solami` as it lands.
+
+- **A trigger, not a source of truth.** The route checks the `X-Webhook-Signature` HMAC (SHA-256 of the raw body under `SOLAMI_WEBHOOK_SECRET`), drops Solami's retries by transaction signature, maps the addresses in the event to real players' Wallet rows, and runs `runForUser` after the 200 is sent. That re-reads the holdings through the ChainAdapter and evaluates the quests exactly as the cron does, so nothing in the payload is ever scored.
+- **The watch list keeps itself current.** A sign-in that links a new wallet updates the webhook's address list (`src/lib/cron/solami-sync.ts`).
+- **Health.** `GET /api/hooks/solami` reports deliveries, rejected signatures, retries dropped, deliveries that matched a player, and the last triggered re-read (how long it took and how many quests it completed). Counts are per server instance.
+- **Code.** `src/lib/adapters/solami.ts` (signature, payload walk, replay guard, webhook spec and client), `src/app/api/hooks/solami/route.ts`, `scripts/solami-webhook.ts`; tests in `tests/solami-webhook.test.ts` and `tests/solami-sync.test.ts`.
+
+Point it at your own key:
+
+```bash
+# a standard Solami key with the WebhooksManage role; production variables loaded in the shell
+SOLAMI_API_KEY="<key>" npm run solami:webhook   # creates the webhook, prints SOLAMI_WEBHOOK_ID and SOLAMI_WEBHOOK_SECRET once
+# set SOLAMI_API_KEY, SOLAMI_WEBHOOK_ID and SOLAMI_WEBHOOK_SECRET in the deployment and redeploy
+curl -s "$APP/api/hooks/solami" | jq .data      # delivery health
+```
+
+Without a key nothing changes: the route answers 503 and the tick keeps verifying quests on its own.
 
 The Diversified rule, exactly as stored on its row (`src/lib/plays/catalogue.ts`):
 
@@ -436,7 +459,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/
 Checks:
 
 ```bash
-npx vitest run      # 1,398 tests across 68 files on 22 Sep 2026; no database needed
+npx vitest run      # 1,418 tests across 70 files on 30 Sep 2026; no database needed
 npx next typegen    # once on a fresh clone: next-env.d.ts and .next/types are gitignored, and tsc needs the route types
 npm run typecheck
 npm run lint
@@ -464,6 +487,9 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 | `NEXT_PUBLIC_APP_NAME` | no | Default `Dulo`. |
 | `NEXT_PUBLIC_GITHUB_URL`, `NEXT_PUBLIC_X_URL`, `NEXT_PUBLIC_VIDEO_URL` | no | Footer links, rendered only when set. Read at build time. |
 | `NEXT_PUBLIC_PARTNER_CONTACT` | no | A `mailto:` or https URL for the `/partners` "Talk to us" button. Hidden when unset. |
+| `SOLAMI_API_KEY` | no | Solami standard key with WebhooksManage. Enables the webhook that verifies on-chain quests within seconds of a transfer. Empty = the tick alone. |
+| `SOLAMI_API_URL` | no | Default `https://api.solami.dev`. |
+| `SOLAMI_WEBHOOK_ID`, `SOLAMI_WEBHOOK_SECRET` | with a Solami key | Printed once by `npm run solami:webhook`. Without the secret, `/api/hooks/solami` refuses every delivery. |
 | `FOUNDER_WALLETS` | script only | Comma-separated founder wallets that `npm run stats` excludes. |
 
 ## Deploy
@@ -495,6 +521,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 - **Logout is stateless.** A session is a 30-day HS256 JWT in an httpOnly cookie. Logout clears the cookie but does not revoke a token already issued.
 - **The `bigint: Failed to load bindings, pure JS will be used` warning is expected.** A transitive Solana dependency prints it during tests and builds, and it is harmless.
 - **Check any wallet is one live read.** On-chain quests that need daily history (Diamond Hands, Steady Buyer, Earnings Holder) show "Needs daily snapshots". The per-IP and per-instance rate limits live in memory.
+- **The Solami webhook is a trigger, and optional.** It needs a Solami plan that includes a webhook; its delivery health lives in memory per server instance. Without it, quests still verify at sign-in, on Refresh and at the 5-minute tick.
 - **The Jupiter Recurring and Kamino quests are coming soon.** They are listed but cannot be verified yet.
 - **PreStocks pre-IPO tokens trade on thin pools and are Jupiter-only priced.** None of the eight has a Pyth feed, so a pre-IPO price is always Jupiter's quote from a thin Meteora pool, with its source and age shown. The issuer's mark (`markPrice` from the PreStocks API) is a separate number and not a tradeable quote; the app never presents the gap between the two as a discount. Pre-IPO Position is therefore count-based, and the copy tool stays xStocks-only. Since 22 Sep the competition does trade them, with virtual cash, and a pool that thin means a virtual-cash trade fills at a quote that a real trade of the same size would move, so a paper fill there is not a price a real trade would get. Points only, so nobody rational moves a market for them, and house bots do not trade them.
 - **Held Through a Split cannot have completed yet.** Both PreStocks adjustments on record (SpaceX's 5-for-1, effective 10 Jun 2026, and OpenAI's x1.4861, effective 17 Jul 2026, read from each mint's ScaledUiAmount config) predate Dulo's first production snapshot on 21 Sep 2026, so no wallet on record held through either. The quest completes on the next adjustment, and its copy says so. An adjustment changes the number of tokens shown, not the holder's value, and the app never presents one as a price signal.
@@ -504,7 +531,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 - Original work, written for this hackathon: no code was ported from earlier projects.
 - Open-source dependencies (Next.js, React, Prisma, @solana/web3.js, @solana/spl-token, Solana wallet-adapter, zod, jose, tweetnacl, Tailwind CSS, shadcn/ui on Base UI, lucide, sonner, vitest and the rest of `package.json`) are used under their own licences.
-- Data comes from the xStocks public API (asset catalogue and multipliers), Jupiter Price v3 (prices) and Solana RPC via Helius (balances and mint extensions).
+- Data comes from the xStocks public API (asset catalogue and multipliers), Jupiter Price v3 (prices), Solana RPC via Helius (balances and mint extensions) and, when configured, Solami webhooks (transfer events that trigger a re-read).
 - Dulo is independent and not affiliated with xStocks, Backed Finance, Jupiter or Kamino. Partner names and logos belong to their owners; inclusion does not imply endorsement.
 
 **Points only, no cash value. Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions.**

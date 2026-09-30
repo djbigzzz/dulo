@@ -26,7 +26,8 @@
     "postinstall": "prisma generate",
     "db:setup": "tsx scripts/deploy-db.mts",
     "db:neon": "tsx scripts/neon-env.mts",
-    "env:vercel": "tsx scripts/vercel-env.mts"
+    "env:vercel": "tsx scripts/vercel-env.mts",
+    "solami:webhook": "tsx scripts/solami-webhook.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

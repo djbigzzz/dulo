@@ -32,7 +32,7 @@ Vision, three rungs, worded the same way in README.md and docs/SUBMISSION.md: to
 Business model, always written as a plan and never as revenue: players are free, and apps and issuers would sponsor competitions and pay per verified completion (partners would list on-chain quests and pay per verified completion). Nothing is billed today, there is no billing code and no project has paid.
 Regulatory framing: points only, no cash value. Real-money Plays (on-chain quests) pay for holding, diversifying and buying steadily. Speculation lives in the virtual-cash competition and the points-only predictions. Say "onboarding, not churn".
 
-Stack: Next.js 15 app router, TypeScript, Tailwind, shadcn/ui, Prisma + Postgres (Supabase), @solana/wallet-adapter (Phantom, Backpack, Solflare, MWA), Helius RPC, xStocks public API, Jupiter Price v3 + Swap v2, Pyth Hermes, Vercel Cron. No Anchor program needed.
+Stack: Next.js 15 app router, TypeScript, Tailwind, shadcn/ui, Prisma + Postgres (Supabase), @solana/wallet-adapter (Phantom, Backpack, Solflare, MWA), Helius RPC, xStocks public API, Jupiter Price v3 + Swap v2, Pyth Hermes, Vercel Cron, and optionally a Solami webhook (30 Sep 2026: a signed transfer event for a player's wallet triggers runForUser within seconds; a trigger only, never a source of truth, src/lib/adapters/solami.ts). No Anchor program needed.
 
 Rules of the codebase:
 - All chain reads go through lib/core ChainAdapter; all asset math through AssetSource; all prices through lib/price. No raw RPC in routes or components.
