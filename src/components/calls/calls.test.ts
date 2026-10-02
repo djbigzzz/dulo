@@ -45,8 +45,8 @@ describe("calls-format — first-session copy and helpers (15 Sep review M-F)", 
     }
   });
 
-  it("says predictions lock at the Friday close (locksAt = settleAt - 5 min, settleAt = close + 5 min), everywhere on /predictions", () => {
-    expect(CALLS_LOCK_COPY).toBe("Predictions lock at the Friday close; settlement runs 5 minutes later.");
+  it("says entries close 24 hours before the Friday close (locksAt = settleAt - 24 h 5 min, settleAt = close + 5 min), everywhere on /predictions", () => {
+    expect(CALLS_LOCK_COPY).toBe("Entries close 24 hours before the Friday close; settlement runs 5 minutes after the close.");
     const page = readFileSync(path.join(process.cwd(), "src/app/predictions/page.tsx"), "utf8");
     expect(page).not.toMatch(/lock 5 minutes before/i);
     expect(page.match(/CALLS_LOCK_COPY/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
@@ -192,10 +192,10 @@ describe("calls-format", () => {
     expect(soonestLockMs([{ status: "open", locksAt: LOCKS }], Date.parse(LOCKS))).toBeNull();
   });
 
-  it("labels the side buttons with share and multiplier", () => {
+  it("labels the side buttons with the share, and the points back only in words for screen readers", () => {
     const odds = { yesProb: 0.64, noProb: 0.36, yesMultiplier: 1.5625, noMultiplier: 2.7777777 };
-    expect(sideButtonLabel(odds, "yes")).toBe("Yes 64% · 1.56x");
-    expect(sideButtonLabel(odds, "no")).toBe("No 36% · 2.78x");
+    expect(sideButtonLabel(odds, "yes")).toBe("Yes 64%, 1.56x points back if correct");
+    expect(sideButtonLabel(odds, "no")).toBe("No 36%, 2.78x points back if correct");
     expect(sideButtonLabel({ yesProb: 0.5, noProb: 0.5, yesMultiplier: null, noMultiplier: null }, "yes")).toBe("Yes 50%");
   });
 });

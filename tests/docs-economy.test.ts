@@ -284,8 +284,8 @@ describe("docs economy — the HANDOFF catalogue, economy and known limits", () 
     expect(HANDOFF).toContain("Known limitations (16 Sep)");
     const limits = section(HANDOFF, "### 3.9 Known limitations (16 Sep)");
     for (const needle of [
-      "open until the Friday close",
-      "open next week's questions at that lock",
+      "Late entries (fixed 2 Oct 2026)",
+      "24 hours before the Friday close",
       "Sybil starter-point funnelling",
       "in memory, per instance, 20 per hour",
       "account-age or wallet-age signal",

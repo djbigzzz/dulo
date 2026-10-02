@@ -5,7 +5,7 @@
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
 
 [![CI](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-1%2C421%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
+[![Tests](https://img.shields.io/badge/tests-1%2C423%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
 [![Solana](https://img.shields.io/badge/Solana-mainnet-ff6a2a?style=flat&labelColor=0a0908)](#why-solana)
 [![Licence](https://img.shields.io/badge/licence-MIT-a9a299?style=flat&labelColor=0a0908)](LICENSE)
 
@@ -108,7 +108,7 @@ Dulo is independent and not affiliated with xStocks. Backed Finance owns that br
 | **Real user and problem** | 800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Holders need a reason to keep holding after the first buy, and apps need a way to reach them. On-chain quests pay points for holding, diversifying, buying steadily and holding through earnings, never for trading volume. Newcomers who hold nothing still get a full game: starter points for predictions and virtual cash for the competition. A listed project's on-chain quests are JSON rows on its campaign, and its page shows the verified completions it drove. Season 0 partners are seeded by hand and no project has signed up yet, so every count reads zero. |
 | **Working end-to-end demo** | Reads Solana mainnet. Anyone can check any wallet without signing in. A SIWS sign-in grants starter points and starts scoring. In-platform quests complete in the same request as the trade or prediction. On-chain quests are verified at sign-in and by a 5-minute cron. The weekly competition and the weekly points-only predictions both settle and roll over on their own. Copying a portfolio hands off to prefilled Jupiter swaps, and quests that carry a badge queue a soulbound Token-2022 badge mint (see [Proof on mainnet](#proof-on-mainnet)). It keeps working with US markets closed. |
 | **Why Solana** | Holdings are public state, so an on-chain quest is checked from RPC, not claimed by a broker. Token-2022 ScaledUiAmount gives multiplier-correct holdings. Jupiter quotes and swaps the xStock mint itself. Badges are NonTransferable Token-2022 mints. A second Token-2022 issuer, PreStocks pre-IPO tokens, is read, priced and scored through the same interfaces with zero extra RPC calls. See [Why Solana](#why-solana). |
-| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,421 tests across 71 files pass today (`npx vitest run`, 1 Oct 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
+| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,423 tests across 71 files pass today (`npx vitest run`, 2 Oct 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
 
 ## How points work
 
@@ -131,7 +131,7 @@ Points only, no cash value. Points live in an append-only `PointsEvent` ledger w
 | Starter points on first sign-in | +1,000 | `starter:<seasonId>` | Once per player per Season, only while the Season is open. Real players only. Can go into predictions, never counts toward Season points or rank. |
 | Quest completed | +50 to +500 | `play:<playKey>` | Once per player per quest per Season. |
 | Weekly competition finish, ranks 1 to 10 | +1,000 down to +100 | `league:<leagueId>:rank:<n>` | Once per week per place, only for real accounts with 3+ trades that week. A place held by a house bot pays nobody. |
-| Points into a prediction, top-ups included | -10 to -5,000 per placement | `call:<marketId>:stake:<userId>:<side>` | The only debit. The balance is checked and debited in one locked transaction, so it never goes below 0. Entries close at the Friday close. |
+| Points into a prediction, top-ups included | -10 to -5,000 per placement | `call:<marketId>:stake:<userId>:<side>` | The only debit. The balance is checked and debited in one locked transaction, so it never goes below 0. Entries close 24 hours before the Friday close. |
 | Prediction settles your way | your share of the whole pool | `call:<marketId>:payout:<userId>` | Once per player per question. No house cut, and never less than you put in. |
 | Prediction settles against you | no new row | none | The points you put in already left your balance, and from settlement on they count against Season points. |
 | Refund: no usable price within 24 hours, or nobody on the other side | exactly what you put in | `call:<marketId>:refund:<userId>:<side>` | Once per player per side per question. Nets to zero. |
@@ -150,7 +150,7 @@ The full ledger table, with every limit and the code that enforces it, is in [`d
 
 - Points-only Yes or No on whether NVDA, TSLA and SPY close above the strike on Friday.
 - Each prediction takes 10 to 5,000 points. The dialog defaults to 100, never to your whole balance, and a balance can never go below zero.
-- Entries close at the Friday close, and settlement runs 5 minutes later. The side that settles right shares the whole pool pro rata, with largest-remainder rounding, and nobody on it gets back less than they put in. Dulo takes no cut.
+- Entries close 24 hours before the Friday close (since 2 Oct 2026, so nobody enters once the answer is nearly known), and settlement runs 5 minutes after the close. The side that settles right shares the whole pool pro rata, with largest-remainder rounding, and nobody on it gets back less than they put in. Dulo takes no cut.
 - Before you confirm, the dialog warns: "If it doesn't settle your way, the points you put in count against your Season points."
 - Settlement reads a price at or after the Friday close (Pyth when a key is set, otherwise Jupiter's quote of the xStock mint), with the source and time printed on the card.
 - Everyone gets their points back if nobody took the other side. A market voids and refunds if no usable price arrives within 24 hours.
@@ -459,7 +459,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/
 Checks:
 
 ```bash
-npx vitest run      # 1,421 tests across 71 files on 1 Oct 2026; no database needed
+npx vitest run      # 1,423 tests across 71 files on 2 Oct 2026; no database needed
 npx next typegen    # once on a fresh clone: next-env.d.ts and .next/types are gitignored, and tsc needs the route types
 npm run typecheck
 npm run lint
@@ -514,7 +514,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 - **Brand new.** Live at https://dulo-iota.vercel.app since 21 Sep 2026 with no external players yet (one account so far: the founder's), so the Season leaderboard is empty and no badge has been minted. It runs on Vercel's free plan: the five-minute tick comes from a GitHub Actions pinger with Vercel's daily run as backstop, and without a Helius or Jupiter key the public RPC and keyless Jupiter rate-limit under load.
 - **No Pyth key.** Pyth Hermes needs a key and Season 0 runs without one. Jupiter Price v3 therefore prices the competition and settles the predictions, and the source and age are printed on every chip and card. Outside the US session a price is Jupiter's last quote; after 6 hours it is marked stale.
-- **Predictions stay open until the Friday close.** A late entry can win points from the house-bot pools at little risk. The planned fix is to close entries earlier and open next week's questions at that moment.
+- **Entries close 24 hours before the Friday close (since 2 Oct 2026).** That removes the near-riskless last-minute entry against the house-bot pools; a Thursday entry still carries a day of price risk. Next week's questions still open after Friday's settle.
 - **Throwaway accounts.** Someone can put a throwaway account's starter points on the side that is about to lose, which moves those points to their main account as Season points. A new-account limit of 20 an hour per network only slows this down, and it lives in memory on each server instance. The planned fix weights accounts by account or wallet age, never by holdings.
 - **The earnings calendar is hand-maintained.** `src/lib/plays/earnings-2026.json` covers 58 tickers. Dates inside the Season 0 judging window (14 Sep to 2 Oct 2026) are checked against each company's announcement; later dates follow each company's usual reporting window and must be re-checked once announced. An xStock without a date cannot complete Earnings Holder.
 - **Copied-portfolio value change is not cash-flow adjusted.** The 7d / 30d figures compare total position value, so a deposit reads as a gain. The UI labels it "value change".

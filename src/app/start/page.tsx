@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRightIcon, Share2Icon, TargetIcon } from "lucide-react";
-import { api, type CallMarketView, type CallPositionView, type CallSide, type PlaceCallResponse } from "@/lib/api-client";
+import { api, leagueApi, type CallMarketView, type CallPositionView, type CallSide, type PlaceCallResponse } from "@/lib/api-client";
 import { APP_URL } from "@/lib/config";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -14,7 +14,7 @@ import { useSignInIntent } from "@/hooks/useSignInIntent";
 import { MarketCard, MarketCardSkeleton } from "@/components/calls/MarketCard";
 import { PlaceCallDialog } from "@/components/calls/PlaceCallDialog";
 import { CALLS_LOCK_COPY, NEXT_WEEK_MARKETS_COPY, liveStatus } from "@/components/calls/calls-format";
-import { START_PATH, shareOnXUrl, type SharePrediction } from "@/components/start/share";
+import { START_PATH, competitionLine, shareOnXUrl, type SharePrediction } from "@/components/start/share";
 
 const NO_POSITIONS: CallPositionView[] = [];
 
@@ -28,6 +28,8 @@ const STEPS = ["Connect your wallet and sign one message. No transaction.", "Get
 export default function StartPage() {
   const { session } = useSession();
   const q = useApiQuery((signal) => api.calls({ signal }), session?.userId ?? "");
+  const lq = useApiQuery((signal) => leagueApi.overview({ signal }), "");
+  const compLine = competitionLine(lq.data?.league ?? null);
   const { refetch } = q;
   const nowMs = Date.now();
 
@@ -74,6 +76,11 @@ export default function StartPage() {
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">This week on Dulo</p>
         <h1 className="text-3xl font-semibold text-balance sm:text-4xl">Make your first prediction</h1>
         <p className="text-pretty text-muted-foreground">Free, points only, settled from Friday&apos;s close.</p>
+        {compLine ? (
+          <Link href="/competition" className="mx-auto mt-1 inline-flex rounded-full border border-ember/30 bg-ember/10 px-3 py-1 text-xs font-medium text-pretty text-foreground hover:bg-ember/15">
+            {compLine}
+          </Link>
+        ) : null}
       </header>
 
       {q.loading ? (

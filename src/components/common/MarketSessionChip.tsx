@@ -84,9 +84,9 @@ export function sessionLabel(s: MarketSession): string {
   return `US market ${s.open ? "open" : "closed"} · ${sessionVerb(s)} ${formatSessionCountdown(s.msUntil)}`;
 }
 
-/** "Open · 3h 05m" (below sm, where the header has no room for the sentence). */
+/** "Open · closes in 3h 05m" / "Closed · opens in 14h 22m" (below sm, where the header has no room for "US market"). */
 export function sessionShortLabel(s: MarketSession): string {
-  return `${s.open ? "Open" : "Closed"} · ${formatSessionCountdown(s.msUntil)}`;
+  return `${s.open ? "Open" : "Closed"} · ${sessionVerb(s)} ${formatSessionCountdown(s.msUntil)}`;
 }
 
 /**
