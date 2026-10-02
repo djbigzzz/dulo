@@ -561,8 +561,8 @@ describe("nav and landing", () => {
     expect(landing.match(/href="\/prestocks"/g)).toHaveLength(1);
     // The competition copy names both price sets, on the landing and the /competition metadata.
     // The hero paragraph is two sentences now (22 Sep); the Competition tile still names both price sets.
+    // The lower Competition tile was cut on 2 Oct 2026; the landing never names only one price set.
     const flat = landing.replace(/\s+/g, " ");
-    expect(flat.match(/real xStock and pre-IPO prices/g)).toHaveLength(1);
     expect(flat).not.toContain("real xStock prices");
     expect(repoFile("src/app/competition/layout.tsx")).toContain("real xStock and pre-IPO prices");
   });

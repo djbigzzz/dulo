@@ -75,8 +75,6 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(landing).toContain('href="#check"');
     expect(landing).toContain('id="check"');
     expect(landing).toContain("<CheckWalletBox");
-    // Pinned by tests/copy.test.ts: the Predictions tile still says where settlement comes from.
-    expect(landing).toContain("settled from the Friday close, source shown on the card");
   });
 
   it("states the welcome offer before sign-in, directly above the buttons, from the points policy", () => {
@@ -131,15 +129,12 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(NEXT_WEEK_MARKETS_COPY).toBe("Next week's predictions open right after Friday's settle.");
   });
 
-  it("reframes the lower sections as three games on one Season leaderboard, with nothing that pays for holding", () => {
+  it("keeps the landing short (lower explainer sections cut 2 Oct 2026), with nothing that pays for holding", () => {
     const landing = repoFile("src/app/page.tsx");
-    expect(landing).toMatch(/Three games, <span className="italic">one Season leaderboard<\/span>/);
+    for (const gone of ["How it <span", "Three games, <span", "Why it works", "<PartnersRow"]) expect(landing).not.toContain(gone);
     expect(landing).not.toContain("PLAY_KINDS");
     for (const chip of ['"Hold"', '"Diversify"', '"DCA"', '"Earnings"']) expect(landing).not.toContain(chip);
     expect(landing).not.toMatch(/\b(paid|pays?|earn\w*) (points )?(for|by) (holding|buying)/i);
-    expect(landing).toContain("A fresh week every Monday with virtual cash at real xStock and pre-IPO prices. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.");
-    expect(landing).toContain("In-platform quests with points and virtual cash, and on-chain quests verified from your wallet.");
-    expect(landing).toContain("See a leader's allocation and open the same legs in Jupiter from your own wallet.");
     // Closing CTA: Connect plus "Make a prediction".
     const cta = landing.slice(landing.indexOf('aria-labelledby="cta"'));
     expect(cta).toContain("<ConnectButton");

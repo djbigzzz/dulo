@@ -111,7 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">
               <Dulo size={18} />
-              <span className="text-pretty">Points only. No cash value. Built on Solana for the Stocklana hackathon.</span>
+              <span className="text-pretty">Points only. No cash value. Built on Solana.</span>
             </div>
             <p className="text-xs text-pretty text-muted-foreground/80">{COMPLIANCE_LINE}</p>
           </div>

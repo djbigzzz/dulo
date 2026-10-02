@@ -62,7 +62,7 @@ describe("copy — Mirror is deep links, Calls settle from the close", () => {
   it("the Oracle Play and the landing Calls tile say where settlement comes from", () => {
     expect(playByKey("oracle")!.desc).toContain(CALLS_SETTLE_COPY);
     const landing = repoFile("src/app/page.tsx");
-    expect(landing).toContain(CALLS_SETTLE_COPY);
+    // The landing's lower Predictions tile was cut on 2 Oct 2026; settlement copy lives on the cards and the quest.
     expect(landing).not.toMatch(/settled (by|from) Pyth/);
   });
 
@@ -165,8 +165,8 @@ describe("public docs — sourced claims, private planning, video scripts", () =
   it("the landing hero leads with the sourced holder stat and the Solana section makes no exclusivity claim", () => {
     const landing = repoFile("src/app/page.tsx");
     expect(landing).toContain("800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026)");
-    expect(landing).toContain("Why it works");
-    expect(landing).toContain("{PARTNER_MARKS_NOTICE}");
+    // The "Why it works" and Partners sections were cut on 2 Oct 2026: no logos, so no marks notice needed.
+    expect(landing).not.toContain("<PartnersRow");
   });
 
   it("REVIEW carries no spend or prize-share reasoning", () => {

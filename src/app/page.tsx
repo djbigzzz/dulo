@@ -2,116 +2,22 @@ import Link from "next/link";
 import {
   ActivityIcon,
   ArrowRightIcon,
-  AwardIcon,
-  BadgeCheckIcon,
-  ClockIcon,
-  CopyIcon,
-  EyeIcon,
   GiftIcon,
   KeyRoundIcon,
   RocketIcon,
-  ScaleIcon,
   ShieldCheckIcon,
-  TargetIcon,
-  TrophyIcon,
-  ZapIcon,
   type LucideIcon,
 } from "lucide-react";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { buttonVariants } from "@/components/ui/button";
 import { Tamga } from "@/components/brand/Tamga";
 import { GameTiles, LivePredictions, RankCard, ScoreboardPreview } from "@/components/landing/ScoreboardPreview";
-import { PartnersRow } from "@/components/landing/PartnersRow";
 import { CheckWalletBox } from "@/components/landing/CheckWalletBox";
 import { MarketSessionChip } from "@/components/common/MarketSessionChip";
-import { COMPLIANCE_LINE, PARTNER_MARKS_NOTICE } from "@/components/common/compliance";
-import { formatPoints } from "@/components/common/format";
-import { formatUsdWhole } from "@/components/league/format";
-import { MIN_TRADES_FOR_WEEKLY_POINTS, STARTER_POINTS, VIRTUAL_CASH_USD, WELCOME_OFFER_LINE } from "@/lib/games/ledger-policy";
+import { COMPLIANCE_LINE } from "@/components/common/compliance";
+import { WELCOME_OFFER_LINE } from "@/lib/games/ledger-policy";
 import { SEASON_NAME } from "@/lib/config";
 import { cn } from "@/lib/utils";
-
-const VIRTUAL_CASH = formatUsdWhole(VIRTUAL_CASH_USD);
-
-const STEPS: { title: string; body: string }[] = [
-  { title: "Connect", body: "Sign a message to prove the wallet is yours. No transaction, nothing to approve." },
-  {
-    title: `Start with ${formatPoints(STARTER_POINTS)} starter points and ${VIRTUAL_CASH} virtual cash`,
-    body: "Starter points go into predictions. The grant itself isn't ranked; settled predictions are. Virtual cash is for the weekly competition, not real money.",
-  },
-  {
-    title: "Predict, compete, complete quests",
-    body: "All three games count toward one Season leaderboard. Points only, no cash value.",
-  },
-];
-
-interface Tile {
-  href: string;
-  title: string;
-  body: string;
-  stat: string;
-  icon: LucideIcon;
-}
-
-/** The three games, Predictions first (it leads in the nav too). */
-const GAMES: Tile[] = [
-  {
-    href: "/predictions",
-    title: "Predictions",
-    icon: TargetIcon,
-    stat: "Yes or No",
-    body: "Yes or No on where a stock closes, for points, settled from the Friday close, source shown on the card.",
-  },
-  {
-    href: "/competition",
-    title: "Competition",
-    icon: TrophyIcon,
-    stat: `${VIRTUAL_CASH} virtual cash`,
-    body: `A fresh week every Monday with virtual cash at real xStock and pre-IPO prices. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.`,
-  },
-  {
-    href: "/quests",
-    title: "Quests",
-    icon: ZapIcon,
-    stat: "+50 to +500 pts",
-    body: "In-platform quests with points and virtual cash, and on-chain quests verified from your wallet.",
-  },
-];
-
-/** Beside the games: a tool (no points of its own) and the Badges some quests mint. */
-const EXTRAS: Tile[] = [
-  {
-    href: "/copy",
-    title: "Copy a portfolio",
-    icon: CopyIcon,
-    stat: "A tool, not a game",
-    body: "See a leader's allocation and open the same legs in Jupiter from your own wallet.",
-  },
-  { href: "/profile", title: "Badges", icon: AwardIcon, stat: "Soulbound", body: "Bigger quests mint a Badge to your wallet that can't be sold." },
-];
-
-const WHY_SOLANA: { title: string; body: string; icon: LucideIcon }[] = [
-  {
-    icon: EyeIcon,
-    title: "Holdings are public",
-    body: "xStocks live in Token-2022 accounts, so on-chain quests verify straight from the chain. No broker login.",
-  },
-  {
-    icon: ScaleIcon,
-    title: "Balances stay correct",
-    body: "Splits and dividends are normalised with the token's multiplier, so a split never breaks a quest.",
-  },
-  {
-    icon: ClockIcon,
-    title: "Prices show their age",
-    body: "Every price carries its source and how old it is, even when the US market is closed.",
-  },
-  {
-    icon: BadgeCheckIcon,
-    title: "Badges can't be traded",
-    body: "Badges are non-transferable Token-2022 tokens: proof you did it, not something to flip.",
-  },
-];
 
 const TRUST: { icon: LucideIcon; label: string; sr?: string }[] = [
   { icon: ShieldCheckIcon, label: "Points only", sr: ", no cash value" },
@@ -126,12 +32,6 @@ const TRUST: { icon: LucideIcon; label: string; sr?: string }[] = [
 const GLOW_PANEL = "border-gradient bg-card bg-ember-glow";
 
 const ENTER = "animate-in fade-in-0 slide-in-from-bottom-2 duration-500 fill-mode-both motion-reduce:animate-none";
-
-const ICON_TILE =
-  "flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]";
-
-const TILE_LINK =
-  "group relative flex h-full overflow-hidden rounded-2xl outline-none transition-all duration-300 hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none motion-reduce:hover:translate-y-0";
 
 function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
@@ -160,15 +60,6 @@ function SectionTitle({
         {children}
       </h2>
     </div>
-  );
-}
-
-function TileArrow() {
-  return (
-    <ArrowRightIcon
-      className="size-4 shrink-0 text-muted-foreground transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transition-none"
-      aria-hidden
-    />
   );
 }
 
@@ -284,166 +175,7 @@ export default function Home() {
         <CheckWalletBox />
       </section>
 
-      {/* 3. How it works */}
-      <section aria-labelledby="how" className={cn("mt-20 flex flex-col gap-10 sm:mt-28 sm:gap-14", ENTER)}>
-        <SectionTitle id="how" eyebrow="Three steps">
-          How it <span className="italic">works</span>
-        </SectionTitle>
-        <ol className="grid gap-10 md:grid-cols-3 md:gap-8">
-          {STEPS.map((s, i) => (
-            <li key={s.title} className="relative flex flex-col gap-4">
-              <div className="flex items-center gap-5">
-                <span
-                  className="font-display text-gradient-gold pr-[0.06em] text-5xl leading-none font-normal sm:text-6xl"
-                  aria-hidden
-                >
-                  0{i + 1}
-                </span>
-                {i < STEPS.length - 1 ? (
-                  <span
-                    className="hidden h-px flex-1 bg-gradient-to-r from-gold/45 via-ember/20 to-transparent md:block"
-                    aria-hidden
-                  />
-                ) : null}
-              </div>
-              <div className="flex max-w-xs flex-col gap-2">
-                <h3 className="text-lg leading-snug font-semibold tracking-tight text-balance text-foreground">
-                  <span className="sr-only">Step {i + 1}: </span>
-                  {s.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* 4. The games */}
-      <section aria-labelledby="mechanics" className={cn("mt-20 flex flex-col gap-10 sm:mt-28 sm:gap-12", ENTER)}>
-        <SectionTitle id="mechanics" eyebrow="Points only, no cash value">
-          Three games, <span className="italic">one Season leaderboard</span>
-        </SectionTitle>
-        <div className="flex flex-col gap-4">
-          <ul className="grid gap-4 lg:grid-cols-3">
-            {GAMES.map(({ href, title, body, stat, icon: Icon }, i) => {
-              const featured = i === 0;
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className={`${featured ? `${GLOW_PANEL} glow-ember` : "bg-card"} ${cn(
-                      TILE_LINK,
-                      "flex-col gap-6 p-5 sm:p-7",
-                      !featured && "border border-white/[0.07] hover:border-white/[0.12] hover:bg-white/[0.04]",
-                    )}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={ICON_TILE} aria-hidden>
-                        <Icon className={cn("size-5", featured ? "text-ember" : "text-gold")} />
-                      </span>
-                      <TileArrow />
-                    </div>
-                    <div className="mt-auto flex flex-col gap-2">
-                      <h3 className="font-display text-4xl leading-none font-normal text-foreground">{title}</h3>
-                      <p
-                        className={cn(
-                          "text-xl font-semibold tracking-tight sm:text-2xl",
-                          featured ? "text-gradient-ember" : "text-foreground",
-                        )}
-                      >
-                        {stat}
-                      </p>
-                      <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {EXTRAS.map(({ href, title, body, stat, icon: Icon }) => (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className={cn(
-                    TILE_LINK,
-                    "items-start gap-4 border border-white/[0.07] bg-card p-5 hover:border-white/[0.12] hover:bg-white/[0.04]",
-                  )}
-                >
-                  <span className={ICON_TILE} aria-hidden>
-                    <Icon className="size-5 text-gold" />
-                  </span>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <h3 className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 text-base font-semibold tracking-tight text-foreground">
-                      {title}
-                      <span className="text-xs font-medium text-muted-foreground">{stat}</span>
-                    </h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-                  </div>
-                  <TileArrow />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* 5. Why Solana */}
-      <section
-        aria-labelledby="why-solana"
-        className={cn("mt-20 grid gap-10 sm:mt-28 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14", ENTER)}
-      >
-        <div className="flex flex-col gap-5 lg:sticky lg:top-24 lg:self-start">
-          <SectionTitle id="why-solana" eyebrow="Why Solana">
-            Why it works <span className="italic">on Solana</span>
-          </SectionTitle>
-          <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-            Dulo reads the chain, not a broker. Four properties of Solana and Token-2022 are what make every on-chain quest verifiable.
-          </p>
-        </div>
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {WHY_SOLANA.map(({ title, body, icon: Icon }) => (
-            <li
-              key={title}
-              className="relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/[0.07] bg-card p-5 sm:p-6"
-            >
-              <span
-                className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent"
-                aria-hidden
-              />
-              <span className={ICON_TILE} aria-hidden>
-                <Icon className="size-5 text-gold" />
-              </span>
-              <div className="flex flex-col gap-1.5">
-                <h3 className="text-base font-semibold tracking-tight text-foreground">{title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* 6. Partners */}
-      <section aria-labelledby="partners" className={cn("mt-20 flex flex-col gap-10 sm:mt-28", ENTER)}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <SectionTitle id="partners" eyebrow="Listed projects">
-            Partners
-          </SectionTitle>
-          <Link
-            href="/partners"
-            className="group flex min-h-10 items-center gap-1.5 text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
-          >
-            All Partners
-            <ArrowRightIcon className="size-4 transition-transform duration-300 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
-          </Link>
-        </div>
-        <div className="flex flex-col gap-4">
-          <PartnersRow />
-          <p className="text-xs leading-relaxed text-muted-foreground">{PARTNER_MARKS_NOTICE}</p>
-        </div>
-      </section>
-
-      {/* 7. Closing CTA */}
+      {/* 3. Closing CTA (the long explainer sections were cut on 2 Oct 2026: the hero, the game tiles and each page say it once) */}
       <section
         aria-labelledby="cta"
         className={`${GLOW_PANEL} ${cn(
