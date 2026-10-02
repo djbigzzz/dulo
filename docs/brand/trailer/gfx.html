@@ -1,0 +1,48 @@
+<!doctype html><html><head><meta charset="utf-8"><link href="fonts.css" rel="stylesheet">
+<style>
+*{margin:0;box-sizing:border-box}
+html,body{width:1080px;height:1350px;overflow:hidden;font-family:Geist,sans-serif;color:#f4f1ea}
+body.bg{background:#0a0908}
+body.bg::before{content:"";position:absolute;inset:0;background:radial-gradient(900px 700px at 80% 110%,rgba(255,106,42,.22),transparent 70%),radial-gradient(800px 600px at 0% -10%,rgba(216,180,106,.13),transparent 70%)}
+body.clear{background:transparent}
+.s{position:absolute;inset:0;display:none}
+.on{display:block}
+/* caption band */
+.band{position:absolute;left:0;right:0;top:0;height:320px;background:#0a0908;border-bottom:1px solid rgba(244,241,234,.08);padding:34px 64px 0}
+.band .k{font-size:32px;line-height:1;letter-spacing:4px;text-transform:uppercase;color:#d8b46a}
+.band .t{margin-top:12px;max-width:760px;font-family:"Instrument Serif",serif;font-size:66px;line-height:1.04;text-wrap:balance}
+.band .f{position:absolute;left:64px;right:64px;bottom:16px;font-size:26px;line-height:1.3;color:#c9c2b8}
+.fade{position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to bottom,rgba(10,9,8,0),#0a0908)}
+/* end card */
+.wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:0 70px;transform-origin:50% 45%}
+.lock{display:flex;flex-direction:column;align-items:center;gap:14px}
+.tamga{width:104px;height:104px}
+.word{font-family:"Instrument Serif",serif;font-size:84px;letter-spacing:8px;line-height:1}
+.tag{font-family:"Instrument Serif",serif;font-size:48px;line-height:1.1;color:#e6e0d6;text-align:center}
+.big{font-family:"Instrument Serif",serif;font-size:112px;line-height:1;text-align:center;max-width:940px}
+.em{background:linear-gradient(110deg,#f0d9a4,#d8b46a 40%,#ff6a2a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.url{font-weight:600;font-size:50px;padding:20px 36px;border-radius:22px;border:2px solid rgba(255,106,42,.55);background:rgba(255,106,42,.10)}
+.sub{font-size:36px;line-height:1.3;max-width:900px;color:#e6e0d6;text-align:center;text-wrap:balance}
+.sub2{font-size:34px;color:#a9a299;text-align:center}
+.fine{position:absolute;bottom:72px;left:50%;transform:translateX(-50%);width:900px;text-align:center;font-size:28px;line-height:1.35;color:#c9c2b8}
+</style></head><body class="bg">
+<div class="s" id="frame">
+  <div class="band"><div class="k" id="fk"></div><div class="t" id="ft"></div>
+    <div class="f">Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions.</div></div>
+  <div class="fade"></div>
+</div>
+<div class="s" id="end">
+  <div class="wrap">
+    <div class="lock">
+      <svg class="tamga" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="g" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#f0d9a4"/><stop offset="45%" stop-color="#d8b46a"/><stop offset="100%" stop-color="#ff6a2a"/></linearGradient></defs><g stroke="url(#g)" stroke-width="6" stroke-linecap="square"><path d="M7 10h12M13 10v44M7 54h12"/><path d="M32 54V33M32 33L21 10M32 33L43 10"/><path d="M45 10h12M51 10v44M45 54h12"/></g></svg>
+      <div class="word">DULO</div>
+      <div class="tag">The entertainment layer for xStocks.</div>
+    </div>
+    <div class="big em">Make your first prediction.</div>
+    <div class="url" id="url">dulo-iota.vercel.app/start</div>
+    <div class="sub">Sign in free: 1,000 starter points and $10,000 of virtual cash to play. Points only, no cash value.</div>
+    <div class="sub2">Sign one message to start. No transaction.</div>
+  </div>
+  <div class="fine">Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions.</div>
+</div>
+</body></html>
