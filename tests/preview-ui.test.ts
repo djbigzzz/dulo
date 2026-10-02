@@ -61,10 +61,8 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     const flat = landing.replace(/\s+/g, " ");
     expect(flat).toContain("The entertainment layer for");
     expect(landing).toContain("Predict. Compete. Complete on-chain quests.");
-    // Two sentences (trimmed 22 Sep): the sourced stat, then the one-line frame. The tiles below say what the games are.
-    expect(flat).toContain(
-      "800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Dulo gives them three games on one Season leaderboard. </p>",
-    );
+    // No paragraph under the verbs since 2 Oct 2026: the welcome line and the tiles say the rest.
+    expect(flat).not.toContain("Dulo gives them three games");
     expect(flat).not.toContain("Yes or No on Friday&apos;s close, a weekly competition");
     expect(landing).not.toContain("Try the League");
     expect(landing).not.toContain("activity is");
@@ -99,9 +97,8 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     // Phones read the pitch, then session and trust, then the live cards.
     expect(hero.indexOf("<MarketSessionChip")).toBeGreaterThan(hero.indexOf("Check a wallet"));
     expect(hero.indexOf("<MarketSessionChip")).toBeLessThan(hero.indexOf("<LivePredictions"));
-    // The H1 steps down below sm so Connect sits on the first 375 px screen; the sourced stat is never hidden.
+    // The H1 steps down below sm so Connect sits on the first 375 px screen.
     expect(landing).toMatch(/id="hero-title"\s+className="font-display text-4xl /);
-    expect(hero).not.toMatch(/hidden[^"]*">\s*800,000\+/);
   });
 
   it("puts the live prediction cards first in the hero, then the ranking, and the game tiles right under it", () => {

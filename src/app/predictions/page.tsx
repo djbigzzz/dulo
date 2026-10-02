@@ -186,7 +186,7 @@ export default function CallsPage() {
         extrasLastOnMobile
         eyebrow="Season 0"
         title="Predictions"
-        description="Yes or No on Friday's close, for points. Correct picks share the points from the other side."
+        description="Yes or No on Friday's close, for points."
         actions={q.data ? <SeasonBadge season={q.data.season} className="hidden sm:inline-flex" /> : q.loading ? <SeasonBadgeSkeleton className="hidden sm:block" /> : null}
         stats={
           stats ? (

@@ -102,7 +102,7 @@ export function CheckWalletBox({ className, primary = false, samples = true }: C
               </li>
             ))}
           </ul>
-          <p className="text-xs leading-relaxed text-muted-foreground/80">Public wallets on Solana: not Dulo players, never scored. Nothing you check is stored.</p>
+          <p className="text-xs leading-relaxed text-muted-foreground/80">Public wallets, not Dulo players. Never scored.</p>
         </div>
       ) : null}
     </div>

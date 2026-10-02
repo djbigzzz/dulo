@@ -35,7 +35,7 @@ export const TILE_COPY: Readonly<Record<GameTileKey, GameTileCopy>> = {
     title: "Predictions",
     cta: "Make a prediction",
     href: "/predictions",
-    note: "Yes or No on Friday's close · house bots seed each pool",
+    note: "Yes or No on Friday's close",
   },
   competition: {
     key: "competition",

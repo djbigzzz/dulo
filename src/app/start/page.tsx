@@ -18,7 +18,7 @@ import { START_PATH, competitionLine, shareOnXUrl, type SharePrediction } from "
 
 const NO_POSITIONS: CallPositionView[] = [];
 
-const STEPS = ["Connect your wallet and sign one message. No transaction.", "Get 1,000 starter points.", "Pick Yes or No. Results land after Friday's close."];
+const STEPS = ["Connect and sign one message. No transaction.", "Get 1,000 starter points.", "Pick Yes or No."];
 
 /**
  * /start: the one-screen entry for shared links. One featured prediction (the first open one),
@@ -75,7 +75,6 @@ export default function StartPage() {
       <header className="flex flex-col gap-2 text-center">
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">This week on Dulo</p>
         <h1 className="text-3xl font-semibold text-balance sm:text-4xl">Make your first prediction</h1>
-        <p className="text-pretty text-muted-foreground">Free, points only, settled from Friday&apos;s close.</p>
         {compLine ? (
           <Link href="/competition" className="mx-auto mt-1 inline-flex rounded-full border border-ember/30 bg-ember/10 px-3 py-1 text-xs font-medium text-pretty text-foreground hover:bg-ember/15">
             {compLine}

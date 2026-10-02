@@ -104,7 +104,7 @@ function buildStats(data: LeagueResponse): Stat[] {
 
 const RULES = (
   <ul className="flex list-disc flex-col gap-1.5 pl-5">
-    <li>Each competition week closes Friday 20:00 UTC. Everyone starts with $10,000 of virtual cash.</li>
+    <li>Each competition week closes Friday 20:00 UTC. Everyone starts with $10,000 of virtual cash. Not real money.</li>
     <li>The competition never pauses. {WEEKEND_TRADES_COPY}.</li>
     <li>Trades fill at the live quote with a 0.1% spread. Nothing is bought on-chain. The smallest trade is {formatUsdWhole(LEAGUE_MIN_TRADE_USD)}.</li>
     <li>When a quote is stale (markets closed, weekends) you can still trade; every price shows its source and age.</li>
@@ -181,7 +181,7 @@ export default function LeaguePage() {
         eyebrow="Season 0"
         title="Weekly competition (virtual cash)"
         suffix={league ? `· Week of ${formatUtcDayMonth(league.weekStart)}` : undefined}
-        description={`Paper trade xStocks with ${startingCash} of virtual cash at real prices. Not real money, and nothing is bought on-chain. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades on Friday earn points.`}
+        description={`Paper trade with ${startingCash} of virtual cash. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.`}
         stats={data && league ? <StatStrip stats={buildStats(data)} /> : q.loading ? <Skeleton className="h-[84px] w-full rounded-2xl" /> : undefined}
         details={RULES}
         className="mb-0"

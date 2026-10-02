@@ -5,7 +5,6 @@ import {
   GiftIcon,
   KeyRoundIcon,
   RocketIcon,
-  ShieldCheckIcon,
   type LucideIcon,
 } from "lucide-react";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
@@ -20,7 +19,6 @@ import { SEASON_NAME } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 const TRUST: { icon: LucideIcon; label: string; sr?: string }[] = [
-  { icon: ShieldCheckIcon, label: "Points only", sr: ", no cash value" },
   { icon: KeyRoundIcon, label: "No transaction to sign in" },
   { icon: ActivityIcon, label: "Live on Solana mainnet" },
 ];
@@ -100,10 +98,6 @@ export default function Home() {
             <p className="font-display text-2xl leading-tight font-normal text-balance text-foreground/85 sm:text-3xl lg:-mt-1 lg:text-2xl">
               Predict. Compete. Complete on-chain quests.
             </p>
-            <p className="max-w-2xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg lg:text-base">
-              800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Dulo gives them three
-              games on one Season leaderboard.
-            </p>
             {/* The welcome offer, stated before sign-in. */}
             <p className="flex max-w-xl items-start gap-2.5 rounded-xl border border-gold/20 bg-gold/[0.06] px-3.5 py-2 text-sm leading-snug lg:mt-1 lg:py-1.5 text-pretty text-foreground/90 shadow-[inset_0_1px_0_rgb(255_245_230/0.05)] sm:w-fit">
               <GiftIcon className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
@@ -164,12 +158,11 @@ export default function Home() {
         className={cn("mt-16 grid scroll-mt-24 gap-8 sm:mt-24 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-14", ENTER)}
       >
         <div className="flex flex-col gap-5">
-          <SectionTitle id="check-title" eyebrow="No sign-in needed">
+          <SectionTitle id="check-title" eyebrow="No sign-in">
             Check <span className="italic">any wallet</span>
           </SectionTitle>
           <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-            Paste a Solana address. Dulo reads its xStocks straight from Token-2022 balances, multiplier-correct, and shows which
-            on-chain quests that wallet already meets. Nothing is stored or scored.
+            See any wallet&apos;s xStocks and the quests it already meets. Nothing stored.
           </p>
         </div>
         <CheckWalletBox />
@@ -198,10 +191,7 @@ export default function Home() {
               <h2 id="cta" className="font-display text-4xl leading-[1.02] font-normal text-foreground sm:text-5xl">
                 Season 0 is <span className="text-gradient-ember pr-[0.08em] italic">live</span>
               </h2>
-              <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-                Sign in once. Predictions, the weekly competition (virtual cash) and quests all count toward one Season
-                leaderboard. Points only, no cash value.
-              </p>
+              <p className="max-w-md text-base leading-relaxed text-muted-foreground">Three games, one leaderboard.</p>
             </div>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row md:shrink-0">

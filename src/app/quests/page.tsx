@@ -108,7 +108,7 @@ export default function QuestsPage() {
         extrasLastOnMobile
         eyebrow="Season 0"
         title="Quests"
-        description="In-platform quests with points and virtual cash, and on-chain quests verified from your wallet. Points only, no cash value."
+        description="Complete quests in Dulo or from your own wallet. Points only."
         actions={
           signedIn ? (
             <Button

@@ -252,7 +252,7 @@ describe("points UI — /leaderboard", () => {
   });
 
   it("describes where Season points come from, and that the starter grant itself doesn't count", () => {
-    expect(src).toContain('description="Season points from quests, weekly competition finishes and settled predictions. The starter grant itself doesn\'t count."');
+    expect(src).toContain('description="Season points from quests, competition finishes and settled predictions."');
   });
 });
 

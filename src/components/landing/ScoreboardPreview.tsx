@@ -299,7 +299,7 @@ function PredictionCard({ market, now, className }: { market: CallMarketView; no
       <SplitRow market={market} />
       <div className="flex flex-wrap items-center justify-between gap-x-3">
         <span className="text-xs text-muted-foreground tabular-nums">
-          {market.odds.total === 0 ? "No points in yet" : `${formatPoints(market.odds.total)} pts in, including the house-bot seed`}
+          {market.odds.total === 0 ? "No points in yet" : `${formatPoints(market.odds.total)} pts in, incl. bot seed`}
           <span aria-hidden> · </span>
           <span className="sr-only">, </span>
           {lockLabel(market, now)}
