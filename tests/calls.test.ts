@@ -1088,7 +1088,7 @@ describe("getCallsBoard / getCallMarket", () => {
       symbol: "NVDAx",
       strike: 210,
       settleAt: "2026-09-18T20:05:00.000Z",
-      locksAt: "2026-09-18T20:00:00.000Z",
+      locksAt: "2026-09-17T20:00:00.000Z",
       status: "open",
       yesPool: 300,
       noPool: 100,

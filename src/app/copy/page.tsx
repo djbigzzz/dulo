@@ -91,7 +91,7 @@ export default function MirrorIndexPage() {
       <PageHeader
         eyebrow="Season 0"
         title="Copy a portfolio"
-        description="Copy a real portfolio: a Season leader, a public wallet on Solana or any address you paste. You swap in Jupiter from your own wallet; Dulo never touches your funds. The next snapshot checks whether your wallet matches."
+        description="Copy a Season leader or any Solana wallet. You swap in Jupiter from your own wallet; Dulo never touches your funds."
         details={HOW_IT_WORKS}
         className="mb-0"
       />

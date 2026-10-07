@@ -1,10 +1,14 @@
+import { after } from "next/server";
 import { handler, ok } from "@/lib/server/api";
+import { catchUpGames } from "@/lib/cron/catch-up";
 import { getSession } from "@/lib/auth/session";
 import { getLeagueOverview } from "@/lib/games/league-views";
 import type { LeagueResponse } from "@/lib/api-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Self-repair when the scheduled tick is late: settle or roll over after the response (src/lib/cron/catch-up.ts).
+export const maxDuration = 300;
 
 /**
  * GET /api/v1/league
@@ -14,6 +18,7 @@ export const dynamic = "force-dynamic";
  * settled week. Recomputes equity/rank when the last recompute is older than 60s.
  */
 export const GET = handler(async () => {
+  after(() => catchUpGames());
   // A broken or expired cookie must never break the public board: treat it as signed out.
   const session = await getSession().catch(() => null);
   const data: LeagueResponse = await getLeagueOverview(session?.userId ?? null);

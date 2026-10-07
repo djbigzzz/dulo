@@ -95,7 +95,7 @@ export default function LeaderboardPage() {
         className="mb-0"
         eyebrow="Season 0"
         title="Leaderboard"
-        description="Season points from quests, weekly competition finishes and settled predictions. The starter grant itself doesn't count."
+        description="Season points from quests, competition finishes and settled predictions."
         actions={board.data ? <SeasonBadge season={board.data.season} className="hidden sm:inline-flex" /> : board.loading ? <SeasonBadgeSkeleton className="hidden sm:block" /> : null}
         stats={headerStats}
       />

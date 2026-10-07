@@ -19,7 +19,7 @@ import { PARTNER_MARKS_NOTICE } from "@/components/common/compliance";
 import { PlayGrid, PlayGridSkeleton } from "@/components/plays/PlayGrid";
 import { PlayFilterBar } from "@/components/plays/PlayFilterBar";
 import { ProofDrawer } from "@/components/plays/ProofDrawer";
-import { PLAY_FILTERS, boardTotals, listedPartnerCount, matchesFilter, questKind, type PlayFilter } from "@/components/plays/play-meta";
+import { PLAY_FILTERS, boardTotals, matchesFilter, questKind, type PlayFilter } from "@/components/plays/play-meta";
 
 /**
  * Sign-in kicks off a wallet snapshot + quest evaluation on the server (auth/verify ->
@@ -98,7 +98,6 @@ export default function QuestsPage() {
         signedIn
           ? { label: "You completed", value: `${totals.completed}/${totals.livePlays}`, tone: totals.completed > 0 ? "positive" : "default" }
           : { label: "You completed", value: "—", hint: "Connect to track" },
-        { label: "Listed projects", value: listedPartnerCount(groups), hint: kinds.soon > 0 ? `None signed yet · ${kinds.soon} quests coming soon` : "None signed yet" },
       ]
     : [];
 
@@ -106,9 +105,10 @@ export default function QuestsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         className="mb-0"
+        extrasLastOnMobile
         eyebrow="Season 0"
         title="Quests"
-        description="In-platform quests with points and virtual cash, and on-chain quests verified from your wallet. Points only, no cash value."
+        description="Complete quests in Dulo or from your own wallet. Points only."
         actions={
           signedIn ? (
             <Button

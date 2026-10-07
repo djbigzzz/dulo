@@ -284,8 +284,8 @@ describe("docs economy — the HANDOFF catalogue, economy and known limits", () 
     expect(HANDOFF).toContain("Known limitations (16 Sep)");
     const limits = section(HANDOFF, "### 3.9 Known limitations (16 Sep)");
     for (const needle of [
-      "open until the Friday close",
-      "open next week's questions at that lock",
+      "Late entries (fixed 2 Oct 2026)",
+      "24 hours before the Friday close",
       "Sybil starter-point funnelling",
       "in memory, per instance, 20 per hour",
       "account-age or wallet-age signal",
@@ -343,7 +343,7 @@ describe("docs economy — honest claims across every doc", () => {
     // 21 Sep: deployed. "Not deployed" is no longer the honest claim, but everything else it used
     // to deny still holds, and going live is exactly when a doc starts quietly implying traction.
     // So each doc must name the live URL AND keep denying players, partners, badges and billing.
-    const LIVE_URL = "https://dulo-iota.vercel.app";
+    const LIVE_URL = "https://projectdulo.com";
     for (const [rel, text] of [
       ["README.md", README],
       ["CLAUDE.md", BRIEF],

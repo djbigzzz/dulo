@@ -10,7 +10,6 @@ import { PriceChip, priceSourceLabel } from "@/components/common/PriceChip";
 import { formatDateTime, formatPoints, formatUsd } from "@/components/common/format";
 import { PoolBar } from "@/components/calls/PoolBar";
 import {
-  formatMultiplier,
   formatPct,
   liveStatus,
   lockLabel,
@@ -267,7 +266,6 @@ export function MarketCard({ market, positions, nowMs, signedIn, onPlace, classN
                 {(["yes", "no"] as const).map((side) => {
                   const held = positions.some((p) => p.side === side);
                   const pct = formatPct(side === "yes" ? market.odds.yesProb : market.odds.noProb);
-                  const mult = side === "yes" ? market.odds.yesMultiplier : market.odds.noMultiplier;
                   return (
                     <button
                       key={side}
@@ -283,10 +281,8 @@ export function MarketCard({ market, positions, nowMs, signedIn, onPlace, classN
                         {held ? <Check className="size-3.5" aria-hidden /> : null}
                         {sideLabel(side)}
                       </span>
-                      <span className="flex min-w-0 items-baseline gap-1.5 tabular-nums">
-                        <span className="text-lg leading-none font-semibold tracking-tight text-foreground">{pct}</span>
-                        {mult !== null ? <span className="text-xs text-muted-foreground">{formatMultiplier(mult)}</span> : null}
-                      </span>
+                      {/* The share only; the points back for one point live in the dialog, never on the button. */}
+                      <span className="text-lg leading-none font-semibold tracking-tight text-foreground tabular-nums">{pct}</span>
                     </button>
                   );
                 })}

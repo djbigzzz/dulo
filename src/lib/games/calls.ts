@@ -83,8 +83,11 @@ import { isOutcome, isSide, odds, payout, settle, type Outcome, type Side, type 
 const LOG_PREFIX = "[games/calls]";
 
 export { MAX_CALL_POINTS, MIN_CALL_POINTS };
-/** No stakes inside this window before settleAt. */
-export const LOCK_BEFORE_SETTLE_MS = 5 * 60 * 1000;
+/**
+ * No points go in inside this window before settleAt: entries close 24 hours before the Friday
+ * close (settleAt = close + 5 min), so nobody can enter once the answer is nearly known.
+ */
+export const LOCK_BEFORE_SETTLE_MS = (24 * 60 + 5) * 60 * 1000;
 /** With no usable price this long after settleAt, the market voids and refunds. */
 export const VOID_AFTER_MS = 24 * 60 * 60 * 1000;
 /** Minutes after the US close at which a Friday market settles (16:00 ET + 5 min). */

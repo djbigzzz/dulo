@@ -2,7 +2,7 @@
 
 Paste-ready copy for the submit form at https://hackathons.solana.com/hackathons/stocklana. The headings below follow the form's own steps.
 
-- **Status:** updated 22 Sep 2026 for the live deployment at https://dulo-iota.vercel.app (Vercel + Neon, since 21 Sep). Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct.
+- **Status:** updated 22 Sep 2026 for the live deployment at https://projectdulo.com (Vercel + Neon, since 21 Sep). Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct.
 - **No placeholders.** Everything inside a paste block is true today. Anything that depends on a thing that does not exist yet (the live URL, the videos, a minted badge, player numbers) is listed under "Add once it exists" in the Links step, outside the blocks.
 - **Limits:** Short Description 280 characters, Full Description 5,000 characters, Pitch Video 3:00, Technical Video 5:00, at least one link.
 
@@ -28,14 +28,14 @@ The entertainment layer for xStocks, live on Solana mainnet. Predict Friday clos
 
 ## Step 2: Description
 
-### Full Description (Markdown, 5,000 max): 4,266 measured
+### Full Description (Markdown, 5,000 max): 4,261 measured
 
 ````markdown
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
 
 Predict. Compete. Complete on-chain quests.
 
-**Live at https://dulo-iota.vercel.app**, reading Solana mainnet. Check any wallet without an account; sign one message to play. There is no transaction.
+**Live at https://projectdulo.com**, reading Solana mainnet. Check any wallet without an account; sign one message to play. There is no transaction.
 
 ## The problem
 
@@ -81,7 +81,7 @@ Players are free. Partners would list on-chain quests and pay per verified compl
 
 ## Team
 
-Built solo. Live since 21 Sep 2026 on Vercel and Neon: no external players yet (one account so far: the founder's), no partner signed and no badge minted; every count on the site is real, and most of them read zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,398 tests, CI on every push.
+Built solo. Live since 21 Sep 2026 on Vercel and Neon: no external players yet (one account so far: the founder's), no partner signed and no badge minted; every count on the site is real, and most of them read zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,428 tests, CI on every push.
 
 Points only, no cash value. Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions. Dulo is independent and not affiliated with xStocks (Backed Finance owns that brand). Original work, written for this hackathon.
 ````
@@ -93,11 +93,11 @@ Every field takes a full `https://` URL, and the form wants at least one. Three 
 | Field | Value |
 |---|---|
 | GitHub | `https://github.com/djbigzzz/dulo` |
-| Demo URL | `https://dulo-iota.vercel.app` |
+| Demo URL | `https://projectdulo.com` |
 | Pitch Video | **Not yet.** The 22 Sep Loom take (https://www.loom.com/share/c9daffe0bcaf472d838f2cea4e9f2c6e) runs 4:59 against the 3:00 limit and says "real money" at 2:09, so it must not be submitted. Re-record from `docs/HANDOFF.md` section 6 (388 words, about 2:55) and paste the link here. |
 | Technical Video | `https://www.loom.com/share/0cb82389e1214dddb84027beecd1d008` (Loom, public link, 4:59, recorded 22 Sep: the platform walkthrough through predictions, the competition, quests and pre-IPO). |
 
-No badge has been minted, so no transaction link is claimed anywhere. dulo.fun is not registered; the Vercel URL is the public origin.
+No badge has been minted, so no transaction link is claimed anywhere. dulo.fun is not registered; the public origin is https://projectdulo.com (since 7 Oct 2026; https://dulo-iota.vercel.app still works).
 
 ## Step 4: Team
 
@@ -165,11 +165,11 @@ Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), confir
 
 ### Repository
 
-- [ ] Optional, and not a blocker: dulo.fun, a `dulofun` GitHub org and `@dulofun` on X. None is registered as of 21 Sep 2026. The repo is public at `github.com/djbigzzz/dulo` and the app is served from its Vercel URL, so the submission needs none of them. Do not print dulo.fun anywhere that implies it resolves.
+- [ ] Optional, and not a blocker: dulo.fun, a `dulofun` GitHub org and `@dulofun` on X. None is registered as of 21 Sep 2026. The repo is public at `github.com/djbigzzz/dulo` and the app is served from https://projectdulo.com, so the submission needs none of them. Do not print dulo.fun anywhere that implies it resolves.
 - [ ] `git status --ignored` shows `!! docs/private/`, and `git ls-files docs/private` prints nothing. No tracked file cites a path inside it.
 - [ ] Secret grep over tracked files is clean: `git grep -nIE "(-----BEGIN|api[_-]?key[\"' ]*[:=]|api-key=|postgres(ql)?://[^ ]*:[^ @]*@)" -- ':!*.example' ':!docs/*'` returns only variable names, never a value.
 - [ ] No keypair, `.env` or wallet file is tracked.
-- [ ] CI is green on the default branch. `npx vitest run` printed **1,398** on 22 Sep; re-read it on the day and make the Full Description and the README say the same number.
+- [ ] CI is green on the default branch. `npx vitest run` printed **1,428** on 7 Oct; re-read it on the day and make the Full Description and the README say the same number.
 - [ ] The repo is public, MIT, with the README's disclosure section intact.
 
 ### Badge names (gate: do this before a badge can ever mint)

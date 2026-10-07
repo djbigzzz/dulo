@@ -16,6 +16,12 @@ export interface PageHeaderProps extends Omit<React.ComponentProps<"header">, "t
   stats?: React.ReactNode;
   /** Rules and fine print, collapsed behind "How it works" so the content stays above the fold. */
   details?: React.ReactNode;
+  /**
+   * Below `md`, render `stats` and `details` after the page's own content (the cards), so a phone
+   * opens on the game, not on numbers. The page container must be a flex column; the header
+   * becomes `display: contents` on small screens and its extras take `order: last`.
+   */
+  extrasLastOnMobile?: boolean;
 }
 
 /** Strip a leading "·" from legacy suffixes; the serif italic carries the separation on its own. */
@@ -23,9 +29,23 @@ function cleanSuffix(suffix: React.ReactNode): React.ReactNode {
   return typeof suffix === "string" ? suffix.replace(/^\s*·\s*/, "") : suffix;
 }
 
-export function PageHeader({ eyebrow, title, suffix, description, actions, stats, details, className, ...props }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, suffix, description, actions, stats, details, extrasLastOnMobile, className, ...props }: PageHeaderProps) {
+  const extras = (
+    <>
+      {stats}
+      {details ? (
+        <details className="group rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-2 text-sm text-muted-foreground transition-colors open:bg-white/[0.03] [&_summary::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 font-medium text-foreground/90 outline-none select-none hover:text-foreground focus-visible:text-ember">
+            How it works
+            <ChevronDownIcon className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" aria-hidden />
+          </summary>
+          <div className="flex flex-col gap-2 pt-2 pb-2 leading-relaxed">{details}</div>
+        </details>
+      ) : null}
+    </>
+  );
   return (
-    <header className={cn("mb-8 flex flex-col gap-5 pt-2", className)} {...props}>
+    <header className={cn("mb-8 flex flex-col gap-5 pt-2", extrasLastOnMobile && "max-md:contents", className)} {...props}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex min-w-0 flex-col gap-2">
           {eyebrow ? (
@@ -42,16 +62,7 @@ export function PageHeader({ eyebrow, title, suffix, description, actions, stats
         </div>
         {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
-      {stats}
-      {details ? (
-        <details className="group rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-2 text-sm text-muted-foreground transition-colors open:bg-white/[0.03] [&_summary::-webkit-details-marker]:hidden">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 font-medium text-foreground/90 outline-none select-none hover:text-foreground focus-visible:text-ember">
-            How it works
-            <ChevronDownIcon className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" aria-hidden />
-          </summary>
-          <div className="flex flex-col gap-2 pt-2 pb-2 leading-relaxed">{details}</div>
-        </details>
-      ) : null}
+      {extrasLastOnMobile ? (stats || details ? <div className="flex flex-col gap-5 max-md:order-last">{extras}</div> : null) : extras}
     </header>
   );
 }

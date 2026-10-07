@@ -36,7 +36,7 @@ describe("marketSession — open", () => {
     expect(s.at.toISOString()).toBe("2026-03-10T20:00:00.000Z");
     expect(s.msUntil).toBe((3 * 60 + 5) * 60_000);
     expect(sessionLabel(s)).toBe("US market open · closes in 3h 05m");
-    expect(sessionShortLabel(s)).toBe("Open · 3h 05m");
+    expect(sessionShortLabel(s)).toBe("Open · closes in 3h 05m");
     expect(sessionTitle(s)).toBe(
       "The US regular session closes at 16:00 ET. Solana never closes, so every price carries its source and age.",
     );
@@ -64,7 +64,7 @@ describe("marketSession — closed", () => {
     expect(s.earlyClose).toBe(false);
     expect(s.msUntil).toBe((14 * 60 + 22) * 60_000);
     expect(sessionLabel(s)).toBe("US market closed · opens in 14h 22m");
-    expect(sessionShortLabel(s)).toBe("Closed · 14h 22m");
+    expect(sessionShortLabel(s)).toBe("Closed · opens in 14h 22m");
     expect(sessionTitle(s)).toBe(
       "The US regular session opens Wednesday at 09:30 ET. Solana never closes, so every price carries its source and age.",
     );

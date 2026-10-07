@@ -2,7 +2,7 @@
 
 We are building the entertainment layer for xStocks: a distribution network where projects list Plays (verified on-chain actions), users complete them from their real wallet activity, and everyone competes in games and predictions for points. Think Arkada/Galxe, but the first vertical is tokenized stocks (xStocks) and the entry is the Stocklana hackathon.
 
-Status (21 Sep 2026): deployed at https://dulo-iota.vercel.app (Vercel Hobby, team mystartup-team; Neon Postgres in us-east-1, schema pushed and seeded). Still true, and never claim otherwise: no external players (one account so far: the founder's), no partner has signed anything, no badge has been minted, no billing. dulo.fun is not registered, so the Vercel URL is the public origin.
+Status (21 Sep 2026): deployed at https://projectdulo.com (Vercel Hobby, team mystartup-team; Neon Postgres in us-east-1, schema pushed and seeded). Still true, and never claim otherwise: no external players (one account so far: the founder's), no partner has signed anything, no badge has been minted, no billing. dulo.fun is not registered. The public origin is https://projectdulo.com (registered 7 Oct 2026, served by Vercel; https://dulo-iota.vercel.app still works).
 
 Deadline (confirmed 17 Sep 2026 from the hackathon page countdown, its header and press coverage): submissions close Fri 25 Sep 2026, 16:00 ET (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct. The page timeline paragraph still says 18 Sep and is stale. README.md, docs/SUBMISSION.md and docs/HANDOFF.md all say this; keep them in step.
 
@@ -32,7 +32,7 @@ Vision, three rungs, worded the same way in README.md and docs/SUBMISSION.md: to
 Business model, always written as a plan and never as revenue: players are free, and apps and issuers would sponsor competitions and pay per verified completion (partners would list on-chain quests and pay per verified completion). Nothing is billed today, there is no billing code and no project has paid.
 Regulatory framing: points only, no cash value. Real-money Plays (on-chain quests) pay for holding, diversifying and buying steadily. Speculation lives in the virtual-cash competition and the points-only predictions. Say "onboarding, not churn".
 
-Stack: Next.js 15 app router, TypeScript, Tailwind, shadcn/ui, Prisma + Postgres (Supabase), @solana/wallet-adapter (Phantom, Backpack, Solflare, MWA), Helius RPC, xStocks public API, Jupiter Price v3 + Swap v2, Pyth Hermes, Vercel Cron. No Anchor program needed.
+Stack: Next.js 15 app router, TypeScript, Tailwind, shadcn/ui, Prisma + Postgres (Supabase), @solana/wallet-adapter (Phantom, Backpack, Solflare, MWA), Helius RPC, xStocks public API, Jupiter Price v3 + Swap v2, Pyth Hermes, Vercel Cron, and optionally a Solami webhook (30 Sep 2026: a signed transfer event for a player's wallet triggers runForUser within seconds; a trigger only, never a source of truth, src/lib/adapters/solami.ts). No Anchor program needed.
 
 Rules of the codebase:
 - All chain reads go through lib/core ChainAdapter; all asset math through AssetSource; all prices through lib/price. No raw RPC in routes or components.
@@ -45,4 +45,4 @@ Rules of the codebase:
 
 Deadline discipline: press Submit Project on Thu 17 Sep as a hedge (Save Draft is not a submission), then keep editing until the close at Fri 25 Sep 2026, 16:00 ET. Mirror ships as "view allocation + open Jupiter with a prefilled swap per leg" by decision (14 Sep): that is the product, not a fallback; in-app swap execution stays on the cut list.
 
-Product name: Dulo, after the House of Dulo, the founding Bulgar dynasty. Repo package name: dulo. dulo.fun is the intended domain and is NOT registered, and no mailbox on it exists. Nothing public may present it as the app's address or as a contact, and no commit may be authored from it. The public origin is the Vercel URL, and the repo is github.com/djbigzzz/dulo.
+Product name: Dulo, after the House of Dulo, the founding Bulgar dynasty. Repo package name: dulo. dulo.fun is the intended domain and is NOT registered, and no mailbox on it exists. Nothing public may present it as the app's address or as a contact, and no commit may be authored from it. The public origin is https://projectdulo.com, and the repo is github.com/djbigzzz/dulo.

@@ -3,7 +3,7 @@
 import { cn } from "cn";
 import type { CallOdds } from "@/lib/api-client";
 import { formatPoints } from "@/components/common/format";
-import { formatMultiplier, formatPct } from "@/components/calls/calls-format";
+import { formatPct } from "@/components/calls/calls-format";
 
 export interface PoolBarProps {
   odds: CallOdds;
@@ -28,10 +28,8 @@ export function PoolBar({ odds, highlight = null, labels = true, className }: Po
           <span className={cn("flex items-baseline gap-1.5", highlight === "yes" ? "font-semibold text-emerald-400" : "text-foreground")}>
             <span className="font-medium">Yes</span>
             <span className="tabular-nums">{formatPct(odds.yesProb)}</span>
-            <span className="text-xs font-normal text-muted-foreground">{formatMultiplier(odds.yesMultiplier)}</span>
           </span>
           <span className={cn("flex items-baseline gap-1.5", highlight === "no" ? "font-semibold text-rose-400" : "text-foreground")}>
-            <span className="text-xs font-normal text-muted-foreground">{formatMultiplier(odds.noMultiplier)}</span>
             <span className="tabular-nums">{formatPct(odds.noProb)}</span>
             <span className="font-medium">No</span>
           </span>
@@ -69,7 +67,7 @@ export function PoolBar({ odds, highlight = null, labels = true, className }: Po
           {formatPoints(odds.yesPool)} pts
         </span>
         <span className="min-w-0 text-center leading-4 text-balance">
-          {empty ? "No points in yet" : `${formatPoints(odds.total)} pts in the pool, house-bot seed included`}
+          {empty ? "No points in yet" : `${formatPoints(odds.total)} pts in the pool, including the house-bot seed`}
         </span>
         <span className="inline-flex shrink-0 items-center gap-1.5 leading-4">
           {formatPoints(odds.noPool)} pts

@@ -52,7 +52,7 @@ const DETAILS = (
     <li>Each prediction asks whether an xStock closes above its strike on Friday. Pick Yes or No and put in points from your balance; your starter points count.</li>
     <li>
       Correct picks share the pool: everyone on the right side gets their own points back plus a share of the points from the other side, in proportion to what they put in. Dulo takes no cut.
-      The multiplier on each button is how many points back one point gets at the current split; it moves until the lock.
+      The percentage on each button is that side&apos;s share of the pool; before you confirm, the dialog shows how many points back one point gets at the current split. Both move until entries close.
     </li>
     <li>{CALLS_LOCK_COPY} If nobody took the other side, or no price is available within 24 hours, points are refunded.</li>
     <li>Settlement uses the Friday close price. The source and time are printed on each settled card.</li>
@@ -183,9 +183,10 @@ export default function CallsPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         className="mb-0"
+        extrasLastOnMobile
         eyebrow="Season 0"
         title="Predictions"
-        description="Yes or No on Friday's close, for points. Correct picks share the points from the other side."
+        description="Yes or No on Friday's close, for points."
         actions={q.data ? <SeasonBadge season={q.data.season} className="hidden sm:inline-flex" /> : q.loading ? <SeasonBadgeSkeleton className="hidden sm:block" /> : null}
         stats={
           stats ? (
@@ -198,7 +199,7 @@ export default function CallsPage() {
       />
 
       {/* The session chip says whether the US market is open; the line says why that is fine. */}
-      <div className="-mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="-mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 max-md:order-last max-md:mt-0">
         <MarketSessionChip />
         <p className="max-w-2xl text-sm text-pretty text-muted-foreground">
           Wall Street is closed outside market hours. Solana is not, so every price on these cards carries its source and age.

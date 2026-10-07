@@ -225,5 +225,18 @@ export const POST = handler(async (req) => {
       console.warn("[auth/verify] post-sign-in refresh failed", err);
     }),
   );
+  // A wallet linked in this request joins the Solami webhook's watch list (lib/cron/solami-sync),
+  // so its next xStock transfer verifies within seconds. Best effort: the 5-minute tick covers it.
+  // Loaded lazily: only deployments with a Solami key pay for the import.
+  if (e.SOLAMI_API_KEY && now.getTime() - wallet.createdAt.getTime() < 60_000) {
+    after(async () => {
+      try {
+        const { syncSolamiWebhook } = await import("@/lib/cron/solami-sync");
+        await syncSolamiWebhook();
+      } catch (err) {
+        console.warn("[auth/verify] Solami webhook sync failed", err instanceof Error ? err.message : err);
+      }
+    });
+  }
   return res;
 });

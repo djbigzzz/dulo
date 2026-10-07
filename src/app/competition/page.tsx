@@ -3,10 +3,10 @@
 import * as React from "react";
 import { useSession } from "@/hooks/useSession";
 import { useInView } from "@/hooks/useInView";
-import { ArrowLeftRight, Sprout, Trophy } from "lucide-react";
+import { ArrowLeftRight, Share2, Sprout, Trophy } from "lucide-react";
 import { cn } from "cn";
 import { api, leagueApi, type LeagueResponse, type PlaysResponse } from "@/lib/api-client";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -37,6 +37,8 @@ import {
 } from "@/components/league/format";
 import { findScoutPlay, scoutProgress } from "@/components/league/scout";
 import { MIN_TRADES_FOR_WEEKLY_POINTS } from "@/lib/games/ledger-policy";
+import { APP_URL } from "@/lib/config";
+import { START_PATH, rankShareOnXUrl } from "@/components/start/share";
 
 /** Equity moves with prices; re-read the board every minute while the tab is visible. */
 const REFRESH_MS = 60_000;
@@ -102,7 +104,7 @@ function buildStats(data: LeagueResponse): Stat[] {
 
 const RULES = (
   <ul className="flex list-disc flex-col gap-1.5 pl-5">
-    <li>Each competition week closes Friday 20:00 UTC. Everyone starts with $10,000 of virtual cash.</li>
+    <li>Each competition week closes Friday 20:00 UTC. Everyone starts with $10,000 of virtual cash. Not real money.</li>
     <li>The competition never pauses. {WEEKEND_TRADES_COPY}.</li>
     <li>Trades fill at the live quote with a 0.1% spread. Nothing is bought on-chain. The smallest trade is {formatUsdWhole(LEAGUE_MIN_TRADE_USD)}.</li>
     <li>When a quote is stale (markets closed, weekends) you can still trade; every price shows its source and age.</li>
@@ -179,14 +181,15 @@ export default function LeaguePage() {
         eyebrow="Season 0"
         title="Weekly competition (virtual cash)"
         suffix={league ? `· Week of ${formatUtcDayMonth(league.weekStart)}` : undefined}
-        description={`Paper trade xStocks with ${startingCash} of virtual cash at real prices. Not real money, and nothing is bought on-chain. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades on Friday earn points.`}
+        description={`Paper trade with ${startingCash} of virtual cash. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.`}
         stats={data && league ? <StatStrip stats={buildStats(data)} /> : q.loading ? <Skeleton className="h-[84px] w-full rounded-2xl" /> : undefined}
         details={RULES}
         className="mb-0"
+        extrasLastOnMobile
       />
 
       {/* The session chip says whether the US market is open; the line says why the board never stops. */}
-      <div className="-mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="-mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 max-md:order-last max-md:mt-0">
         <MarketSessionChip />
         <p className="max-w-2xl text-sm text-pretty text-muted-foreground">
           Wall Street is closed outside market hours. Solana is not, so you can trade on paper at any hour and every price carries its source and age.
@@ -219,6 +222,17 @@ export default function LeaguePage() {
                     </div>
                   ) : null}
                   <AccountCard me={data.me} startingCashUsd={data.startingCashUsd} />
+                  {data.me && !data.me.isBot && data.me.rank !== null ? (
+                    <a
+                      href={rankShareOnXUrl(data.me.rank, data.me.pnlPct, `${APP_URL}${START_PATH}`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(buttonVariants({ variant: "outline" }), "-mt-4 h-10 self-start")}
+                    >
+                      <Share2 data-icon="inline-start" aria-hidden />
+                      Post your rank on X
+                    </a>
+                  ) : null}
                   {/* Derived from the board above: renders nothing until this account has traded this week. */}
                   <YouVsBots me={data.me} rows={data.leaderboard} className="-mt-4" />
                   <section className="flex flex-col gap-3" aria-labelledby="league-positions">

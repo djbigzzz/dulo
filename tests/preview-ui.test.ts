@@ -61,10 +61,8 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     const flat = landing.replace(/\s+/g, " ");
     expect(flat).toContain("The entertainment layer for");
     expect(landing).toContain("Predict. Compete. Complete on-chain quests.");
-    // Two sentences (trimmed 22 Sep): the sourced stat, then the one-line frame. The tiles below say what the games are.
-    expect(flat).toContain(
-      "800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Dulo gives them three games on one Season leaderboard. </p>",
-    );
+    // No paragraph under the verbs since 2 Oct 2026: the welcome line and the tiles say the rest.
+    expect(flat).not.toContain("Dulo gives them three games");
     expect(flat).not.toContain("Yes or No on Friday&apos;s close, a weekly competition");
     expect(landing).not.toContain("Try the League");
     expect(landing).not.toContain("activity is");
@@ -75,8 +73,6 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(landing).toContain('href="#check"');
     expect(landing).toContain('id="check"');
     expect(landing).toContain("<CheckWalletBox");
-    // Pinned by tests/copy.test.ts: the Predictions tile still says where settlement comes from.
-    expect(landing).toContain("settled from the Friday close, source shown on the card");
   });
 
   it("states the welcome offer before sign-in, directly above the buttons, from the points policy", () => {
@@ -101,9 +97,8 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     // Phones read the pitch, then session and trust, then the live cards.
     expect(hero.indexOf("<MarketSessionChip")).toBeGreaterThan(hero.indexOf("Check a wallet"));
     expect(hero.indexOf("<MarketSessionChip")).toBeLessThan(hero.indexOf("<LivePredictions"));
-    // The H1 steps down below sm so Connect sits on the first 375 px screen; the sourced stat is never hidden.
+    // The H1 steps down below sm so Connect sits on the first 375 px screen.
     expect(landing).toMatch(/id="hero-title"\s+className="font-display text-4xl /);
-    expect(hero).not.toMatch(/hidden[^"]*">\s*800,000\+/);
   });
 
   it("puts the live prediction cards first in the hero, then the ranking, and the game tiles right under it", () => {
@@ -131,15 +126,12 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(NEXT_WEEK_MARKETS_COPY).toBe("Next week's predictions open right after Friday's settle.");
   });
 
-  it("reframes the lower sections as three games on one Season leaderboard, with nothing that pays for holding", () => {
+  it("keeps the landing short (lower explainer sections cut 2 Oct 2026), with nothing that pays for holding", () => {
     const landing = repoFile("src/app/page.tsx");
-    expect(landing).toMatch(/Three games, <span className="italic">one Season leaderboard<\/span>/);
+    for (const gone of ["How it <span", "Three games, <span", "Why it works", "<PartnersRow"]) expect(landing).not.toContain(gone);
     expect(landing).not.toContain("PLAY_KINDS");
     for (const chip of ['"Hold"', '"Diversify"', '"DCA"', '"Earnings"']) expect(landing).not.toContain(chip);
     expect(landing).not.toMatch(/\b(paid|pays?|earn\w*) (points )?(for|by) (holding|buying)/i);
-    expect(landing).toContain("A fresh week every Monday with virtual cash at real xStock and pre-IPO prices. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.");
-    expect(landing).toContain("In-platform quests with points and virtual cash, and on-chain quests verified from your wallet.");
-    expect(landing).toContain("See a leader's allocation and open the same legs in Jupiter from your own wallet.");
     // Closing CTA: Connect plus "Make a prediction".
     const cta = landing.slice(landing.indexOf('aria-labelledby="cta"'));
     expect(cta).toContain("<ConnectButton");

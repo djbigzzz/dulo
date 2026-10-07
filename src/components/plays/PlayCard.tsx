@@ -228,7 +228,7 @@ export function PlayCard<P extends PlayCardPlay>({
       data-play-key={play.key}
       data-status={play.comingSoon ? "coming_soon" : status}
       className={cn(
-        "group/play relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border bg-card p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.04] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        "group/play relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 sm:gap-4 sm:p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.04] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
         play.comingSoon && !complete
           ? "border-dashed border-white/10"
           : complete
@@ -257,7 +257,7 @@ export function PlayCard<P extends PlayCardPlay>({
           </MedallionFrame>
         ) : (
           <span
-            className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl border sm:size-14 sm:rounded-2xl border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]"
             aria-hidden
           >
             <CategoryIcon className="size-5" />
@@ -266,7 +266,7 @@ export function PlayCard<P extends PlayCardPlay>({
         <p className="shrink-0 text-right leading-none">
           <span
             className={cn(
-              "block text-3xl font-semibold tracking-tight tabular-nums",
+              "block text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl",
               play.badgeKey ? "text-gradient-gold" : "text-foreground",
               play.comingSoon && !complete && "opacity-70",
             )}
@@ -292,7 +292,8 @@ export function PlayCard<P extends PlayCardPlay>({
         </p>
       </div>
 
-      <p className="flex items-start gap-2 text-sm text-muted-foreground">
+      {/* The rule in one line; on phones the action button below says the same thing, so it is hidden there. */}
+      <p className="hidden items-start gap-2 text-sm text-muted-foreground sm:flex">
         <FileSearch
           className="mt-0.5 size-4 shrink-0 text-gold/70"
           aria-hidden
@@ -327,7 +328,7 @@ export function PlayCard<P extends PlayCardPlay>({
       ) : null}
 
       {hasFooter ? (
-        <div className="mt-auto flex flex-col gap-4">
+        <div className="mt-auto flex flex-col gap-3 sm:gap-4">
           <div
             className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"
             aria-hidden
@@ -355,7 +356,8 @@ export function PlayCard<P extends PlayCardPlay>({
                 {statusNote}
               </span>
             ) : null}
-            {play.completions > 0 ? (
+            {/* A count only once it is social proof, not "1 player". */}
+            {play.completions >= 5 ? (
               <span className="text-xs text-muted-foreground tabular-nums">
                 {formatPoints(play.completions)}{" "}
                 {play.completions === 1 ? "player" : "players"}
@@ -398,7 +400,7 @@ export function PlayCard<P extends PlayCardPlay>({
       <RuleDisclosure
         rule={play.rule}
         showHint={false}
-        className={cn(!hasFooter && "mt-auto")}
+        className={cn("max-sm:hidden", !hasFooter && "mt-auto")}
       />
     </article>
   );

@@ -727,11 +727,11 @@ describe("play-meta", () => {
     expect(visibleStartAction({ ...mirror, status: "in_progress" })).toMatchObject({ href: "/copy" });
   });
 
-  it("counts only listed Partners, so /quests matches /partners", () => {
+  it("counts only listed Partners (used by /partners); /quests no longer shows a partners tile", () => {
     const groups = ["xstocks", "jupiter", "kamino", "dulo"].map((slug) => ({ partner: { slug } }));
     expect(listedPartnerCount(groups)).toBe(3);
     expect(listedPartnerCount([{ partner: { slug: "dulo" } }])).toBe(0);
-    expect(readFileSync(path.join(process.cwd(), "src/app/quests/page.tsx"), "utf8")).toContain('label: "Listed projects", value: listedPartnerCount(groups)');
+    expect(readFileSync(path.join(process.cwd(), "src/app/quests/page.tsx"), "utf8")).not.toContain('label: "Listed projects"');
   });
 
   it("the /quests page refreshes the session after a quest refresh and has no buy action in its empty state", () => {

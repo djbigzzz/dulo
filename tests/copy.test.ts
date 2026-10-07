@@ -62,7 +62,7 @@ describe("copy — Mirror is deep links, Calls settle from the close", () => {
   it("the Oracle Play and the landing Calls tile say where settlement comes from", () => {
     expect(playByKey("oracle")!.desc).toContain(CALLS_SETTLE_COPY);
     const landing = repoFile("src/app/page.tsx");
-    expect(landing).toContain(CALLS_SETTLE_COPY);
+    // The landing's lower Predictions tile was cut on 2 Oct 2026; settlement copy lives on the cards and the quest.
     expect(landing).not.toMatch(/settled (by|from) Pyth/);
   });
 
@@ -162,11 +162,12 @@ describe("public docs — sourced claims, private planning, video scripts", () =
     }
   });
 
-  it("the landing hero leads with the sourced holder stat and the Solana section makes no exclusivity claim", () => {
+  it("the landing carries no unsourced holder stat and no partner logos", () => {
     const landing = repoFile("src/app/page.tsx");
-    expect(landing).toContain("800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026)");
-    expect(landing).toContain("Why it works");
-    expect(landing).toContain("{PARTNER_MARKS_NOTICE}");
+    // The sourced stat left the hero on 2 Oct 2026 (less text); it lives in the docs and the pitch video.
+    expect(landing).not.toContain("800,000+");
+    // The "Why it works" and Partners sections were cut on 2 Oct 2026: no logos, so no marks notice needed.
+    expect(landing).not.toContain("<PartnersRow");
   });
 
   it("REVIEW carries no spend or prize-share reasoning", () => {
@@ -237,11 +238,11 @@ describe("public docs — sourced claims, private planning, video scripts", () =
     expect(env).not.toMatch(/JUPITER_API_KEY` only lifts rate limits/);
     expect(env).toContain("us-east-1");
     expect(env).toContain("?pgbouncer=true&connection_limit=1&connect_timeout=5");
-    expect(env).toMatch(/`NEXT_PUBLIC_APP_URL`: `https:\/\/<project>\.vercel\.app` until dulo\.fun actually resolves/);
+    expect(env).toMatch(/`NEXT_PUBLIC_APP_URL`: `https:\/\/projectdulo\.com` since 7 Oct 2026/);
     const example = repoFile(".env.example");
     expect(example).toMatch(/^JUPITER_API_KEY=.*REQUIRED in production/m);
     expect(example).toContain("pgbouncer=true&connection_limit=1&connect_timeout=5");
-    expect(example).toMatch(/^NEXT_PUBLIC_APP_URL=.*<project>\.vercel\.app until dulo\.fun/m);
+    expect(example).toMatch(/^NEXT_PUBLIC_APP_URL=.*production: https:\/\/projectdulo\.com/m);
     expect(repoFile(".github/workflows/tick.yml")).toMatch(/APP_URL\s+= https:\/\/<project>\.vercel\.app/);
   });
 
