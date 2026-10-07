@@ -3,7 +3,7 @@ import fs from "node:fs";
 const DIR = process.cwd();
 const FPS = 30;
 const END = 3.5;                                                    // end card seconds; edit.py reads the same value
-const URL_TEXT = process.env.START_URL || "dulo-iota.vercel.app/start";
+const URL_TEXT = process.env.START_URL || "projectdulo.com/start";
 const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" }).catch(() => chromium.launch());
 const p = await b.newPage({ viewport: { width: 1080, height: 1350 } });
 await p.goto(`file://${DIR}/gfx.html`);

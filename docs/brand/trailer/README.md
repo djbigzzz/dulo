@@ -4,7 +4,7 @@ Three live mobile shots of the production app (a prediction card with a tap on Y
 
 ## When to render
 
-Footage shows the current week's questions and countdown, so render after the weekly rollover (the Friday tick at 21:10 UTC opens next week's predictions) and post before the next Friday lock. Before posting, `curl -s -o /dev/null -w '%{http_code}' https://dulo-iota.vercel.app/start` must print 200, because the end card links there.
+Footage shows the current week's questions and countdown, so render after the weekly rollover (the Friday tick at 21:10 UTC opens next week's predictions) and post before the next Friday lock. Before posting, `curl -s -o /dev/null -w '%{http_code}' https://projectdulo.com/start` must print 200, because the end card links there.
 
 ## Render
 

@@ -343,7 +343,7 @@ describe("docs economy — honest claims across every doc", () => {
     // 21 Sep: deployed. "Not deployed" is no longer the honest claim, but everything else it used
     // to deny still holds, and going live is exactly when a doc starts quietly implying traction.
     // So each doc must name the live URL AND keep denying players, partners, badges and billing.
-    const LIVE_URL = "https://dulo-iota.vercel.app";
+    const LIVE_URL = "https://projectdulo.com";
     for (const [rel, text] of [
       ["README.md", README],
       ["CLAUDE.md", BRIEF],

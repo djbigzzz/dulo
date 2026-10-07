@@ -16,11 +16,11 @@
 Three games on one Season leaderboard: points-only **predictions** on Friday closes, a weekly **competition** with $10,000 of virtual cash at real xStock and pre-IPO prices, and **quests**, some completed in the app and some verified from your own Solana wallet with the proof attached. Every new player starts with 1,000 starter points. Points only, no cash value.
 
 > [!NOTE]
-> **Live at https://dulo-iota.vercel.app**, reading Solana mainnet, not a testnet mock. It is deployed but brand new: no external players yet (one account so far: the founder's), no project has signed up, no badge has been minted and nothing is billed. Every count below reads zero because it is zero.
+> **Live at https://projectdulo.com**, reading Solana mainnet, not a testnet mock. It is deployed but brand new: no external players yet (one account so far: the founder's), no project has signed up, no badge has been minted and nothing is billed. Every count below reads zero because it is zero.
 
 | | |
 |---|---|
-| **Live app** | **https://dulo-iota.vercel.app** |
+| **Live app** | **https://projectdulo.com** |
 | **Pitch video** | _recording this week_ |
 | **Technical video** | [Platform walkthrough on Loom](https://www.loom.com/share/0cb82389e1214dddb84027beecd1d008) (4:59) |
 | **Pitch deck** | [Dulo-pitch-deck.pdf](docs/pitch/Dulo-pitch-deck.pdf) (13 slides) |
@@ -42,7 +42,7 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 
 ## Judge quick path (90 seconds, nothing to install)
 
-**Open https://dulo-iota.vercel.app — nothing to install.** Or run it yourself in about 5 minutes: [Run locally](#run-locally). Every chain read goes to Solana mainnet, so nothing here is a testnet mock. You do not need to hold an xStock: starter points and virtual cash cover everything except the on-chain quests.
+**Open https://projectdulo.com — nothing to install.** Or run it yourself in about 5 minutes: [Run locally](#run-locally). Every chain read goes to Solana mainnet, so nothing here is a testnet mock. You do not need to hold an xStock: starter points and virtual cash cover everything except the on-chain quests.
 
 The landing opens on this week's live prediction cards, the three game tiles (Predictions, Competition, On-chain quests) and the welcome offer, with Connect wallet first and Check a wallet second.
 
@@ -512,7 +512,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 ## Known limitations
 
-- **Brand new.** Live at https://dulo-iota.vercel.app since 21 Sep 2026 with no external players yet (one account so far: the founder's), so the Season leaderboard is empty and no badge has been minted. It runs on Vercel's free plan: the five-minute tick comes from a GitHub Actions pinger with Vercel's daily run as backstop, and without a Helius or Jupiter key the public RPC and keyless Jupiter rate-limit under load.
+- **Brand new.** Live since 21 Sep 2026 (at https://projectdulo.com since 7 Oct) with no external players yet (one account so far: the founder's), so the Season leaderboard is empty and no badge has been minted. It runs on Vercel's free plan: the five-minute tick comes from a GitHub Actions pinger with Vercel's daily run as backstop, and without a Helius or Jupiter key the public RPC and keyless Jupiter rate-limit under load.
 - **No Pyth key.** Pyth Hermes needs a key and Season 0 runs without one. Jupiter Price v3 therefore prices the competition and settles the predictions, and the source and age are printed on every chip and card. Outside the US session a price is Jupiter's last quote; after 6 hours it is marked stale.
 - **Entries close 24 hours before the Friday close (since 2 Oct 2026).** That removes the near-riskless last-minute entry against the house-bot pools; a Thursday entry still carries a day of price risk. Next week's questions still open after Friday's settle.
 - **Throwaway accounts.** Someone can put a throwaway account's starter points on the side that is about to lose, which moves those points to their main account as Season points. A new-account limit of 20 an hour per network only slows this down, and it lives in memory on each server instance. The planned fix weights accounts by account or wallet age, never by holdings.

@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import fs from "node:fs";
-const BASE = "https://dulo-iota.vercel.app";
+const BASE = "https://projectdulo.com";
 const OUT = process.cwd() + "/shots";
 const FPS = 30;
 const VP = { width: 432, height: 936 };

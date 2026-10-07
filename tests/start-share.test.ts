@@ -4,7 +4,7 @@ import { START_PATH, competitionLine, rankShareOnXUrl, rankShareText, shareOnXUr
 // /start share post: the prefilled X text a player can post after a prediction. Plain names only
 // (points only, no betting words), and the link back to /start.
 
-const URL_ = "https://dulo-iota.vercel.app/start";
+const URL_ = "https://projectdulo.com/start";
 
 describe("/start share", () => {
   it("states the pick, says points only, and links back", () => {

@@ -2,7 +2,7 @@
 
 We are building the entertainment layer for xStocks: a distribution network where projects list Plays (verified on-chain actions), users complete them from their real wallet activity, and everyone competes in games and predictions for points. Think Arkada/Galxe, but the first vertical is tokenized stocks (xStocks) and the entry is the Stocklana hackathon.
 
-Status (21 Sep 2026): deployed at https://dulo-iota.vercel.app (Vercel Hobby, team mystartup-team; Neon Postgres in us-east-1, schema pushed and seeded). Still true, and never claim otherwise: no external players (one account so far: the founder's), no partner has signed anything, no badge has been minted, no billing. dulo.fun is not registered, so the Vercel URL is the public origin.
+Status (21 Sep 2026): deployed at https://projectdulo.com (Vercel Hobby, team mystartup-team; Neon Postgres in us-east-1, schema pushed and seeded). Still true, and never claim otherwise: no external players (one account so far: the founder's), no partner has signed anything, no badge has been minted, no billing. dulo.fun is not registered. The public origin is https://projectdulo.com (registered 7 Oct 2026, served by Vercel; https://dulo-iota.vercel.app still works).
 
 Deadline (confirmed 17 Sep 2026 from the hackathon page countdown, its header and press coverage): submissions close Fri 25 Sep 2026, 16:00 ET (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct. The page timeline paragraph still says 18 Sep and is stale. README.md, docs/SUBMISSION.md and docs/HANDOFF.md all say this; keep them in step.
 
@@ -45,4 +45,4 @@ Rules of the codebase:
 
 Deadline discipline: press Submit Project on Thu 17 Sep as a hedge (Save Draft is not a submission), then keep editing until the close at Fri 25 Sep 2026, 16:00 ET. Mirror ships as "view allocation + open Jupiter with a prefilled swap per leg" by decision (14 Sep): that is the product, not a fallback; in-app swap execution stays on the cut list.
 
-Product name: Dulo, after the House of Dulo, the founding Bulgar dynasty. Repo package name: dulo. dulo.fun is the intended domain and is NOT registered, and no mailbox on it exists. Nothing public may present it as the app's address or as a contact, and no commit may be authored from it. The public origin is the Vercel URL, and the repo is github.com/djbigzzz/dulo.
+Product name: Dulo, after the House of Dulo, the founding Bulgar dynasty. Repo package name: dulo. dulo.fun is the intended domain and is NOT registered, and no mailbox on it exists. Nothing public may present it as the app's address or as a contact, and no commit may be authored from it. The public origin is https://projectdulo.com, and the repo is github.com/djbigzzz/dulo.

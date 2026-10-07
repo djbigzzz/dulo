@@ -1,6 +1,6 @@
 # Launch kit (Colosseum Crypto World's Fair, 1 to 12 Oct 2026)
 
-Everything here is written to the CLAUDE.md copy rules: points only, no cash value; "virtual cash" beside every mention of the competition; no betting words; never "prediction market"; xStocks are tokenized stocks, never "real stocks"; pre-IPO tokens are never shares or stock; nothing claims players, partners or revenue Dulo does not have. Replace `<LINK>` with the public origin (today `https://dulo-iota.vercel.app`, or the new domain once it resolves) and `<X>` with the project's X handle.
+Everything here is written to the CLAUDE.md copy rules: points only, no cash value; "virtual cash" beside every mention of the competition; no betting words; never "prediction market"; xStocks are tokenized stocks, never "real stocks"; pre-IPO tokens are never shares or stock; nothing claims players, partners or revenue Dulo does not have. Replace `<LINK>` with the public origin (`https://projectdulo.com` since 7 Oct 2026) and `<X>` with the project's X handle.
 
 The share link for every post is `<LINK>/start`: one screen, one prediction, sign in on the button, then a prefilled "Post your pick on X".
 
@@ -68,7 +68,7 @@ Every post that names xStocks carries, in the post or a reply: "Not investment a
 2. At the registrar, add the DNS records Vercel shows (usually an `A` record to `76.76.21.21` for the apex and a `CNAME` for `www` to `cname.vercel-dns.com`). Wait until Vercel marks both valid.
 3. Vercel > Settings > Environment Variables: set `NEXT_PUBLIC_APP_URL=https://<domain>` for Production, then redeploy. This also moves the SIWS domain, badge metadata URIs and the Solami webhook URL.
 4. If the Solami webhook exists, run `npm run solami:webhook` once more so it points at the new URL.
-5. Tell Claude the domain: CLAUDE.md, README.md, docs/SUBMISSION.md and docs/HANDOFF.md say dulo.fun is not registered and the Vercel URL is the public origin; they change together, with the tests that pin that wording.
+5. Done 7 Oct 2026 for projectdulo.com: CLAUDE.md, README.md, docs/SUBMISSION.md and docs/HANDOFF.md name it as the public origin, with the tests that pin that wording.
 
 ## 6. What counts as traction
 

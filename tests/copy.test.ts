@@ -238,11 +238,11 @@ describe("public docs — sourced claims, private planning, video scripts", () =
     expect(env).not.toMatch(/JUPITER_API_KEY` only lifts rate limits/);
     expect(env).toContain("us-east-1");
     expect(env).toContain("?pgbouncer=true&connection_limit=1&connect_timeout=5");
-    expect(env).toMatch(/`NEXT_PUBLIC_APP_URL`: `https:\/\/<project>\.vercel\.app` until dulo\.fun actually resolves/);
+    expect(env).toMatch(/`NEXT_PUBLIC_APP_URL`: `https:\/\/projectdulo\.com` since 7 Oct 2026/);
     const example = repoFile(".env.example");
     expect(example).toMatch(/^JUPITER_API_KEY=.*REQUIRED in production/m);
     expect(example).toContain("pgbouncer=true&connection_limit=1&connect_timeout=5");
-    expect(example).toMatch(/^NEXT_PUBLIC_APP_URL=.*<project>\.vercel\.app until dulo\.fun/m);
+    expect(example).toMatch(/^NEXT_PUBLIC_APP_URL=.*production: https:\/\/projectdulo\.com/m);
     expect(repoFile(".github/workflows/tick.yml")).toMatch(/APP_URL\s+= https:\/\/<project>\.vercel\.app/);
   });
 
