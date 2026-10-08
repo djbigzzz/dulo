@@ -116,6 +116,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p className="text-xs text-pretty text-muted-foreground/80">{COMPLIANCE_LINE}</p>
           </div>
           <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link href="/start" className={FOOTER_LINK}>
+              Take the tour
+            </Link>
             <Link href="/check" className={FOOTER_LINK}>
               Check a wallet
             </Link>

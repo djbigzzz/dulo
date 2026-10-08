@@ -196,8 +196,8 @@ export default function Home() {
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row md:shrink-0">
             <ConnectButton size="lg" className="h-11 px-5 text-base" />
-            <Link href="/predictions" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-11 px-5 text-base")}>
-              Make a prediction
+            <Link href="/start" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-11 px-5 text-base")}>
+              Take the tour
               <ArrowRightIcon data-icon="inline-end" />
             </Link>
           </div>

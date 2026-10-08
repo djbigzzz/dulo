@@ -13,7 +13,7 @@ import { PriceChip } from "@/components/common/PriceChip";
 import { useApiQuery } from "@/components/common/useApiQuery";
 import { formatUsd } from "@/components/common/format";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
-import { LEAGUE_MIN_TRADE_USD, WEEKEND_TRADES_COPY, formatQty, isBelowMinTrade, isPreWeek } from "@/components/league/format";
+import { LEAGUE_MIN_TRADE_USD, WEEKEND_TRADES_COPY, formatQty, formatUsdWhole, isBelowMinTrade, isPreWeek } from "@/components/league/format";
 import { completedPlayTitle, type LeagueTradeResult } from "@/components/league/scout";
 import { symbolSource } from "@/components/league/symbol-source";
 
@@ -38,6 +38,11 @@ export interface TradeFormProps {
    * /prestocks passes false: its page header carries the line once for the whole page.
    */
   preIpoNotice?: boolean;
+  /**
+   * /start tour: a chip beside Max that fills in the quantity for this many dollars of virtual
+   * cash on the buy side, capped at the cash left; omitted, nothing renders.
+   */
+  quickBuyUsd?: number;
   className?: string;
 }
 
@@ -65,6 +70,11 @@ function floorQty(n: number): number {
   return Math.floor(n * 10 ** QTY_DECIMALS) / 10 ** QTY_DECIMALS;
 }
 
+/** The /start tour's quick amount: `usd` of virtual cash at the buy fill, capped at the cash left. */
+export function quickBuyQty(usd: number, cash: number | null, fill: number): number {
+  return floorQty(Math.min(usd, cash ?? usd) / fill);
+}
+
 function parseQty(s: string): number | null {
   if (!s.trim()) return null;
   const n = Number(s);
@@ -81,13 +91,17 @@ const selectClass = cn(
 
 const LABEL = "text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase";
 
+/** The small pill buttons over the quantity input (Max, and the /start tour's quick amount). */
+const CHIP =
+  "inline-flex h-6 items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 text-xs font-medium text-muted-foreground tabular-nums transition-colors hover:border-white/15 hover:text-foreground disabled:opacity-50";
+
 /**
  * Symbol select (fixed list + held symbols), Buy/Sell toggle, quantity, estimated cost at the
  * quote +/- spread and the price chip (source / age / stale). Submits to POST /league/trade and
  * toasts any Play the trade completed ("Quest complete: First Paper Trades · +50 pts"). The page can render two of these
  * (desktop panel + mobile sheet), so every id comes from useId.
  */
-export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "", onPlaced, sources, symbolLabel, preIpoNotice = true, className }: TradeFormProps) {
+export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "", onPlaced, sources, symbolLabel, preIpoNotice = true, quickBuyUsd, className }: TradeFormProps) {
   const symbols = useApiQuery((signal) => leagueApi.symbols({ signal }), `${refreshKey}:${signedIn ? "in" : "out"}`, { refetchOnFocus: false });
   const sourceKey = sources ? sources.join(",") : "";
   const list = React.useMemo(() => {
@@ -137,6 +151,11 @@ export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "",
     } else {
       setQtyText(String(floorQty(held)));
     }
+  };
+
+  const setQuickBuy = () => {
+    if (fill === null || !quickBuyUsd) return;
+    setQtyText(String(quickBuyQty(quickBuyUsd, cash, fill)));
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -217,9 +236,22 @@ export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "",
           <label htmlFor={qtyId} className={LABEL}>
             Quantity
           </label>
-          <button type="button" onClick={setMax} disabled={fill === null} className="inline-flex h-6 items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 text-xs font-medium text-muted-foreground tabular-nums transition-colors hover:border-white/15 hover:text-foreground disabled:opacity-50">
-            {side === "buy" ? `Max${cash !== null ? ` (${formatUsd(cash)})` : ""}` : `Max (${formatQty(held)})`}
-          </button>
+          <div className="flex items-center gap-1.5">
+            {quickBuyUsd && side === "buy" ? (
+              <button
+                type="button"
+                onClick={setQuickBuy}
+                disabled={fill === null}
+                aria-label={`Set the quantity to ${formatUsdWhole(quickBuyUsd)} of virtual cash`}
+                className={CHIP}
+              >
+                {formatUsdWhole(quickBuyUsd)}
+              </button>
+            ) : null}
+            <button type="button" onClick={setMax} disabled={fill === null} className={CHIP}>
+              {side === "buy" ? `Max${cash !== null ? ` (${formatUsd(cash)})` : ""}` : `Max (${formatQty(held)})`}
+            </button>
+          </div>
         </div>
         <Input
           id={qtyId}

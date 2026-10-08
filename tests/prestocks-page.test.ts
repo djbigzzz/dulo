@@ -41,7 +41,7 @@ import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE, PRE_IPO_TOKEN_2022_NOTE } fro
 import { MOBILE_TABS, NAV_ITEMS } from "@/components/layout/nav";
 import { PRESTOCKS_STATIC } from "@/lib/assets/prestocks";
 import { activePlays } from "@/lib/plays/catalogue";
-import { TradeForm, groupSymbols } from "@/components/league/TradeForm";
+import { TradeForm, groupSymbols, quickBuyQty } from "@/components/league/TradeForm";
 import { isPreIpoSymbol, symbolSource } from "@/components/league/symbol-source";
 import { LIST, PreIpoBoard, PreIpoRow, ROW, ROW_GRID } from "@/components/prestocks/PreIpoBoard";
 import { PRE_IPO_PAGE_DESCRIPTION, PRE_IPO_PAGE_TITLE, PreStocksView, preIpoQuests } from "@/components/prestocks/PreStocksView";
@@ -349,6 +349,31 @@ describe("the trade form lists both issuers on /competition and pre-IPO tokens o
     const quiet = html(createElement(TradeForm, { league: WEEK, signedIn: true, serverNow: NOW, sources: ["prestocks"], symbolLabel: "Pre-IPO token", preIpoNotice: false }));
     expect(quiet).toContain("Paper buy ANDURIL");
     expect(quiet).not.toContain(PRE_IPO_COMPLIANCE_LINE);
+  });
+
+  it("offers the /start tour's $1,000 chip only when the page passes quickBuyUsd, and only on the buy side", () => {
+    const chip = 'aria-label="Set the quantity to $1,000 of virtual cash"';
+    const quick = html(createElement(TradeForm, { league: WEEK, signedIn: true, serverNow: NOW, sources: ["xstocks"], quickBuyUsd: 1000 }));
+    expect(quick).toContain(chip);
+    expect(quick).toContain(">$1,000<");
+    expect(quick).toContain("Paper buy TSLAx");
+    const plain = html(createElement(TradeForm, { league: WEEK, signedIn: true, serverNow: NOW }));
+    expect(plain).not.toContain(chip);
+    expect(plain).not.toContain(">$1,000<");
+    // The competition and /prestocks pages never pass it.
+    for (const rel of ["src/app/competition/page.tsx", "src/components/prestocks/PreStocksView.tsx"]) expect(repoFile(rel)).not.toContain("quickBuyUsd");
+    // A static render cannot toggle to Sell, so the buy-side guard is pinned by source.
+    expect(repoFile("src/components/league/TradeForm.tsx")).toContain('quickBuyUsd && side === "buy" ? (');
+  });
+
+  it("the $1,000 chip's quantity is that much virtual cash at the buy fill, capped at the cash left", () => {
+    expect(quickBuyQty(1000, 10_000, 400)).toBe(2.5);
+    expect(quickBuyQty(1000, null, 400)).toBe(2.5);
+    // Less than $1,000 of virtual cash left: the chip fills in what the cash buys, never more.
+    expect(quickBuyQty(1000, 250, 400)).toBe(0.625);
+    expect(quickBuyQty(1000, 250, 400) * 400).toBeLessThanOrEqual(250);
+    // Floored to six decimals, so the cost never rounds above the amount.
+    expect(quickBuyQty(1000, 10_000, 3)).toBe(333.333333);
   });
 
   it("with an older payload that carries no source tag, every symbol is an xStock", () => {

@@ -132,10 +132,10 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(landing).not.toContain("PLAY_KINDS");
     for (const chip of ['"Hold"', '"Diversify"', '"DCA"', '"Earnings"']) expect(landing).not.toContain(chip);
     expect(landing).not.toMatch(/\b(paid|pays?|earn\w*) (points )?(for|by) (holding|buying)/i);
-    // Closing CTA: Connect plus "Make a prediction".
+    // Closing CTA: Connect plus "Take the tour" (the /start tour, 8 Oct 2026).
     const cta = landing.slice(landing.indexOf('aria-labelledby="cta"'));
     expect(cta).toContain("<ConnectButton");
-    expect(cta).toMatch(/href="\/predictions"[^>]*>\s*Make a prediction/);
+    expect(cta).toMatch(/href="\/start"[^>]*>\s*Take the tour/);
     // No betting words or internal odds on the landing.
     expect(landing).not.toMatch(/probability|odds today|~0%/i);
     expect(landing).not.toMatch(/prediction market|\bstake|\bodds\b|\bpayout|\bbets?\b/i);

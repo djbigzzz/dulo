@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApiClientError,
   NO_CASH_VALUE,
+  OWN_PREDICTION_FLOW_PATHS,
   accountPointsLines,
+  actionForPath,
   apiFetch,
   errorMessage,
   isUserRejection,
@@ -187,7 +189,7 @@ describe("signInToast — the toast after a successful verify", () => {
     expect(signInToast("signedIn", welcome)).toEqual({
       title: WELCOME_TITLE,
       description: WELCOME_COPY,
-      action: { label: "Make a prediction", href: "/predictions" },
+      action: { label: "Make a prediction", href: "/start" },
     });
     expect(WELCOME_TITLE).toBe("Welcome to Dulo");
     // The copy states both numbers the policy grants, and that it is points only.
@@ -195,6 +197,19 @@ describe("signInToast — the toast after a successful verify", () => {
     expect(WELCOME_COPY).toContain(`$${VIRTUAL_CASH_USD.toLocaleString("en-US")} of virtual cash`);
     expect(WELCOME_COPY).toContain("The starter grant itself isn't ranked; once a prediction settles, what you put in and get back counts toward your Season points.");
     expect(WELCOME_COPY).toContain("Points only, no cash value.");
+  });
+
+  it("drops the button on the pages that open their own prediction dialog, and keeps the copy", () => {
+    const action = signInToast("signedIn", welcome).action;
+    expect(action).toEqual({ label: "Make a prediction", href: "/start" });
+    expect(OWN_PREDICTION_FLOW_PATHS).toEqual(["/start", "/predictions"]);
+    for (const path of ["/start", "/start/", "/predictions", "/predictions//"]) expect(actionForPath(action, path), path).toBeUndefined();
+    for (const path of ["/", "/competition", "/quests", "/start/x", "/startx"]) expect(actionForPath(action, path), path).toBe(action);
+    expect(actionForPath(undefined, "/")).toBeUndefined();
+    expect(actionForPath(undefined, "/start")).toBeUndefined();
+    // No pathname (outside a browser): nothing to match, so the action stays.
+    expect(actionForPath(action, null)).toBe(action);
+    expect(actionForPath(action, undefined)).toBe(action);
   });
 
   it("never loses the one-off welcome, even when the sign-in linked a wallet", () => {

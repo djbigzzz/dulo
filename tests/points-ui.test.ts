@@ -263,6 +263,8 @@ describe("points UI — SessionProvider", () => {
     expect(src).toContain("signInToast(signInOutcome(previous, data.session), data.welcome)");
     expect(src).toContain("apiFetch<VerifyResult>(\"/api/v1/auth/verify\"");
     expect(src).not.toContain('toast.success("Signed in"');
+    // /start and /predictions open their own prediction dialog: the welcome keeps its copy and drops its button there.
+    expect(src).toContain("actionForPath(action, window.location.pathname)");
   });
 
   it("navigates with next/navigation's router, mounted only when the action is pressed", () => {
