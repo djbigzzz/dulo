@@ -21,10 +21,11 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 | | |
 |---|---|
 | **Live app** | **https://projectdulo.com** |
-| **Pitch video** | _recording this week_ |
+| **Try it** | **[projectdulo.com/start](https://projectdulo.com/start)**: a four-step tour (a prediction, three paper trades with virtual cash, your quests, the leaderboard) in about three minutes |
+| **Pitch video** | _linked with the Colosseum submission_ |
 | **Technical video** | [Platform walkthrough on Loom](https://www.loom.com/share/0cb82389e1214dddb84027beecd1d008) (4:59) |
 | **Pitch deck** | [Dulo-pitch-deck.pdf](docs/pitch/Dulo-pitch-deck.pdf) (13 slides) |
-| **Hackathon** | [Stocklana](https://hackathons.solana.com/hackathons/stocklana) — submissions close Fri 25 Sep 2026, 16:00 ET, and judging runs to 2 Oct |
+| **Hackathon** | [Colosseum Crypto World's Fair](https://colosseum.com/worldsfair): submissions close Mon 12 Oct 2026, 11:59pm PT. Dulo was first entered in [Stocklana](https://hackathons.solana.com/hackathons/stocklana) (submissions closed Fri 25 Sep 2026, 16:00 ET, and judging runs to 2 Oct) |
 | **Licence** | [MIT](LICENSE) |
 
 <p align="center">
@@ -42,7 +43,7 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 
 ## Judge quick path (90 seconds, nothing to install)
 
-**Open https://projectdulo.com — nothing to install.** Or run it yourself in about 5 minutes: [Run locally](#run-locally). Every chain read goes to Solana mainnet, so nothing here is a testnet mock. You do not need to hold an xStock: starter points and virtual cash cover everything except the on-chain quests.
+**Open https://projectdulo.com/start for the guided tour, or https://projectdulo.com — nothing to install.** Or run it yourself in about 5 minutes: [Run locally](#run-locally). Every chain read goes to Solana mainnet, so nothing here is a testnet mock. You do not need to hold an xStock: starter points and virtual cash cover everything except the on-chain quests.
 
 The landing opens on this week's live predictions (one featured with its price, the other two as rows; 9 Oct 2026: calm redesign), the three game tiles (Predictions, Competition, On-chain quests) and the welcome offer, with Connect wallet first and Check a wallet second.
 
@@ -396,6 +397,8 @@ Dulo's in-platform quests sit under a hidden house partner that is not listed. T
 A plan, not revenue: nothing is billed today, there is no billing code and no paying project.
 
 Players are free, forever. The plan is that partners list on-chain quests and pay per verified completion, and that apps and issuers sponsor competitions. What they would pay for is attribution: verified completions per Partner per Season. Points only, no cash value.
+
+Points today, real money later: the plan is real-money prediction markets once demand is proven, through a licensed partner or only where they are allowed, and only after legal advice. A paid Yes/No on a stock's close is a binary option, and every EU Member State bans selling those to retail clients ([ESMA, 3 Jul 2026](https://www.esma.europa.eu/press-news/esma-news/esma-reminds-firms-existing-rules-and-obligations-under-binary-option-measures)). Nothing real-money is built.
 
 ## Numbers so far
 

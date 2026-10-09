@@ -4,7 +4,7 @@ We are building the entertainment layer for xStocks: a distribution network wher
 
 Status (21 Sep 2026): deployed at https://projectdulo.com (Vercel Hobby, team mystartup-team; Neon Postgres in us-east-1, schema pushed and seeded). Still true, and never claim otherwise: no external players (one account so far: the founder's), no partner has signed anything, no badge has been minted, no billing. dulo.fun is not registered. The public origin is https://projectdulo.com (registered 7 Oct 2026, served by Vercel; https://dulo-iota.vercel.app still works).
 
-Deadline (confirmed 17 Sep 2026 from the hackathon page countdown, its header and press coverage): submissions close Fri 25 Sep 2026, 16:00 ET (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct. The page timeline paragraph still says 18 Sep and is stale. README.md, docs/SUBMISSION.md and docs/HANDOFF.md all say this; keep them in step.
+Deadline (confirmed 17 Sep 2026 from the hackathon page countdown, its header and press coverage): submissions close Fri 25 Sep 2026, 16:00 ET (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct. The page timeline paragraph still says 18 Sep and is stale. README.md, docs/SUBMISSION.md and docs/HANDOFF.md all say this; keep them in step. Since 9 Oct 2026 the current entry is the Colosseum Crypto World's Fair (submissions close Mon 12 Oct 2026, 11:59pm PT; docs/COLOSSEUM.md): README's hackathon row names it first and keeps Stocklana as the earlier entry.
 
 Long-term: multichain, multi-asset, multi-client, many partners. Hackathon: Solana only, xStocks only, web PWA only, partners seeded by hand. Build one of everything behind an interface; never build the second of anything.
 
