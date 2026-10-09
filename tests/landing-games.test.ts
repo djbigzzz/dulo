@@ -11,15 +11,16 @@ import {
   GAME_TILE_ORDER,
   TILE_COPY,
   TILE_PLACEHOLDER,
-  competitionTileStat,
+  competitionTileFigure,
   createSharedReads,
   flattenPlays,
   onChainQuestTileStat,
   pickLiveMarkets,
-  predictionsTileStat,
-  questTileNote,
+  predictionsTileFigure,
+  questTileFigure,
 } from "@/components/landing/game-tiles";
-import { GameTiles, LivePredictions, RankCard } from "@/components/landing/ScoreboardPreview";
+import { NEXT_WEEK_MARKETS_COPY } from "@/components/calls/calls-format";
+import { GameTiles, LivePredictions, SeasonTop } from "@/components/landing/ScoreboardPreview";
 
 /**
  * The landing's three game tiles and the live prediction cards (approved wireframe, 16 Sep 2026).
@@ -112,11 +113,19 @@ describe("game tiles — copy", () => {
       const { title, cta, note } = TILE_COPY[key];
       expect(`${title} ${cta} ${note}`, key).not.toMatch(BANNED);
     }
-    expect(questTileNote(null)).not.toMatch(BANNED);
+    for (const fig of [
+      predictionsTileFigure([market({ total: 50 })], NOW),
+      predictionsTileFigure([], NOW),
+      competitionTileFigure({ leaderboard: [leader({ isBot: true })] }),
+      competitionTileFigure({ leaderboard: [] }),
+      questTileFigure({ value: "3 quests live", liveCount: 3, comingSoonCount: 2 }),
+    ]) {
+      expect(`${fig?.figure} ${fig?.line}`).not.toMatch(BANNED);
+    }
   });
 });
 
-describe("predictionsTileStat — points in this week's predictions", () => {
+describe("predictionsTileFigure — points in this week's predictions", () => {
   it("sums the points in open and locked predictions only", () => {
     const markets = [
       market({ ticker: "NVDA", total: 500 }),
@@ -125,23 +134,28 @@ describe("predictionsTileStat — points in this week's predictions", () => {
       market({ ticker: "AAPL", total: 900, status: "settled", outcome: "yes" }),
       market({ ticker: "MSFT", total: 300, status: "void", outcome: "void" }),
     ];
-    expect(predictionsTileStat(markets, NOW)).toBe("1,650 pts in this week");
+    expect(predictionsTileFigure(markets, NOW)).toEqual({ figure: "1,650", line: "points in this week" });
   });
 
   it("still counts a prediction whose entries closed since the server answered", () => {
     const afterLock = Date.parse(LOCKS) + 60_000;
-    expect(predictionsTileStat([market({ total: 400 })], afterLock)).toBe("400 pts in this week");
+    expect(predictionsTileFigure([market({ total: 400 })], afterLock)?.figure).toBe("400");
   });
 
   it("reads 0 on a live board with nothing in yet, and skips a malformed total", () => {
-    expect(predictionsTileStat([], NOW)).toBe("0 pts in this week");
-    expect(predictionsTileStat([market({ total: 0 })], NOW)).toBe("0 pts in this week");
-    expect(predictionsTileStat([market({ total: Number.NaN }), market({ ticker: "SPY", total: 25 })], NOW)).toBe("25 pts in this week");
+    expect(predictionsTileFigure([market({ total: 0 })], NOW)?.figure).toBe("0");
+    expect(predictionsTileFigure([market({ total: Number.NaN }), market({ ticker: "SPY", total: 25 })], NOW)?.figure).toBe("25");
+  });
+
+  it("says when the next board opens between weeks, never a stale total", () => {
+    const between = { figure: "Between weeks", line: NEXT_WEEK_MARKETS_COPY };
+    expect(predictionsTileFigure([], NOW)).toEqual(between);
+    expect(predictionsTileFigure([market({ total: 900, status: "settled", outcome: "yes" })], NOW)).toEqual(between);
   });
 
   it("returns null while loading or after a failed read, never a made-up number", () => {
-    expect(predictionsTileStat(null, NOW)).toBeNull();
-    expect(predictionsTileStat(undefined, NOW)).toBeNull();
+    expect(predictionsTileFigure(null, NOW)).toBeNull();
+    expect(predictionsTileFigure(undefined, NOW)).toBeNull();
   });
 });
 
@@ -166,34 +180,34 @@ describe("pickLiveMarkets — the hero's prediction cards", () => {
   });
 });
 
-describe("competitionTileStat — the weekly competition leader (virtual cash)", () => {
+describe("competitionTileFigure — the weekly competition leader (virtual cash)", () => {
   it("labels a house bot leader", () => {
-    expect(competitionTileStat({ leaderboard: [leader({ isBot: true, pnlPct: 0.79622 })] })).toEqual({
-      value: "#1 +0.8% this week",
-      note: "virtual cash · house bot",
+    expect(competitionTileFigure({ leaderboard: [leader({ isBot: true, pnlPct: 0.79622 })] })).toEqual({
+      figure: "+0.8%",
+      line: "#1 this week · house bot · virtual cash",
     });
   });
 
   it("shows a real leader without the bot label, and a loss with a minus sign", () => {
-    expect(competitionTileStat({ leaderboard: [leader({ pnlPct: 1.8 }), leader({ rank: 2, isBot: true })] })).toEqual({
-      value: "#1 +1.8% this week",
-      note: "virtual cash",
+    expect(competitionTileFigure({ leaderboard: [leader({ pnlPct: 1.8 }), leader({ rank: 2, isBot: true })] })).toEqual({
+      figure: "+1.8%",
+      line: "#1 this week · virtual cash",
     });
-    expect(competitionTileStat({ leaderboard: [leader({ pnlPct: -0.42 })] })?.value).toBe("#1 −0.4% this week");
+    expect(competitionTileFigure({ leaderboard: [leader({ pnlPct: -0.42 })] })?.figure).toBe("−0.4%");
   });
 
   it("offers the starting virtual cash when nobody has traded this week", () => {
-    expect(competitionTileStat({ leaderboard: [] })).toEqual({ value: "$10,000", note: "virtual cash to start" });
+    expect(competitionTileFigure({ leaderboard: [] })).toEqual({ figure: "$10,000", line: "virtual cash to start" });
   });
 
   it("returns null while loading or after a failed read", () => {
-    expect(competitionTileStat(null)).toBeNull();
-    expect(competitionTileStat(undefined)).toBeNull();
+    expect(competitionTileFigure(null)).toBeNull();
+    expect(competitionTileFigure(undefined)).toBeNull();
   });
 
-  it("always says virtual cash next to the number", () => {
+  it("always says virtual cash beside the figure", () => {
     for (const league of [{ leaderboard: [] }, { leaderboard: [leader()] }, { leaderboard: [leader({ isBot: true })] }]) {
-      expect(competitionTileStat(league)?.note).toMatch(/^virtual cash/);
+      expect(competitionTileFigure(league)?.line).toMatch(/virtual cash/);
     }
   });
 });
@@ -212,21 +226,22 @@ describe("onChainQuestTileStat — quests verified from a wallet", () => {
 
   it("counts live on-chain quests and never the coming-soon or in-platform ones", () => {
     expect(onChainQuestTileStat(catalogue)).toEqual({ value: "3 quests live", liveCount: 3, comingSoonCount: 2 });
-    expect(questTileNote(onChainQuestTileStat(catalogue))).toBe("Verified from your wallet · 2 coming soon");
+    expect(questTileFigure(onChainQuestTileStat(catalogue))).toEqual({ figure: "3", line: "quests live, verified from your wallet" });
   });
 
   it("counts a quest listed under two partners once", () => {
     const twice = board([[play("first_position", HOLD)], [play("first_position", HOLD)]]);
     expect(flattenPlays(twice)).toHaveLength(1);
     expect(onChainQuestTileStat(twice)).toEqual({ value: "1 quest live", liveCount: 1, comingSoonCount: 0 });
-    expect(questTileNote(onChainQuestTileStat(twice))).toBe("Verified from your wallet");
+    expect(questTileFigure(onChainQuestTileStat(twice))).toEqual({ figure: "1", line: "quest live, verified from your wallet" });
   });
 
   it("reads 0 when only in-platform quests exist, and null while loading", () => {
     expect(onChainQuestTileStat(board([[play("oracle", INTERNAL)]]))?.value).toBe("0 quests live");
+    expect(questTileFigure(onChainQuestTileStat(board([[play("oracle", INTERNAL)]])))?.figure).toBe("0");
     expect(onChainQuestTileStat(null)).toBeNull();
     expect(onChainQuestTileStat(undefined)).toBeNull();
-    expect(questTileNote(null)).toBe("Verified from your wallet");
+    expect(questTileFigure(null)).toBeNull();
   });
 });
 
@@ -286,6 +301,9 @@ describe("createSharedReads — one request per endpoint per page load", () => {
     for (const call of ["api.calls()", "leagueApi.overview()", '"/api/v1/plays"', '"/api/v1/leaderboard?limit=3"']) {
       expect(src.split(call).length - 1, call).toBe(1);
     }
+    // The hero ranking card was cut on 9 Oct 2026; the Season top 3 moved to the closing section.
+    expect(src).not.toContain("export function RankCard");
+    expect(src).toContain("export function SeasonTop");
     // No per-component fetch helpers left behind.
     expect(src).not.toMatch(/\buseLoad\(/);
   });
@@ -311,15 +329,15 @@ describe("GameTiles and the hero cards — first frame, before any read", () => 
     expect(html).not.toMatch(BANNED);
   });
 
-  it("shows prediction skeletons (one below lg) and a neutral ranking skeleton while loading", () => {
+  it("shows one featured-card skeleton while loading, never a figure", () => {
     const cards = renderToStaticMarkup(createElement(LivePredictions));
     expect(cards).toContain('aria-busy="true"');
     expect(cards.match(/data-slot="skeleton"/g)?.length ?? 0).toBeGreaterThan(0);
-    expect(cards.split("hidden lg:flex").length - 1).toBe(2);
     expect(cards).not.toContain("pts in");
-    const rank = renderToStaticMarkup(createElement(RankCard));
-    expect(rank).toContain("Leaderboard");
-    expect(rank).not.toContain("quality_screen");
+    // No split figure in the text while the board loads.
+    expect(cards).not.toMatch(/>\d+%</);
+    // The Season top 3 renders nothing while it loads: never an empty board or a skeleton.
+    expect(renderToStaticMarkup(createElement(SeasonTop))).toBe("");
   });
 
   it("keeps every animation behind motion-reduce", () => {

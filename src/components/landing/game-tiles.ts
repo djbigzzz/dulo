@@ -1,6 +1,7 @@
 /**
  * The landing's three game tiles (approved wireframe, 16 Sep 2026): Predictions, Competition and
- * On-chain quests, each with one live number and one button. Pure and client-safe, no React.
+ * On-chain quests, each with one large live figure, one short line and one button (calmer pass,
+ * 9 Oct 2026). Pure and client-safe, no React.
  *
  * Every number is read from /api/v1. While a read is loading, or after it failed, a helper
  * returns null and the tile prints an em dash: the landing never shows a made-up figure.
@@ -10,7 +11,7 @@
  */
 import type { CallMarketView, LeagueResponse, PlayView, PlaysResponse } from "@/lib/api-client";
 import { formatPoints } from "@/components/common/format";
-import { liveStatus } from "@/components/calls/calls-format";
+import { NEXT_WEEK_MARKETS_COPY, liveStatus } from "@/components/calls/calls-format";
 import { formatSignedPct, formatUsdWhole } from "@/components/league/format";
 import { VIRTUAL_CASH_USD } from "@/lib/games/ledger-policy";
 
@@ -64,19 +65,45 @@ function isLive(m: Pick<CallMarketView, "status" | "locksAt">, nowMs: number): b
   return s === "open" || s === "locked";
 }
 
-/**
- * "1,650 pts in this week": every point put into this week's open or locked predictions.
- * Null while the board is loading or failed (the tile shows an em dash instead).
- */
-export function predictionsTileStat(markets: readonly MarketLike[] | null | undefined, nowMs: number): string | null {
-  if (!markets) return null;
+/** Every point put into this week's open or locked predictions (a malformed total is skipped). */
+function livePointsIn(markets: readonly MarketLike[], nowMs: number): number {
   let total = 0;
   for (const m of markets) {
     if (!isLive(m, nowMs)) continue;
     const pts = m.odds?.total;
     if (typeof pts === "number" && Number.isFinite(pts) && pts > 0) total += pts;
   }
-  return `${formatPoints(total)} pts in this week`;
+  return total;
+}
+
+/**
+ * A tile's one large live figure and the one short line under it ("1,900" / "points in this
+ * week"). The helpers return null while a read is loading or failed: the tile prints an em dash.
+ */
+export interface TileFigure {
+  figure: string;
+  line: string;
+}
+
+/**
+ * "1,650" / "points in this week": every point put into this week's open or locked predictions.
+ * Between Friday's settle and the next board: "Between weeks" and when the next one opens.
+ */
+export function predictionsTileFigure(markets: readonly MarketLike[] | null | undefined, nowMs: number): TileFigure | null {
+  if (!markets) return null;
+  if (!markets.some((m) => isLive(m, nowMs))) return { figure: "Between weeks", line: NEXT_WEEK_MARKETS_COPY };
+  return { figure: formatPoints(livePointsIn(markets, nowMs)), line: "points in this week" };
+}
+
+/**
+ * "+1.8%" / "#1 this week · house bot · virtual cash", or "$10,000" / "virtual cash to start" on
+ * an empty board. The line always says virtual cash, so the figure is never read as money.
+ */
+export function competitionTileFigure(league: Pick<LeagueResponse, "leaderboard"> | null | undefined): TileFigure | null {
+  if (!league) return null;
+  const leader = league.leaderboard?.[0];
+  if (!leader) return { figure: formatUsdWhole(VIRTUAL_CASH_USD), line: "virtual cash to start" };
+  return { figure: formatSignedPct(leader.pnlPct), line: `#1 this week${leader.isBot ? " · house bot" : ""} · virtual cash` };
 }
 
 /**
@@ -94,27 +121,6 @@ export function pickLiveMarkets<T extends Pick<CallMarketView, "status" | "locks
     .filter((m) => isLive(m, nowMs))
     .sort((a, b) => rank(a) - rank(b) || (b.odds?.total ?? 0) - (a.odds?.total ?? 0) || a.ticker.localeCompare(b.ticker));
   return { shown: live.slice(0, Math.max(0, limit)), count: live.length };
-}
-
-export interface CompetitionTileStat {
-  value: string;
-  /** Always says "virtual cash", so the number is never read as real money. */
-  note: string;
-}
-
-/**
- * The weekly competition's leader: "#1 +1.8% this week" with "virtual cash" (and "house bot"
- * when the leader is one). An empty board reads "$10,000 virtual cash to start".
- * Null while the overview is loading or failed.
- */
-export function competitionTileStat(league: Pick<LeagueResponse, "leaderboard"> | null | undefined): CompetitionTileStat | null {
-  if (!league) return null;
-  const leader = league.leaderboard?.[0];
-  if (!leader) return { value: formatUsdWhole(VIRTUAL_CASH_USD), note: "virtual cash to start" };
-  return {
-    value: `#1 ${formatSignedPct(leader.pnlPct)} this week`,
-    note: `virtual cash${leader.isBot ? " · house bot" : ""}`,
-  };
 }
 
 export interface QuestTileStat {
@@ -153,14 +159,14 @@ export function onChainQuestTileStat(plays: Pick<PlaysResponse, "groups"> | null
   return { value: `${liveCount} ${liveCount === 1 ? "quest" : "quests"} live`, liveCount, comingSoonCount };
 }
 
-/** "Verified from your wallet · 2 coming soon" */
-export function questTileNote(stat: QuestTileStat | null): string {
-  const base = TILE_COPY.quests.note;
-  return stat && stat.comingSoonCount > 0 ? `${base} · ${stat.comingSoonCount} coming soon` : base;
+/** "11" / "quests live, verified from your wallet". Coming-soon partner quests are never counted. */
+export function questTileFigure(stat: QuestTileStat | null): TileFigure | null {
+  if (!stat) return null;
+  return { figure: formatPoints(stat.liveCount), line: `${stat.liveCount === 1 ? "quest" : "quests"} live, verified from your wallet` };
 }
 
 /**
- * One request per endpoint per page load. The hero cards and the tiles read the same four
+ * One request per endpoint per page load. The hero card and the tiles read the same
  * endpoints; whichever mounts first starts the request and the rest share its promise.
  *
  * - A pending request is always shared.

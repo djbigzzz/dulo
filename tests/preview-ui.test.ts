@@ -11,7 +11,7 @@ vi.mock("@/components/layout/MobileTabBar", () => ({ MobileTabBar: () => null })
 
 import { footerLinks } from "@/components/layout/AppShell";
 import { CHECK_INVALID_MESSAGE, SAMPLE_WALLETS, checkHref } from "@/components/landing/check-wallet";
-import { PRACTICE_LEAGUE_TITLE, SEASON_TOP_MIN_ROWS, seasonTopRows } from "@/components/landing/scoreboard-mode";
+import { SEASON_TOP_MIN_ROWS, seasonTopRows } from "@/components/landing/scoreboard-mode";
 import { PRE_IPO_PUBLIC_WALLETS, PUBLIC_WALLETS, publicWalletLabel } from "@/lib/mirror/public-wallets";
 import { WELCOME_OFFER_LINE } from "@/lib/games/ledger-policy";
 import { NEXT_WEEK_MARKETS_COPY } from "@/components/calls/calls-format";
@@ -84,42 +84,52 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(WELCOME_OFFER_LINE).toBe("Sign in free: 1,000 starter points and $10,000 of virtual cash to play. Points only, no cash value.");
   });
 
-  it("keeps the market session chip, the trust row and the compliance line in the hero", () => {
+  it("keeps the market session chip, the pre-IPO hook and the compliance line in the hero, as one quiet status line", () => {
     const landing = repoFile("src/app/page.tsx");
     const hero = landing.slice(landing.indexOf('aria-labelledby="hero-title"'), landing.indexOf("<GameTiles"));
-    expect(hero).toContain("<MarketSessionChip />");
-    // The one pre-IPO hook on the landing (22 Sep) sits beside the chip, at the trust line's size; nothing else moved.
-    expect(hero).toMatch(/<MarketSessionChip \/>[\s\S]{0,400}href="\/prestocks"[\s\S]{0,300}Pre-IPO tokens trade 24\/7/);
-    expect(hero.indexOf('href="/prestocks"')).toBeLessThan(hero.indexOf("TRUST.map("));
-    expect(hero).toContain("TRUST.map(");
+    expect(hero).toContain("<MarketSessionChip");
+    // The one pre-IPO hook on the landing (22 Sep) sits beside the chip, at the same quiet size.
+    expect(hero).toMatch(/<MarketSessionChip [^>]*\/>[\s\S]{0,400}href="\/prestocks"[\s\S]{0,300}Pre-IPO tokens trade 24\/7/);
+    // The trust row was folded away on 9 Oct 2026: one status line, not four chips.
+    expect(hero).not.toContain("TRUST.map(");
     expect(hero).toContain("{COMPLIANCE_LINE}");
     expect(landing).toMatch(/import \{[^}]*\bCOMPLIANCE_LINE\b[^}]*\} from "@\/components\/common\/compliance"/);
-    // Phones read the pitch, then session and trust, then the live cards.
+    // Phones read the pitch, then the status line, then the live card.
     expect(hero.indexOf("<MarketSessionChip")).toBeGreaterThan(hero.indexOf("Check a wallet"));
     expect(hero.indexOf("<MarketSessionChip")).toBeLessThan(hero.indexOf("<LivePredictions"));
     // The H1 steps down below sm so Connect sits on the first 375 px screen.
-    expect(landing).toMatch(/id="hero-title"\s+className="font-display text-4xl /);
+    expect(landing).toMatch(/id="hero-title"\s+className="font-display text-\[2\.75rem\] /);
   });
 
-  it("puts the live prediction cards first in the hero, then the ranking, and the game tiles right under it", () => {
+  it("signed in, the hero's first button is the next step, never the wallet chip again", () => {
+    const landing = repoFile("src/app/page.tsx");
+    const hero = landing.slice(landing.indexOf('aria-labelledby="hero-title"'), landing.indexOf("<GameTiles"));
+    expect(hero).toMatch(/<SessionSwitch signedIn=\{<ContinueTour \/>\} signedOut=\{<ConnectButton /);
+    expect(landing).toMatch(/href="\/start"[^>]*>\s*Continue the tour/);
+    // The welcome offer is for visitors who have not signed in yet; a signed-in player gets a plain welcome.
+    expect(hero).toMatch(/<SessionSwitch\s+signedIn=\{[\s\S]{0,300}Welcome back\.[\s\S]{0,300}signedOut=\{[\s\S]{0,300}\{WELCOME_OFFER_LINE\}/);
+    // The landing shows no personal balance (docs/HANDOFF.md 3.8, decided 16 Sep 2026).
+    expect(landing).not.toMatch(/\buser\??\.points|PointsSummary|seasonPoints|formatPoints/);
+    expect(repoFile("src/components/landing/SessionSwitch.tsx")).not.toMatch(/\.points|formatPoints|balance/);
+  });
+
+  it("puts this week's predictions in the hero as one featured card, and the game tiles right under it", () => {
     const landing = repoFile("src/app/page.tsx");
     const predictions = landing.indexOf("<LivePredictions");
-    const rank = landing.indexOf("<RankCard");
     const tiles = landing.indexOf("<GameTiles");
     expect(predictions).toBeGreaterThan(-1);
-    expect(rank).toBeGreaterThan(predictions);
+    // The hero ranking card was cut on 9 Oct 2026: the tiles carry the competition's live figure.
+    expect(landing).not.toContain("<RankCard");
     // The tiles follow the hero section and come before the Check section.
     expect(tiles).toBeGreaterThan(landing.indexOf("</section>"));
     expect(tiles).toBeLessThan(landing.indexOf('id="check"'));
     const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
     expect(src).not.toContain("PlayTeaser");
     expect(src).toContain("export function LivePredictions");
-    expect(src).toContain("export function RankCard");
+    expect(src).not.toContain("export function RankCard");
     expect(src).toContain("export function GameTiles");
     expect(src).toContain("Live right now");
-    // Predictions show at every width: no viewport-height gate on them any more.
-    expect(src).not.toContain("min-height:740px");
-    const cards = src.slice(src.indexOf("export function LivePredictions"), src.indexOf("export function RankCard"));
+    const cards = src.slice(src.indexOf("export function LivePredictions"), src.indexOf("export function GameTiles"));
     expect(cards).not.toMatch(/min-height/);
     expect(cards).toContain("See all {count} predictions");
     expect(cards).toContain("NEXT_WEEK_MARKETS_COPY");
@@ -132,24 +142,25 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(landing).not.toContain("PLAY_KINDS");
     for (const chip of ['"Hold"', '"Diversify"', '"DCA"', '"Earnings"']) expect(landing).not.toContain(chip);
     expect(landing).not.toMatch(/\b(paid|pays?|earn\w*) (points )?(for|by) (holding|buying)/i);
-    // Closing CTA: Connect plus "Take the tour" (the /start tour, 8 Oct 2026).
+    // Closing CTA: Connect plus the tour; signed in, the tour plus "Make a prediction".
     const cta = landing.slice(landing.indexOf('aria-labelledby="cta"'));
     expect(cta).toContain("<ConnectButton");
     expect(cta).toMatch(/href="\/start"[^>]*>\s*Take the tour/);
+    expect(cta).toMatch(/href="\/predictions"[^>]*>\s*Make a prediction/);
     // No betting words or internal odds on the landing.
     expect(landing).not.toMatch(/probability|odds today|~0%/i);
     expect(landing).not.toMatch(/prediction market|\bstake|\bodds\b|\bpayout|\bbets?\b/i);
   });
 });
 
-describe("ScoreboardPreview — Season top 3 once three real players exist", () => {
+describe("SeasonTop — the landing top 3 once three real players exist", () => {
   const board = (n: number): LeaderboardResponse => ({
     season: null,
     limit: 3,
     rows: Array.from({ length: n }, (_, i) => ({ rank: i + 1, userId: `u${i}`, handle: null, address: null, points: 300 - i * 50 })),
   });
 
-  it("shows the virtual competition until the board has three rows", () => {
+  it("shows nothing until the board has three rows, then the first three", () => {
     expect(SEASON_TOP_MIN_ROWS).toBe(3);
     expect(seasonTopRows(null)).toBeNull();
     expect(seasonTopRows(undefined)).toBeNull();
@@ -157,34 +168,17 @@ describe("ScoreboardPreview — Season top 3 once three real players exist", () 
     expect(seasonTopRows(board(2))).toBeNull();
     expect(seasonTopRows(board(3))?.map((r) => r.userId)).toEqual(["u0", "u1", "u2"]);
     expect(seasonTopRows(board(5))).toHaveLength(3);
-    expect(PRACTICE_LEAGUE_TITLE).toBe("Virtual competition: house bots until players join");
+  });
+
+  it("sits in the closing section, below the fold, never in the hero", () => {
+    const landing = repoFile("src/app/page.tsx");
+    const cta = landing.slice(landing.indexOf('aria-labelledby="cta"'));
+    expect(cta).toContain("<SeasonTop ");
+    expect(landing.indexOf("<SeasonTop")).toBeGreaterThan(landing.indexOf('aria-labelledby="cta"'));
   });
 });
 
-describe("mobile layout at 375 px — landing competition preview and the /competition Trade button", () => {
-  it("shortens the virtual competition title on phones and moves the rest to a muted sub-line", () => {
-    const [short, rest] = PRACTICE_LEAGUE_TITLE.split(": ");
-    expect(short).toBe("Virtual competition");
-    expect(rest).toBe("house bots until players join");
-    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
-    expect(src).toContain('PRACTICE_LEAGUE_TITLE.split(": ")');
-    expect(src).toContain("shortLabel={PRACTICE_SHORT}");
-    expect(src).toContain("subLabel={PRACTICE_SUB}");
-    // Full title from sm up, short title and sub-line below sm.
-    expect(src).toContain('<span className="sm:hidden">{shortLabel}</span>');
-    expect(src).toContain('<span className="hidden sm:inline">{label}</span>');
-    expect(src).toMatch(/text-muted-foreground sm:hidden">\{subLabel\}/);
-  });
-
-  it("drops the bot pill text on phones but keeps a labelled icon", () => {
-    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
-    expect(src).toContain('const BOT_LABEL = "House bot, never earns points"');
-    expect(src).toContain("aria-label={BOT_LABEL}");
-    expect(src).toContain("title={BOT_LABEL}");
-    expect(src).toContain('<span className="hidden sm:inline">house bot</span>');
-    // The competition page's BotMarker uses the same words.
-    expect(repoFile("src/components/league/LeagueLeaderboard.tsx")).toContain('aria-label="House bot, never earns points"');
-  });
+describe("mobile layout at 375 px — the /competition Trade button", () => {
 
   it("makes the competition Trade button sticky above the tab bar so it rests clear of the last row and the footer", () => {
     const page = repoFile("src/app/competition/page.tsx");

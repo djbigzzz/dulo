@@ -1,206 +1,155 @@
 import Link from "next/link";
-import {
-  ActivityIcon,
-  ArrowRightIcon,
-  GiftIcon,
-  KeyRoundIcon,
-  RocketIcon,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRightIcon, GiftIcon } from "lucide-react";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { buttonVariants } from "@/components/ui/button";
 import { Tamga } from "@/components/brand/Tamga";
-import { GameTiles, LivePredictions, RankCard, ScoreboardPreview } from "@/components/landing/ScoreboardPreview";
+import { GameTiles, LivePredictions, SeasonTop } from "@/components/landing/ScoreboardPreview";
 import { CheckWalletBox } from "@/components/landing/CheckWalletBox";
+import { SessionSwitch } from "@/components/landing/SessionSwitch";
 import { MarketSessionChip } from "@/components/common/MarketSessionChip";
 import { COMPLIANCE_LINE } from "@/components/common/compliance";
 import { WELCOME_OFFER_LINE } from "@/lib/games/ledger-policy";
-import { SEASON_NAME } from "@/lib/config";
 import { cn } from "@/lib/utils";
-
-const TRUST: { icon: LucideIcon; label: string; sr?: string }[] = [
-  { icon: KeyRoundIcon, label: "No transaction to sign in" },
-  { icon: ActivityIcon, label: "Live on Solana mainnet" },
-];
-
-/**
- * Hero / featured surface. Kept out of cn(): tailwind-merge reads bg-card and bg-ember-glow as the same
- * utility group and would drop bg-card (and with it the glass sheen).
- */
-const GLOW_PANEL = "border-gradient bg-card bg-ember-glow";
 
 const ENTER = "animate-in fade-in-0 slide-in-from-bottom-2 duration-500 fill-mode-both motion-reduce:animate-none";
 
-function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <p className={cn("flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-gold uppercase", className)}>
-      <span className="h-px w-6 shrink-0 bg-gradient-to-r from-gold/0 to-gold/80" aria-hidden />
-      {children}
-    </p>
-  );
-}
+/** The landing's large buttons: two per row on phones, side by side from sm. */
+const BIG = "h-12 rounded-xl px-4 text-[0.9375rem] sm:px-6 sm:text-base";
+const OUTLINE = cn(buttonVariants({ variant: "outline", size: "lg" }), BIG);
+const PRIMARY = cn(buttonVariants({ size: "lg" }), BIG);
 
-function SectionTitle({
-  id,
-  eyebrow,
-  children,
-  className,
-}: {
-  id: string;
-  eyebrow: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
+/** A signed-in player's next step: the tour picks up from their own data. */
+function ContinueTour() {
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
-      <Eyebrow>{eyebrow}</Eyebrow>
-      <h2 id={id} className="font-display text-3xl leading-[1.02] font-normal text-balance text-foreground sm:text-5xl">
-        {children}
-      </h2>
-    </div>
+    <Link href="/start" className={PRIMARY}>
+      Continue the tour
+      <ArrowRightIcon data-icon="inline-end" />
+    </Link>
   );
 }
 
 export default function Home() {
   return (
     <div className="flex flex-col">
-      {/* 1. Hero: the pitch and the way in on the left, live predictions on the right. */}
+      {/* 1. Hero: the pitch and the way in on the left, this week's live prediction on the right. No panel: one raised card. */}
       <section
         aria-labelledby="hero-title"
-        className={`${GLOW_PANEL} ${cn(
-          "relative overflow-hidden rounded-3xl px-5 pt-7 pb-7 sm:px-10 sm:pt-10 sm:pb-10 lg:px-10 lg:pt-6 lg:pb-5",
-          ENTER,
-        )}`}
+        className="grid gap-10 pt-4 sm:pt-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26.5rem)] lg:items-center lg:gap-16 lg:pt-6 lg:[@media(max-height:860px)]:pt-0"
       >
-        {/* A faint top-edge light. */}
-        <div
-          className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent"
-          aria-hidden
-        />
-        {/*
-          Phones and tablets read top to bottom: pitch, session and trust, then the live cards.
-          From lg the pitch and the cards sit side by side and the session and trust row runs under both,
-          so the three game tiles below still land on the first 1280x800 screen.
-        */}
-        <div className="grid gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,23.5rem)] lg:gap-x-10 lg:gap-y-3">
-          <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:col-start-1 lg:row-start-1 lg:gap-3 lg:self-center">
-            <Eyebrow>
-              Season 0 · {SEASON_NAME}
-              <span className="-ml-2 hidden min-[420px]:inline">&nbsp;on Solana</span>
-            </Eyebrow>
-            <h1
-              id="hero-title"
-              className="font-display text-4xl leading-[0.98] font-normal tracking-[-0.02em] text-foreground sm:text-7xl sm:text-balance lg:text-6xl"
-            >
-              The entertainment layer for{" "}
-              <span className="text-gradient-ember pr-[0.08em] whitespace-nowrap italic">xStocks.</span>
-            </h1>
-            <p className="font-display text-2xl leading-tight font-normal text-balance text-foreground/85 sm:text-3xl lg:-mt-1 lg:text-2xl">
-              Predict. Compete. Complete on-chain quests.
-            </p>
-            {/* The welcome offer, stated before sign-in. */}
-            <p className="flex max-w-xl items-start gap-2.5 rounded-xl border border-gold/20 bg-gold/[0.06] px-3.5 py-2 text-sm leading-snug lg:mt-1 lg:py-1.5 text-pretty text-foreground/90 shadow-[inset_0_1px_0_rgb(255_245_230/0.05)] sm:w-fit">
-              <GiftIcon className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
-              <span>{WELCOME_OFFER_LINE}</span>
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:mt-1">
-              <ConnectButton size="lg" className="h-11 px-5 text-base" />
-              <Link
-                href="#check"
-                className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-11 px-5 text-base")}
-              >
-                Check a wallet
-                <ArrowRightIcon data-icon="inline-end" />
-              </Link>
-            </div>
+        <div className={cn("flex min-w-0 flex-col", ENTER)}>
+          <h1
+            id="hero-title"
+            className="font-display text-[2.75rem] leading-[0.95] font-normal tracking-[-0.02em] text-balance text-foreground sm:text-7xl lg:text-[4.75rem]"
+          >
+            The entertainment layer for{" "}
+            <span className="text-gradient-ember pr-[0.08em] whitespace-nowrap italic">xStocks.</span>
+          </h1>
+          <p className="mt-4 font-display text-[1.625rem] leading-tight font-normal text-balance text-foreground/65 sm:mt-5 sm:text-3xl">
+            Predict. Compete. Complete on-chain quests.
+          </p>
+          {/*
+            The welcome offer, stated before sign-in. Signed in: a plain welcome, never a balance (the
+            landing shows no personal balance, docs/HANDOFF.md 3.8).
+          */}
+          <SessionSwitch
+            signedIn={
+              <p className="mt-7 flex max-w-md items-start gap-3 text-base leading-relaxed text-pretty text-foreground/85">
+                <span className="mx-1 mt-[0.5625rem] size-2 shrink-0 rounded-full bg-emerald-400" aria-hidden />
+                <span>Welcome back.</span>
+              </p>
+            }
+            signedOut={
+              <p className="mt-7 flex max-w-md items-start gap-3 text-base leading-relaxed text-pretty text-foreground/85">
+                <GiftIcon className="mt-[0.3rem] size-4 shrink-0 text-gold" aria-hidden />
+                <span>{WELCOME_OFFER_LINE}</span>
+              </p>
+            }
+          />
+          <div className="mt-7 grid gap-3 min-[385px]:grid-cols-2 sm:flex sm:items-center">
+            <SessionSwitch signedIn={<ContinueTour />} signedOut={<ConnectButton size="lg" className={BIG} />} />
+            <Link href="#check" className={OUTLINE}>
+              Check a wallet
+              <ArrowRightIcon data-icon="inline-end" />
+            </Link>
           </div>
-
-          <div className="flex min-w-0 flex-col gap-2 lg:col-span-2 lg:row-start-2">
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <MarketSessionChip />
-              {/* The one pre-IPO hook on the landing (22 Sep): the same size as the trust line, beside the session chip. */}
+          {/* One quiet status line (the US session, the one pre-IPO hook), then the compliance line. */}
+          <div className="mt-9 flex flex-col gap-2 border-t border-white/[0.06] pt-5 sm:mt-12">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <MarketSessionChip className="h-5 border-0 bg-transparent px-0 tracking-normal" />
+              <span className="text-xs text-muted-foreground/40" aria-hidden>
+                ·
+              </span>
               <Link
                 href="/prestocks"
                 className="group/preipo flex items-center gap-1.5 text-xs text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
               >
-                <RocketIcon className="size-3.5 text-gold/80" aria-hidden />
                 Pre-IPO tokens trade 24/7
                 <ArrowRightIcon className="size-3 transition-transform duration-300 group-hover/preipo:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
               </Link>
-              <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-                {TRUST.map(({ icon: Icon, label, sr }) => (
-                  <li key={label} className="flex items-center gap-1.5">
-                    <Icon className="size-3.5 text-gold/80" aria-hidden />
-                    {label}
-                    {sr ? <span className="sr-only">{sr}</span> : null}
-                  </li>
-                ))}
-              </ul>
             </div>
-            <p className="text-xs leading-snug text-pretty text-muted-foreground/80">{COMPLIANCE_LINE}</p>
+            <p className="max-w-lg text-xs leading-relaxed text-pretty text-muted-foreground/70">{COMPLIANCE_LINE}</p>
           </div>
-
-          <ScoreboardPreview className="min-w-0 lg:col-start-2 lg:row-start-1 lg:self-start">
-            <LivePredictions />
-            {/* From lg the ranking needs a tall screen: at 1280x800 the three prediction cards and the tiles come first. */}
-            <RankCard className="lg:hidden lg:[@media(min-height:1100px)]:flex" />
-          </ScoreboardPreview>
         </div>
+
+        <LivePredictions className="min-w-0" />
       </section>
 
-      {/* The three games, one live number and one button each, on the first desktop screen. */}
-      <GameTiles className={cn("mt-3", ENTER)} />
+      {/*
+        The three games, one live figure and one button each, on the first desktop screen. A short
+        desktop (1280x800) tightens the hero card and the tiles a little so the buttons still land on it.
+      */}
+      <GameTiles className={cn("mt-10 sm:mt-12 lg:mt-10 lg:[@media(max-height:860px)]:mt-6", ENTER)} />
 
       {/* 2. Check any wallet (no sign-in: a live read, nothing stored, never scored) */}
       <section
         id="check"
         aria-labelledby="check-title"
-        className={cn("mt-16 grid scroll-mt-24 gap-8 sm:mt-24 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-14", ENTER)}
+        className="mt-20 grid scroll-mt-24 gap-6 sm:mt-28 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-16"
       >
-        <div className="flex flex-col gap-5">
-          <SectionTitle id="check-title" eyebrow="No sign-in">
+        <div className="flex flex-col gap-3">
+          <h2 id="check-title" className="font-display text-4xl leading-none font-normal text-foreground sm:text-5xl">
             Check <span className="italic">any wallet</span>
-          </SectionTitle>
-          <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-            See any wallet&apos;s xStocks and the quests it already meets. Nothing stored.
+          </h2>
+          <p className="max-w-sm text-base leading-relaxed text-muted-foreground">
+            See any wallet&apos;s xStocks and the quests it already meets. No sign-in, nothing stored.
           </p>
         </div>
-        <CheckWalletBox />
+        <CheckWalletBox className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none sm:p-0" />
       </section>
 
-      {/* 3. Closing CTA (the long explainer sections were cut on 2 Oct 2026: the hero, the game tiles and each page say it once) */}
+      {/* 3. Closing call: the tamga, one line, the same two ways in. */}
       <section
         aria-labelledby="cta"
-        className={`${GLOW_PANEL} ${cn(
-          "relative mt-20 overflow-hidden rounded-3xl px-6 py-10 sm:mt-28 sm:px-10 sm:py-14 lg:px-14",
-          ENTER,
-        )}`}
+        className="relative isolate mt-24 flex flex-col items-center overflow-hidden px-2 pt-14 pb-6 text-center sm:mt-32"
       >
         <div
-          className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-full bg-[radial-gradient(45%_55%_at_50%_30%,rgb(255_106_42/0.1),transparent)]"
           aria-hidden
         />
-        <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8">
-            <div className="relative flex size-28 shrink-0 items-center justify-center" aria-hidden>
-              <span className="absolute inset-0 rounded-full bg-[radial-gradient(closest-side,rgb(216_180_106/0.16),transparent)]" />
-              <Tamga tone="gradient" size={96} className="relative opacity-90" />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Eyebrow>{SEASON_NAME}</Eyebrow>
-              <h2 id="cta" className="font-display text-4xl leading-[1.02] font-normal text-foreground sm:text-5xl">
-                Season 0 is <span className="text-gradient-ember pr-[0.08em] italic">live</span>
-              </h2>
-              <p className="max-w-md text-base leading-relaxed text-muted-foreground">Three games, one leaderboard.</p>
-            </div>
-          </div>
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row md:shrink-0">
-            <ConnectButton size="lg" className="h-11 px-5 text-base" />
-            <Link href="/start" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-11 px-5 text-base")}>
-              Take the tour
-              <ArrowRightIcon data-icon="inline-end" />
-            </Link>
-          </div>
+        <div className="pointer-events-none absolute inset-x-[15%] top-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" aria-hidden />
+        <Tamga tone="gradient" size={56} className="opacity-90" />
+        <h2 id="cta" className="mt-6 font-display text-5xl leading-none font-normal text-foreground sm:text-6xl">
+          Season 0 is <span className="text-gradient-ember pr-[0.08em] italic">live</span>
+        </h2>
+        <p className="mt-4 text-base text-muted-foreground">Three games, one leaderboard.</p>
+        {/* The landing top 3: renders nothing until three real players have Season points. */}
+        <SeasonTop className="mt-5" />
+        <div className="mt-8 flex w-full max-w-sm flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row">
+          <SessionSwitch signedIn={<ContinueTour />} signedOut={<ConnectButton size="lg" className={BIG} />} />
+          <SessionSwitch
+            signedIn={
+              <Link href="/predictions" className={OUTLINE}>
+                Make a prediction
+                <ArrowRightIcon data-icon="inline-end" />
+              </Link>
+            }
+            signedOut={
+              <Link href="/start" className={OUTLINE}>
+                Take the tour
+                <ArrowRightIcon data-icon="inline-end" />
+              </Link>
+            }
+          />
         </div>
       </section>
     </div>
