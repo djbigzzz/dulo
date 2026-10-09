@@ -8,9 +8,11 @@ import type { PlayRule } from "@/lib/plays/rules";
 import { STARTING_CASH_USD } from "@/lib/games/league";
 import { VIRTUAL_CASH_USD } from "@/lib/games/ledger-policy";
 import {
+  COMPACT_ROW_EMPTY,
   GAME_TILE_ORDER,
   TILE_COPY,
   TILE_PLACEHOLDER,
+  compactRowCopy,
   competitionTileFigure,
   createSharedReads,
   flattenPlays,
@@ -134,7 +136,13 @@ describe("predictionsTileFigure — points in this week's predictions", () => {
       market({ ticker: "AAPL", total: 900, status: "settled", outcome: "yes" }),
       market({ ticker: "MSFT", total: 300, status: "void", outcome: "void" }),
     ];
-    expect(predictionsTileFigure(markets, NOW)).toEqual({ figure: "1,650", line: "points in this week" });
+    expect(predictionsTileFigure(markets, NOW)).toEqual({ figure: "1,650", line: "points in this week, incl. bot seed" });
+  });
+
+  it("says the total includes the house bots' seed, in the same words as the hero card", () => {
+    // With one real account most of the pool is the bots' seed: the tile never reads as player activity.
+    expect(predictionsTileFigure([market({ total: 1_900 })], NOW)?.line).toMatch(/incl\. bot seed$/);
+    expect(repoFile("src/components/landing/ScoreboardPreview.tsx")).toContain("pts in, incl. bot seed");
   });
 
   it("still counts a prediction whose entries closed since the server answered", () => {
@@ -177,6 +185,40 @@ describe("pickLiveMarkets — the hero's prediction cards", () => {
   it("is empty between Friday's settle and next week's board, and while loading", () => {
     expect(pickLiveMarkets([market({ status: "settled" })], NOW)).toEqual({ shown: [], count: 0 });
     expect(pickLiveMarkets(null, NOW)).toEqual({ shown: [], count: 0 });
+  });
+});
+
+describe("compactRowCopy — the hero card's other predictions", () => {
+  const row = (over: Partial<CallMarketView> & { total?: number; yesProb?: number } = {}) => {
+    const { yesProb = 0.5, ...rest } = over;
+    const m = market(rest);
+    return { ...m, odds: { ...m.odds, yesProb, noProb: 1 - yesProb } };
+  };
+
+  it("names the row by its visible text first (WCAG 2.5.3), then the full question", () => {
+    const copy = compactRowCopy(row({ ticker: "TSLA", strike: 400, total: 500, yesProb: 0.64 }));
+    expect(copy.label).toBe("TSLA above $400.00");
+    expect(copy.split).toBe("64% Yes");
+    expect(copy.name.startsWith("TSLA above $400.00, 64% Yes. ")).toBe(true);
+    expect(copy.name).toMatch(/Will TSLA close above \$400\.00 on .+\?$/);
+  });
+
+  it("says an empty pool instead of drawing a 50/50, on screen and in the name alike", () => {
+    const copy = compactRowCopy(row({ ticker: "SPY", strike: 769.33, total: 0 }));
+    expect(COMPACT_ROW_EMPTY).toBe("No points yet");
+    expect(copy.split).toBe(COMPACT_ROW_EMPTY);
+    expect(copy.name.startsWith("SPY above $769.33, No points yet. ")).toBe(true);
+    expect(copy.name).not.toContain("50%");
+    expect(`${copy.label} ${copy.split}`).not.toMatch(BANNED);
+  });
+
+  it("draws an empty pool's row track neutral and gives the strike the room below 400px", () => {
+    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
+    const rowSrc = src.slice(src.indexOf("function CompactRow"), src.indexOf("function LiveLabel"));
+    expect(rowSrc).toContain('empty ? "bg-white/[0.06]" : "bg-rose-400/40"');
+    expect(rowSrc).toContain("min-[400px]:flex");
+    expect(rowSrc).not.toContain("min-[360px]:flex");
+    expect(rowSrc).toContain("aria-label={name}");
   });
 });
 
@@ -333,11 +375,33 @@ describe("GameTiles and the hero cards — first frame, before any read", () => 
     const cards = renderToStaticMarkup(createElement(LivePredictions));
     expect(cards).toContain('aria-busy="true"');
     expect(cards.match(/data-slot="skeleton"/g)?.length ?? 0).toBeGreaterThan(0);
+    // The placeholder holds the two compact rows of a normal week too, so the card keeps its height
+    // (and the hero does not jump) when the board arrives.
+    expect(cards.match(/class="flex min-h-12 items-center/g)?.length ?? 0).toBe(2);
     expect(cards).not.toContain("pts in");
     // No split figure in the text while the board loads.
     expect(cards).not.toMatch(/>\d+%</);
     // The Season top 3 renders nothing while it loads: never an empty board or a skeleton.
     expect(renderToStaticMarkup(createElement(SeasonTop))).toBe("");
+  });
+
+  it("draws the focus ring on every landing link that turns the global outline off", () => {
+    for (const rel of ["src/components/landing/ScoreboardPreview.tsx", "src/app/page.tsx"]) {
+      const src = repoFile(rel);
+      const links = [...src.matchAll(/<Link\s[^>]*?className=(?:"([^"]*)"|\{cn\(\s*"([^"]*)")/g)].map((m) => m[1] ?? m[2]);
+      expect(links.length, rel).toBeGreaterThan(0);
+      for (const cls of links.filter((c) => /\boutline-none\b/.test(c))) {
+        expect(cls, rel).toContain("focus-visible:ring-2 focus-visible:ring-[var(--focus)]");
+      }
+    }
+  });
+
+  it("keeps the locked card's header whole on a narrow phone: two items that wrap, never mid-phrase", () => {
+    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
+    expect(src).toContain('<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">');
+    expect(src).toMatch(/whitespace-nowrap text-muted-foreground tabular-nums">\{lockLabel\(market, now\)\}/);
+    const label = src.slice(src.indexOf("function LiveLabel"), src.indexOf("const CARD_ACTION"));
+    expect(label.match(/inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap/g)).toHaveLength(2);
   });
 
   it("keeps every animation behind motion-reduce", () => {

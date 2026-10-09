@@ -10,7 +10,6 @@ import { PriceChip, priceSourceLabel } from "@/components/common/PriceChip";
 import { formatDateTime, formatPoints, formatUsd } from "@/components/common/format";
 import { PoolBar } from "@/components/calls/PoolBar";
 import {
-  formatPct,
   liveStatus,
   lockLabel,
   marketQuestion,
@@ -18,6 +17,7 @@ import {
   resultLabel,
   sideButtonLabel,
   sideLabel,
+  splitPct,
   strikeDistance,
 } from "@/components/calls/calls-format";
 
@@ -265,7 +265,7 @@ export function MarketCard({ market, positions, nowMs, signedIn, onPlace, classN
               <div className="grid grid-cols-2 gap-2.5">
                 {(["yes", "no"] as const).map((side) => {
                   const held = positions.some((p) => p.side === side);
-                  const pct = formatPct(side === "yes" ? market.odds.yesProb : market.odds.noProb);
+                  const pct = splitPct(market.odds)[side];
                   return (
                     <button
                       key={side}

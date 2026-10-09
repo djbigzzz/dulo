@@ -18,12 +18,13 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PriceChip } from "@/components/common/PriceChip";
-import { displayName, formatPoints, formatUsd } from "@/components/common/format";
-import { NEXT_WEEK_MARKETS_COPY, formatPct, liveStatus, lockLabel, marketQuestion } from "@/components/calls/calls-format";
+import { displayName, formatPoints } from "@/components/common/format";
+import { NEXT_WEEK_MARKETS_COPY, liveStatus, lockLabel, marketQuestion, splitPct } from "@/components/calls/calls-format";
 import {
   GAME_TILE_ORDER,
   TILE_COPY,
   TILE_PLACEHOLDER,
+  compactRowCopy,
   competitionTileFigure,
   createSharedReads,
   onChainQuestTileStat,
@@ -141,8 +142,8 @@ const SPLIT_FIGURE = cn(FIGURE, "text-[3.25rem] leading-[0.85]");
 /** The featured split: two large figures, Yes and No, over one thin bar. */
 function BigSplit({ market }: { market: CallMarketView }) {
   const empty = market.odds.total === 0;
-  const yes = formatPct(market.odds.yesProb);
-  const no = formatPct(market.odds.noProb);
+  // No is 100 minus the rounded Yes: the two big figures always add up to 100%.
+  const { yes, no } = splitPct(market.odds);
   const label = "text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase";
   return (
     <div className="flex flex-col gap-3">
@@ -168,26 +169,40 @@ function BigSplit({ market }: { market: CallMarketView }) {
   );
 }
 
-/** One of this week's other predictions: ticker and strike, a small split, and the way to it. */
+/**
+ * One of this week's other predictions: ticker and strike, a small split, and the way to it. Its
+ * accessible name starts with the visible text (compactRowCopy), then the full question.
+ */
 function CompactRow({ market }: { market: CallMarketView }) {
   const empty = market.odds.total === 0;
-  const yes = formatPct(market.odds.yesProb);
+  const { label, split, name } = compactRowCopy(market);
   return (
     <li>
       <Link
         href="/predictions"
-        aria-label={`${marketQuestion(market)} ${empty ? "No points in yet" : `Current split: Yes ${yes}`}`}
+        aria-label={name}
         className="group -mx-2 flex min-h-12 items-center gap-3 lg:[@media(max-height:860px)]:min-h-10 rounded-xl px-2 text-sm outline-none transition-colors hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
       >
         <span className="min-w-0 flex-1 truncate text-muted-foreground">
-          <span className="font-medium text-foreground">{market.ticker}</span> above {formatUsd(market.strike)}
+          <span className="font-medium text-foreground">{market.ticker}</span>
+          {label.slice(market.ticker.length)}
         </span>
-        <span className="hidden h-1 w-14 shrink-0 overflow-hidden rounded-full bg-rose-400/40 min-[360px]:flex" aria-hidden>
+        {/* From 400px only: below that the strike needs the room. An empty pool draws a neutral track, never a No side. */}
+        <span
+          className={cn("hidden h-1 w-14 shrink-0 overflow-hidden rounded-full min-[400px]:flex", empty ? "bg-white/[0.06]" : "bg-rose-400/40")}
+          aria-hidden
+        >
           <span className={cn("h-full rounded-full", empty ? "bg-white/[0.15]" : "bg-emerald-400")} style={{ width: yesWidth(market) }} />
         </span>
-        <span className="w-[4.5rem] shrink-0 text-right tabular-nums">
-          <span className={cn("font-medium", empty ? "text-muted-foreground" : "text-emerald-300")}>{yes}</span>{" "}
-          <span className="text-muted-foreground">Yes</span>
+        <span className="min-w-[4.5rem] shrink-0 text-right whitespace-nowrap tabular-nums">
+          {empty ? (
+            <span className="text-muted-foreground">{split}</span>
+          ) : (
+            <>
+              <span className="font-medium text-emerald-300">{splitPct(market.odds).yes}</span>{" "}
+              <span className="text-muted-foreground">Yes</span>
+            </>
+          )}
         </span>
         <ChevronRightIcon
           className="size-4 shrink-0 text-muted-foreground transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transition-none"
@@ -203,14 +218,14 @@ function LiveLabel({ open }: { open: boolean }) {
   // Entries closed: a still gold dot, not the live pulse, until Friday's settle.
   if (!open) {
     return (
-      <span className="inline-flex items-center gap-2 text-xs font-medium text-gold">
+      <span className="inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap text-gold">
         <span className="size-1.5 rounded-full bg-gold" aria-hidden />
         This week&apos;s prediction
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-2 text-xs font-medium text-emerald-300">
+    <span className="inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap text-emerald-300">
       <span className="relative flex size-1.5" aria-hidden>
         <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/70 motion-reduce:animate-none" />
         <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
@@ -230,9 +245,10 @@ function Featured({ market, now }: { market: CallMarketView; now: number }) {
   const open = liveStatus(market, now) === "open";
   return (
     <article className="flex flex-col" aria-label={question}>
-      <div className="flex items-center justify-between gap-3">
+      {/* Two whole items: on a narrow phone the lock time drops to its own line, never mid-phrase. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <LiveLabel open={open} />
-        <span className="text-xs text-muted-foreground tabular-nums">{lockLabel(market, now)}</span>
+        <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">{lockLabel(market, now)}</span>
       </div>
       <h3 className="mt-4 text-2xl leading-tight font-semibold tracking-tight text-balance text-foreground sm:text-[1.625rem]">{question}</h3>
       {market.quote ? (
@@ -258,6 +274,11 @@ function Featured({ market, now }: { market: CallMarketView; now: number }) {
   );
 }
 
+/**
+ * The loading card: the featured prediction and the two compact rows of a normal week (three
+ * markets), at their loaded sizes, so the card does not grow (and the hero does not jump) when
+ * the board arrives.
+ */
 function FeaturedSkeleton() {
   return (
     <div className="flex flex-col" aria-hidden>
@@ -268,13 +289,21 @@ function FeaturedSkeleton() {
       <Bar className="mt-4 h-7 w-11/12" />
       <Bar className="mt-2 h-7 w-2/3" />
       <Bar className="mt-3 h-4 w-48" />
-      <div className="mt-7 flex items-end justify-between">
-        <Bar className="h-14 w-24" />
-        <Bar className="h-14 w-24" />
+      {/* The Yes / No label over its 52px figure. */}
+      <div className="mt-7 flex items-end justify-between lg:[@media(max-height:860px)]:mt-5">
+        <Bar className="h-[4.25rem] w-24" />
+        <Bar className="h-[4.25rem] w-24" />
       </div>
       <Bar className="mt-3 h-1.5 w-full rounded-full" />
-      <Bar className="mt-3 h-3 w-36" />
-      <Bar className="mt-5 mb-2 h-12 w-full rounded-xl" />
+      <Bar className="mt-3 h-4 w-36" />
+      <Bar className="mt-5 h-12 w-full rounded-xl" />
+      <div className="mt-6 border-t border-white/[0.06] pt-2">
+        {[0, 1].map((i) => (
+          <div key={i} className="flex min-h-12 items-center lg:[@media(max-height:860px)]:min-h-10">
+            <Bar className="h-4 w-full" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -328,7 +357,7 @@ export function LivePredictions({ className }: { className?: string }) {
             {count > shown.length ? (
               <Link
                 href="/predictions"
-                className="group mt-2 inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
+                className="group -mx-1 mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-md px-1 text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
               >
                 See all {count} predictions
                 <Arrow />

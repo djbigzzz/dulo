@@ -48,6 +48,7 @@ export function CheckWalletBox({ className, primary = false, samples = true }: C
 
   return (
     <div className={cn("flex flex-col gap-4 rounded-2xl border border-white/[0.07] bg-card p-4 sm:p-6", className)}>
+      {/* Stacked below sm, so the field grows only in the sm row: flex-1 in a column would override its h-11 (44px). */}
       <form className="flex flex-col gap-2 sm:flex-row" onSubmit={submit} noValidate>
         <label htmlFor={inputId} className="sr-only">
           Solana wallet address
@@ -66,7 +67,7 @@ export function CheckWalletBox({ className, primary = false, samples = true }: C
           spellCheck={false}
           aria-invalid={error !== null}
           aria-describedby={error ? errorId : undefined}
-          className={cn(WELL, "h-11 min-w-0 flex-1 px-3.5 font-mono text-sm md:text-sm dark:bg-black/25")}
+          className={cn(WELL, "h-11 min-w-0 px-3.5 font-mono text-sm sm:flex-1 md:text-sm dark:bg-black/25")}
         />
         <Button type="submit" size="lg" variant={primary ? "default" : "outline"} className="h-11 shrink-0 rounded-xl px-5 font-semibold">
           Check wallet

@@ -139,9 +139,10 @@ production because it would land in request logs.
 
 Then open the site and walk the judge path:
 
-1. The landing shows three live prediction cards with real prices, and three game tiles with real
-   numbers rather than dashes. If the cards are stuck on skeletons, the database is empty — step 4
-   did not run against this database.
+1. The landing shows this week's featured prediction with its price (source and age) and the other
+   two as rows, and three game tiles with real numbers rather than dashes (9 Oct 2026: calm
+   redesign). If the card is stuck on a skeleton, the database is empty — step 4 did not run
+   against this database.
 2. **Check a wallet** → **Public holder A**. This is the strongest page in the app and needs no
    sign-in: it reads a real mainnet wallet, applies the Token-2022 multipliers and shows which
    on-chain quests that wallet already meets, with every price carrying its source and age.

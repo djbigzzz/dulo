@@ -48,14 +48,15 @@ export default function Home() {
             Predict. Compete. Complete on-chain quests.
           </p>
           {/*
-            The welcome offer, stated before sign-in. Signed in: a plain welcome, never a balance (the
-            landing shows no personal balance, docs/HANDOFF.md 3.8).
+            The welcome offer, stated before sign-in. Signed in: a plain line that is true at a first
+            sign-in and a return alike (the first-grant toast says "Welcome to Dulo" at the same moment),
+            never a balance (the landing shows no personal balance, docs/HANDOFF.md 3.8).
           */}
           <SessionSwitch
             signedIn={
               <p className="mt-7 flex max-w-md items-start gap-3 text-base leading-relaxed text-pretty text-foreground/85">
                 <span className="mx-1 mt-[0.5625rem] size-2 shrink-0 rounded-full bg-emerald-400" aria-hidden />
-                <span>Welcome back.</span>
+                <span>You&apos;re signed in.</span>
               </p>
             }
             signedOut={
@@ -81,13 +82,13 @@ export default function Home() {
               </span>
               <Link
                 href="/prestocks"
-                className="group/preipo flex items-center gap-1.5 text-xs text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
+                className="group/preipo flex min-h-6 items-center gap-1.5 rounded-sm text-xs text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
               >
                 Pre-IPO tokens trade 24/7
                 <ArrowRightIcon className="size-3 transition-transform duration-300 group-hover/preipo:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
               </Link>
             </div>
-            <p className="max-w-lg text-xs leading-relaxed text-pretty text-muted-foreground/70">{COMPLIANCE_LINE}</p>
+            <p className="max-w-lg text-xs leading-relaxed text-pretty text-muted-foreground/80">{COMPLIANCE_LINE}</p>
           </div>
         </div>
 
@@ -100,11 +101,16 @@ export default function Home() {
       */}
       <GameTiles className={cn("mt-10 sm:mt-12 lg:mt-10 lg:[@media(max-height:860px)]:mt-6", ENTER)} />
 
-      {/* 2. Check any wallet (no sign-in: a live read, nothing stored, never scored) */}
+      {/*
+        2. Check any wallet (no sign-in: a live read, nothing stored, never scored). tabIndex -1: the
+        hero's "Check a wallet" link moves focus here as well as the view, so the next Tab reaches the
+        address field instead of jumping back up to the hero.
+      */}
       <section
         id="check"
+        tabIndex={-1}
         aria-labelledby="check-title"
-        className="mt-20 grid scroll-mt-24 gap-6 sm:mt-28 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-16"
+        className="mt-20 grid scroll-mt-24 gap-6 outline-none sm:mt-28 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-16"
       >
         <div className="flex flex-col gap-3">
           <h2 id="check-title" className="font-display text-4xl leading-none font-normal text-foreground sm:text-5xl">
@@ -114,7 +120,8 @@ export default function Home() {
             See any wallet&apos;s xStocks and the quests it already meets. No sign-in, nothing stored.
           </p>
         </div>
-        <CheckWalletBox className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none sm:p-0" />
+        {/* No card here, so the field gets a stronger edge of its own to stay visible on the page. */}
+        <CheckWalletBox className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none sm:p-0 [&_input]:border-white/[0.14]" />
       </section>
 
       {/* 3. Closing call: the tamga, one line, the same two ways in. */}

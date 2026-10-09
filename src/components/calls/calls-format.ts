@@ -143,9 +143,18 @@ export function formatMultiplier(x: number | null): string {
   return `${x >= 10 ? x.toFixed(0) : x.toFixed(2).replace(/\.?0+$/, "")}x`;
 }
 
-/** "62%" — whole percent, both sides summing to 100 by construction. */
+/** "62%" — one share as a whole percent. For a Yes / No pair use splitPct, which always sums to 100. */
 export function formatPct(p: number): string {
   return `${Math.round(p * 100)}%`;
+}
+
+/**
+ * The current split as two whole percents that add up to 100: No is 100 minus the rounded Yes,
+ * so a 620 / 180 pool (77.5% / 22.5%) reads "78%" / "22%", never "78%" / "23%".
+ */
+export function splitPct(odds: Pick<CallMarketView["odds"], "yesProb">): { yes: string; no: string } {
+  const yes = Math.round(odds.yesProb * 100);
+  return { yes: `${yes}%`, no: `${100 - yes}%` };
 }
 
 export function sideLabel(side: CallSide): string {
@@ -212,7 +221,7 @@ export function soonestLockMs(markets: Pick<CallMarketView, "status" | "locksAt"
 
 /** Side button copy: "Yes 64% · 1.56x", or "Yes 50%" while nobody is on that side. */
 export function sideButtonLabel(odds: Pick<CallMarketView["odds"], "yesProb" | "noProb" | "yesMultiplier" | "noMultiplier">, side: CallSide): string {
-  const pct = formatPct(side === "yes" ? odds.yesProb : odds.noProb);
+  const pct = splitPct(odds)[side];
   const mult = side === "yes" ? odds.yesMultiplier : odds.noMultiplier;
   return mult === null ? `${sideLabel(side)} ${pct}` : `${sideLabel(side)} ${pct}, ${formatMultiplier(mult)} points back if correct`;
 }

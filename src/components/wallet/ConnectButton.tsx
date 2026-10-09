@@ -29,6 +29,13 @@ const menuPopupClass =
 /** The header chip's label: the balance is spendable points, never money. */
 const POINTS_CHIP_LABEL = "Points balance, points only, no cash value";
 
+/** The Sign in pair's floor per size (the Button sizes' own heights): the pair never shrinks below it. */
+const PAIR_MIN: Record<NonNullable<ConnectButtonProps["size"]>, { h: string; w: string }> = {
+  sm: { h: "min-h-7", w: "min-w-7" },
+  default: { h: "min-h-8", w: "min-w-8" },
+  lg: { h: "min-h-9", w: "min-w-9" },
+};
+
 const menuItemClass =
   "flex h-10 cursor-default items-center gap-2 rounded-lg px-3 text-sm outline-none select-none data-highlighted:bg-muted data-highlighted:text-foreground data-disabled:opacity-50 sm:h-8 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground";
 
@@ -158,15 +165,30 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
   }
 
   if (!signedIn) {
+    // Two buttons, sized as one control: `className` sizes the pair (the landing's 48px hero
+    // button, a full-width form button), never pads it, and both buttons stretch to fill it.
+    // Without a height class they keep their own size (the header's 36px).
     return (
-      <div className={cn("inline-flex items-center gap-1", className)}>
-        <Button size={size} variant={variant} className="font-semibold" onClick={() => void signIn()} disabled={signingIn}>
+      <div className={cn("inline-flex items-stretch gap-1", className, "p-0!")}>
+        <Button
+          size={size}
+          variant={variant}
+          className={cn("h-auto grow font-semibold", PAIR_MIN[size].h)}
+          onClick={() => void signIn()}
+          disabled={signingIn}
+        >
           {signingIn ? <Loader2Icon className="animate-spin" data-icon="inline-start" /> : <WalletIcon data-icon="inline-start" />}
           {signingIn ? "Signing" : "Sign in"}
         </Button>
         <Menu.Root modal={false}>
           <Menu.Trigger
-            render={<Button size={size === "lg" ? "icon-lg" : size === "sm" ? "icon-sm" : "icon"} variant="outline" aria-label="Wallet options" />}
+            render={
+              <Button
+                variant="outline"
+                className={cn("aspect-square h-auto w-auto shrink-0 p-0", PAIR_MIN[size].h, PAIR_MIN[size].w)}
+                aria-label="Wallet options"
+              />
+            }
           >
             <ChevronDownIcon />
           </Menu.Trigger>

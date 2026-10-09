@@ -75,6 +75,33 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(landing).toContain("<CheckWalletBox");
   });
 
+  it("moves keyboard focus with 'Check a wallet': the #check section takes focus, so the next Tab reaches the address field", () => {
+    const landing = repoFile("src/app/page.tsx");
+    // Next's hash navigation calls focus() on the target; without tabIndex the call does nothing and focus stays in the hero.
+    expect(landing).toMatch(/<section\s+id="check"\s+tabIndex=\{-1\}/);
+  });
+
+  it("keeps the check field 44px tall on phones and visible without its card", () => {
+    const box = repoFile("src/components/landing/CheckWalletBox.tsx");
+    const input = box.slice(box.indexOf("<Input"), box.indexOf("/>", box.indexOf("<Input")));
+    // Stacked below sm: a bare flex-1 (basis 0) in the column overrides h-11 and draws a 28px field.
+    expect(input).toContain("h-11");
+    expect(input).toContain("sm:flex-1");
+    expect(input).not.toMatch(/[" ]flex-1\b/);
+    // The landing strips the card, so it gives the field a stronger edge than the 6% well border.
+    expect(repoFile("src/app/page.tsx")).toMatch(/<CheckWalletBox className="[^"]*\[&_input\]:border-white\/\[0\.14\]/);
+  });
+
+  it("keeps the hero's Sign in as tall as the Connect it replaces: the pair fills the caller's size, never its padding", () => {
+    const src = repoFile("src/components/wallet/ConnectButton.tsx");
+    const branch = src.slice(src.indexOf("if (!signedIn) {"), src.indexOf("const points = user?.points"));
+    expect(branch).toContain('<div className={cn("inline-flex items-stretch gap-1", className, "p-0!")}>');
+    // Both buttons drop their fixed height and stretch to the wrapper, with the size's own height as the floor.
+    expect(branch).toMatch(/className=\{cn\("h-auto grow font-semibold", PAIR_MIN\[size\]\.h\)\}/);
+    expect(branch).toMatch(/className=\{cn\("aspect-square h-auto w-auto shrink-0 p-0", PAIR_MIN\[size\]\.h, PAIR_MIN\[size\]\.w\)\}/);
+    expect(src).toMatch(/lg: \{ h: "min-h-9", w: "min-w-9" \}/);
+  });
+
   it("states the welcome offer before sign-in, directly above the buttons, from the points policy", () => {
     const landing = repoFile("src/app/page.tsx");
     expect(landing).toMatch(/import \{[^}]*\bWELCOME_OFFER_LINE\b[^}]*\} from "@\/lib\/games\/ledger-policy"/);
@@ -93,6 +120,14 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     // The trust row was folded away on 9 Oct 2026: one status line, not four chips.
     expect(hero).not.toContain("TRUST.map(");
     expect(hero).toContain("{COMPLIANCE_LINE}");
+    // The regulatory line keeps AA contrast for 12px text: /80 is 5.3:1 on the page background, /70 only 4.3:1.
+    const compliance = hero.match(/<p className="([^"]*)">\{COMPLIANCE_LINE\}<\/p>/);
+    const tone = compliance?.[1].split(" ").find((c) => c.startsWith("text-muted-foreground"));
+    expect(["text-muted-foreground", "text-muted-foreground/90", "text-muted-foreground/80"]).toContain(tone);
+    // The pre-IPO link draws the focus ring (its outline-none removes the global outline) and is at least 24px tall.
+    const preIpo = hero.match(/href="\/prestocks"\s+className="([^"]*)"/);
+    expect(preIpo?.[1]).toContain("focus-visible:ring-2 focus-visible:ring-[var(--focus)]");
+    expect(preIpo?.[1]).toContain("min-h-6");
     expect(landing).toMatch(/import \{[^}]*\bCOMPLIANCE_LINE\b[^}]*\} from "@\/components\/common\/compliance"/);
     // Phones read the pitch, then the status line, then the live card.
     expect(hero.indexOf("<MarketSessionChip")).toBeGreaterThan(hero.indexOf("Check a wallet"));
@@ -106,8 +141,10 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     const hero = landing.slice(landing.indexOf('aria-labelledby="hero-title"'), landing.indexOf("<GameTiles"));
     expect(hero).toMatch(/<SessionSwitch signedIn=\{<ContinueTour \/>\} signedOut=\{<ConnectButton /);
     expect(landing).toMatch(/href="\/start"[^>]*>\s*Continue the tour/);
-    // The welcome offer is for visitors who have not signed in yet; a signed-in player gets a plain welcome.
-    expect(hero).toMatch(/<SessionSwitch\s+signedIn=\{[\s\S]{0,300}Welcome back\.[\s\S]{0,300}signedOut=\{[\s\S]{0,300}\{WELCOME_OFFER_LINE\}/);
+    // The welcome offer is for visitors who have not signed in yet. A signed-in player gets a plain line
+    // that is true at a first sign-in too: the first-grant toast says "Welcome to Dulo" at that moment.
+    expect(hero).toMatch(/<SessionSwitch\s+signedIn=\{[\s\S]{0,300}You&apos;re signed in\.[\s\S]{0,300}signedOut=\{[\s\S]{0,300}\{WELCOME_OFFER_LINE\}/);
+    expect(landing).not.toMatch(/Welcome back/i);
     // The landing shows no personal balance (docs/HANDOFF.md 3.8, decided 16 Sep 2026).
     expect(landing).not.toMatch(/\buser\??\.points|PointsSummary|seasonPoints|formatPoints/);
     expect(repoFile("src/components/landing/SessionSwitch.tsx")).not.toMatch(/\.points|formatPoints|balance/);

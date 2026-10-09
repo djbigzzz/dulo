@@ -5,7 +5,7 @@
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
 
 [![CI](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-1%2C486%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
+[![Tests](https://img.shields.io/badge/tests-1%2C497%20passing-d8b46a?style=flat&labelColor=0a0908)](#tests)
 [![Solana](https://img.shields.io/badge/Solana-mainnet-ff6a2a?style=flat&labelColor=0a0908)](#why-solana)
 [![Licence](https://img.shields.io/badge/licence-MIT-a9a299?style=flat&labelColor=0a0908)](LICENSE)
 
@@ -44,7 +44,7 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 
 **Open https://projectdulo.com — nothing to install.** Or run it yourself in about 5 minutes: [Run locally](#run-locally). Every chain read goes to Solana mainnet, so nothing here is a testnet mock. You do not need to hold an xStock: starter points and virtual cash cover everything except the on-chain quests.
 
-The landing opens on this week's live prediction cards, the three game tiles (Predictions, Competition, On-chain quests) and the welcome offer, with Connect wallet first and Check a wallet second.
+The landing opens on this week's live predictions (one featured with its price, the other two as rows; 9 Oct 2026: calm redesign), the three game tiles (Predictions, Competition, On-chain quests) and the welcome offer, with Connect wallet first and Check a wallet second.
 
 1. **Connect.** Phantom, Solflare or another Wallet Standard wallet such as Backpack, then sign one message (Sign-In With Solana). No transaction.
 2. **Welcome.** Your first sign-in writes 1,000 starter points to the ledger, and the toast says so: 1,000 starter points for predictions and $10,000 of virtual cash for this week's competition. The account menu shows a points balance of 1,000 and Season points of 0, "Not ranked yet", because starter points never count toward rank.
@@ -84,7 +84,7 @@ The nav reads Predictions · Competition · Quests · Pre-IPO · Copy a portfoli
 
 | Page | What it shows | Sign-in |
 |---|---|---|
-| `/` | The landing: this week's live prediction cards, the three game tiles, the welcome offer and check any wallet | no |
+| `/` | The landing: this week's featured prediction and the other two as rows (9 Oct 2026: calm redesign), the three game tiles, the welcome offer and check any wallet | no |
 | `/predictions` | Predictions: points-only Yes or No on Friday closes | to predict |
 | `/competition` | Weekly competition (virtual cash): trade form, positions and the board with labelled house bots | to trade |
 | `/quests` | Quests: in-platform, on-chain and coming soon, with a proof on every completed on-chain quest | to earn |
@@ -108,7 +108,7 @@ Dulo is independent and not affiliated with xStocks. Backed Finance owns that br
 | **Real user and problem** | 800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Holders need a reason to keep holding after the first buy, and apps need a way to reach them. On-chain quests pay points for holding, diversifying, buying steadily and holding through earnings, never for trading volume. Newcomers who hold nothing still get a full game: starter points for predictions and virtual cash for the competition. A listed project's on-chain quests are JSON rows on its campaign, and its page shows the verified completions it drove. Season 0 partners are seeded by hand and no project has signed up yet, so every count reads zero. |
 | **Working end-to-end demo** | Reads Solana mainnet. Anyone can check any wallet without signing in. A SIWS sign-in grants starter points and starts scoring. In-platform quests complete in the same request as the trade or prediction. On-chain quests are verified at sign-in and by a 5-minute cron. The weekly competition and the weekly points-only predictions both settle and roll over on their own. Copying a portfolio hands off to prefilled Jupiter swaps, and quests that carry a badge queue a soulbound Token-2022 badge mint (see [Proof on mainnet](#proof-on-mainnet)). It keeps working with US markets closed. |
 | **Why Solana** | Holdings are public state, so an on-chain quest is checked from RPC, not claimed by a broker. Token-2022 ScaledUiAmount gives multiplier-correct holdings. Jupiter quotes and swaps the xStock mint itself. Badges are NonTransferable Token-2022 mints. A second Token-2022 issuer, PreStocks pre-IPO tokens, is read, priced and scored through the same interfaces with zero extra RPC calls. See [Why Solana](#why-solana). |
-| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,486 tests across 73 files pass today (`npx vitest run`, 8 Oct 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
+| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,497 tests across 73 files pass today (`npx vitest run`, 9 Oct 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
 
 ## How points work
 
@@ -459,7 +459,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/
 Checks:
 
 ```bash
-npx vitest run      # 1,486 tests across 73 files on 8 Oct 2026; no database needed
+npx vitest run      # 1,497 tests across 73 files on 9 Oct 2026; no database needed
 npx next typegen    # once on a fresh clone: next-env.d.ts and .next/types are gitignored, and tsc needs the route types
 npm run typecheck
 npm run lint

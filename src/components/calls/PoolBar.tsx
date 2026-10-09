@@ -3,7 +3,7 @@
 import { cn } from "cn";
 import type { CallOdds } from "@/lib/api-client";
 import { formatPoints } from "@/components/common/format";
-import { formatPct } from "@/components/calls/calls-format";
+import { splitPct } from "@/components/calls/calls-format";
 
 export interface PoolBarProps {
   odds: CallOdds;
@@ -20,6 +20,7 @@ export interface PoolBarProps {
  */
 export function PoolBar({ odds, highlight = null, labels = true, className }: PoolBarProps) {
   const yesPct = Math.round(odds.yesProb * 100);
+  const split = splitPct(odds);
   const empty = odds.total === 0;
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -27,17 +28,17 @@ export function PoolBar({ odds, highlight = null, labels = true, className }: Po
         <div className="flex items-baseline justify-between gap-2 text-sm">
           <span className={cn("flex items-baseline gap-1.5", highlight === "yes" ? "font-semibold text-emerald-400" : "text-foreground")}>
             <span className="font-medium">Yes</span>
-            <span className="tabular-nums">{formatPct(odds.yesProb)}</span>
+            <span className="tabular-nums">{split.yes}</span>
           </span>
           <span className={cn("flex items-baseline gap-1.5", highlight === "no" ? "font-semibold text-rose-400" : "text-foreground")}>
-            <span className="tabular-nums">{formatPct(odds.noProb)}</span>
+            <span className="tabular-nums">{split.no}</span>
             <span className="font-medium">No</span>
           </span>
         </div>
       ) : null}
       <div
         role="img"
-        aria-label={`Yes pool ${formatPoints(odds.yesPool)} points (${formatPct(odds.yesProb)}), No pool ${formatPoints(odds.noPool)} points (${formatPct(odds.noProb)})`}
+        aria-label={`Yes pool ${formatPoints(odds.yesPool)} points (${split.yes}), No pool ${formatPoints(odds.noPool)} points (${split.no})`}
         className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]"
       >
         <div

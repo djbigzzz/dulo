@@ -362,6 +362,13 @@ describe("docs economy — honest claims across every doc", () => {
   it("the deadline and the vision stay in step", () => {
     // 17 Sep: the page countdown, header and press confirm the close moved to Fri 25 Sep 16:00 ET,
     // judging to 2 Oct. Every doc states that one date; the stale 18 Sep close must not survive.
+    // 9 Oct 2026: the docs now carry real 9 Oct dates (the test count, the calm-redesign notes), so
+    // the guard fails on a close, deadline or judging date of 9 Oct (the retired plan), not on any mention.
+    const STALE =
+      /(close|deadline)[^.]{0,60}18 Sep 2026|(close|deadline|submissions?|judging)[^.]{0,60}\b9 Oct|which is binding|(work|plan) (to|for) the earlier (date|one)/i;
+    expect("Submissions close Fri 9 Oct 2026, 16:00 ET").toMatch(STALE);
+    expect("judging runs to 9 Oct").toMatch(STALE);
+    expect("1,497 tests across 73 files on 9 Oct 2026").not.toMatch(STALE);
     for (const [rel, text] of [
       ["README.md", README],
       ["docs/SUBMISSION.md", SUBMISSION],
@@ -370,7 +377,7 @@ describe("docs economy — honest claims across every doc", () => {
     ] as const) {
       expect(text, rel).toMatch(/Fri 25 Sep 2026,? 16:00 ET/);
       expect(text, rel).toMatch(/judging runs to 2 Oct/i);
-      expect(text, rel).not.toMatch(/(close|deadline)[^.]{0,60}18 Sep 2026|9 Oct|which is binding|(work|plan) (to|for) the earlier (date|one)/i);
+      expect(text, rel).not.toMatch(STALE);
     }
     expect(SUBMISSION).toContain("Thu 17 Sep: press Submit Project");
     const vision = "any app or issuer runs competitions, predictions and rewards for its own holders on Dulo's API, and a player carries one score across them";

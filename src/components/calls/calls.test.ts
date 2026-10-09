@@ -22,6 +22,7 @@ import {
   sideButtonLabel,
   sideForKey,
   soonestLockMs,
+  splitPct,
   stakeError,
   strikeDistance,
 } from "@/components/calls/calls-format";
@@ -152,6 +153,19 @@ describe("calls-format", () => {
     expect(formatMultiplier(12.7)).toBe("13x");
     expect(formatPct(0.625)).toBe("63%");
     expect(formatPct(0.5)).toBe("50%");
+  });
+
+  it("splits Yes / No into whole percents that always add up to 100", () => {
+    // 620 / 180 (77.5% / 22.5%): rounding each side alone would print 78% and 23%.
+    expect(splitPct({ yesProb: 620 / 800 })).toEqual({ yes: "78%", no: "22%" });
+    // 3 : 5 (37.5% / 62.5%): rounding each side alone would print 38% and 63%.
+    expect(splitPct({ yesProb: 3 / 8 })).toEqual({ yes: "38%", no: "62%" });
+    expect(splitPct({ yesProb: 0.5 })).toEqual({ yes: "50%", no: "50%" });
+    for (let yes = 0; yes <= 1000; yes += 7) {
+      const { yes: y, no: n } = splitPct({ yesProb: yes / 1000 });
+      expect(parseInt(y, 10) + parseInt(n, 10)).toBe(100);
+    }
+    expect(sideButtonLabel({ yesProb: 0.775, noProb: 0.225, yesMultiplier: null, noMultiplier: null }, "no")).toBe("No 22%");
   });
 
   it("labels outcomes and results", () => {
