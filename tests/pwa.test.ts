@@ -20,8 +20,8 @@ describe("manifest.webmanifest", () => {
     expect(m.description).toBe(POSITIONING);
     expect(m.start_url).toBe("/");
     expect(m.display).toBe("standalone");
-    expect(m.background_color).toBe("#09090b");
-    expect(m.theme_color).toBe("#09090b");
+    expect(m.background_color).toBe("#0b0b0c");
+    expect(m.theme_color).toBe("#0b0b0c");
   });
 
   it("points every icon at an existing file in public/", () => {
@@ -49,10 +49,10 @@ describe("manifest.webmanifest", () => {
 });
 
 describe("manifest colours", () => {
-  it("match the Mono near-black ground (the dark --background) and the layout's theme-color", () => {
+  it("match the Broadcast ink ground (the dark --background) and the layout's theme-color", () => {
     const layout = readFileSync(path.join(ROOT, "src/app/layout.tsx"), "utf8");
     const theme = layout.match(/const THEME_COLOR = "(#[0-9a-f]{6})"/i)?.[1];
-    expect(theme).toBe("#09090b");
+    expect(theme).toBe("#0b0b0c");
     // The page ground the app paints is the same colour, so the splash and status bar never flash.
     const css = readFileSync(path.join(ROOT, "src/app/globals.css"), "utf8");
     expect(css).toMatch(new RegExp(`\\.dark \\{[^}]*--background: ${theme};`));
@@ -64,21 +64,21 @@ describe("manifest colours", () => {
 });
 
 describe("/offline page", () => {
-  it("is on the design system: accent tamga, heavy Geist title, one white full-navigation retry, inline fallbacks", () => {
+  it("is on the design system: cream tamga, serif title, one gold full-navigation retry, inline fallbacks", () => {
     const html = renderToStaticMarkup(createElement(OfflinePage));
-    // Tamga tone="gradient": the solid accent is an inline stroke, so it renders without any stylesheet.
-    expect(html).toContain('stroke="#3b82f6"');
+    // Tamga tone="gradient": the solid cream is an inline stroke, so it renders without any stylesheet.
+    expect(html).toContain('stroke="#f3f0e8"');
     expect(html).not.toContain("stop-color");
     for (const d of TAMGA_PATHS) expect(html).toContain(`d="${d}"`);
-    // Geist (the next/font variable) first, then system sans, set heavy and tight; never a serif.
-    expect(html).toMatch(/<h1 class="font-display[^"]*"[^>]*font-family:var\(--font-geist-sans\)[^"]*;font-weight:600[^>]*>You are /);
-    expect(html).not.toContain("serif)");
+    // Instrument Serif (the next/font variable) first, then a system serif, at its one weight (no faux bold).
+    expect(html).toMatch(/<h1 class="font-display[^"]*"[^>]*font-family:var\(--font-instrument-serif\)[^"]*serif;font-weight:400[^>]*>You are /);
+    expect(html).not.toContain("--font-geist");
     expect(html).toContain("offline</span>");
     // A real <a href="/"> so the service worker can serve the retry; exactly one link/button, and it
     // is the page's one primary (white) action.
     expect(html.match(/<a /g)).toHaveLength(1);
     expect(html).toMatch(/<a href="\/"[^>]*>Try again<\/a>/);
-    expect(html).toMatch(/<a href="\/" class="[^"]*\bbg-primary\b[^"]*\btext-primary-foreground\b/);
+    expect(html).toMatch(/<a href="\/" class="[^"]*\bbefore:bg-primary\b[^"]*\btext-primary-foreground\b/);
     expect(offlineMetadata.robots).toEqual({ index: false });
   });
 });

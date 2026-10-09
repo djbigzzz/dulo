@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Gamepad2, Sprout } from "lucide-react";
 import { cn } from "cn";
 import { useSession } from "@/hooks/useSession";
-import { api, leagueApi, type LeagueResponse, type LeagueSymbolsResponse, type PartnerDetail, type PlaysResponse, type PlayView } from "@/lib/api-client";
+import { api, leagueApi, type LeagueSymbolsResponse, type PartnerDetail, type PlaysResponse, type PlayView } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { SignInBanner } from "@/components/common/SignInBanner";
 import { StatStrip, type Stat } from "@/components/common/StatStrip";
 import { useApiQuery } from "@/components/common/useApiQuery";
+import { useLeagueQuery } from "@/components/layout/WeekData";
 import { formatUsd } from "@/components/common/format";
 import { WEEKEND_TRADES_COPY, formatSignedUsd, formatUsdWhole, isPreWeek, pnlClass } from "@/components/league/format";
 import { PositionsTable, PositionsTableSkeleton } from "@/components/league/PositionsTable";
@@ -80,7 +81,8 @@ export function PreStocksView({ className }: PreStocksViewProps) {
   const sessionKey = session?.userId ?? "";
 
   const symbols = useApiQuery<LeagueSymbolsResponse>((signal) => leagueApi.symbols({ signal }), ["prestocks:symbols", sessionKey]);
-  const league = useApiQuery<LeagueResponse>((signal) => leagueApi.overview({ signal }), ["prestocks:league", sessionKey]);
+  // The shell's shared read (WeekData); the week track under the header reads the same request.
+  const league = useLeagueQuery(["prestocks:league", sessionKey]);
   const partner = useApiQuery<PartnerDetail>((signal) => api.partner(PRE_IPO_PARTNER_SLUG, { signal }), "prestocks:partner", { refetchOnFocus: false });
   const plays = useApiQuery<PlaysResponse>(() => api.plays(), ["prestocks:plays", sessionKey], { refetchOnFocus: false });
 

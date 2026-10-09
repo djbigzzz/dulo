@@ -24,20 +24,20 @@ import { useSession } from "@/hooks/useSession";
 import { accountPointsLines, truncateAddress } from "@/hooks/session-helpers";
 
 const menuPopupClass =
-  "z-50 min-w-48 rounded-xl bg-popover p-1 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/10 outline-none transition-[opacity,transform] duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0";
+  "z-50 min-w-48 rounded-md bg-popover p-1 text-sm text-popover-foreground shadow-[0_24px_48px_-16px_rgb(0_0_0/0.8)] ring-1 ring-rule-2 outline-none transition-[opacity,transform] duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none";
 
 /** The header chip's label: the balance is spendable points, never money. */
 const POINTS_CHIP_LABEL = "Points balance, points only, no cash value";
 
 /** The Sign in pair's floor per size (the Button sizes' own heights): the pair never shrinks below it. */
 const PAIR_MIN: Record<NonNullable<ConnectButtonProps["size"]>, { h: string; w: string }> = {
-  sm: { h: "min-h-7", w: "min-w-7" },
-  default: { h: "min-h-8", w: "min-w-8" },
-  lg: { h: "min-h-9", w: "min-w-9" },
+  sm: { h: "min-h-8", w: "min-w-8" },
+  default: { h: "min-h-9", w: "min-w-9" },
+  lg: { h: "min-h-10", w: "min-w-10" },
 };
 
 const menuItemClass =
-  "flex h-10 cursor-default items-center gap-2 rounded-lg px-3 text-sm outline-none select-none data-highlighted:bg-white/[0.08] data-highlighted:text-foreground focus-visible:ring-1 focus-visible:ring-[var(--focus)] focus-visible:ring-inset data-disabled:opacity-50 sm:h-8 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground";
+  "flex h-10 cursor-default items-center gap-2 rounded-sm px-3 text-sm outline-none select-none data-highlighted:bg-ink-4 data-highlighted:text-foreground focus-visible:ring-1 focus-visible:ring-[var(--focus)] focus-visible:ring-inset data-disabled:opacity-50 sm:h-8 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground";
 
 /**
  * Wallet entry point for the header.
@@ -55,7 +55,7 @@ export interface ConnectButtonProps {
   className?: string;
   size?: "sm" | "default" | "lg";
   /**
-   * "default" is the primary (white) button. Pass "outline" where another control is the view's one primary
+   * "default" is the gold primary button. Pass "outline" where another control is the view's one primary
    * action: the header (every page owns its own primary), and the /prestocks and /competition sign-in
    * banners, which sit beside the trade form's own Connect.
    */
@@ -99,8 +99,10 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
   if (!mounted || (!connected && !connecting)) {
     return (
       <Button size={size} variant={variant} className={cn("font-semibold", className)} onClick={openModal} disabled={!mounted}>
-        <WalletIcon data-icon="inline-start" />
-        Connect<span className="-ml-0.5 hidden sm:inline">wallet</span>
+        {/* One text run (no icon in Broadcast): "Connect" on a phone, "Connect wallet" from sm. */}
+        <span>
+          Connect<span className="hidden sm:inline"> wallet</span>
+        </span>
       </Button>
     );
   }
@@ -108,7 +110,7 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
   if (connecting || (connected && loading)) {
     return (
       <Button size={size} variant="outline" className={className} disabled>
-        <Loader2Icon className="animate-spin" data-icon="inline-start" />
+        <Loader2Icon className="animate-spin motion-reduce:animate-none" data-icon="inline-start" />
         {connecting ? "Connecting" : "Checking session"}
       </Button>
     );
@@ -123,7 +125,7 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
           {signingIn ? (
             <Loader2Icon className="animate-spin" data-icon="inline-start" />
           ) : (
-            <span className="size-2 rounded-full bg-amber-300" aria-hidden />
+            <span className="size-2 rounded-full border border-foreground" aria-hidden />
           )}
           {truncateAddress(address ?? "")}
           <ChevronDownIcon data-icon="inline-end" className="text-muted-foreground" />
@@ -140,21 +142,21 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
                   this account yet.
                 </div>
               </div>
-              <Menu.Separator className="my-1 h-px bg-border" />
+              <Menu.Separator className="my-1 h-px bg-rule" />
               <Menu.Item className={menuItemClass} disabled={signingIn} onClick={() => void signIn()}>
                 <PlusIcon /> Add this wallet
               </Menu.Item>
               <Menu.Item className={menuItemClass} disabled={signingIn} onClick={() => void signIn({ switch: true })}>
                 <RepeatIcon /> Switch account
               </Menu.Item>
-              <Menu.Separator className="my-1 h-px bg-border" />
+              <Menu.Separator className="my-1 h-px bg-rule" />
               <Menu.Item className={menuItemClass} onClick={() => void copyAddress()}>
                 <CopyIcon /> Copy address
               </Menu.Item>
               <Menu.Item className={menuItemClass} onClick={() => void changeWallet()}>
                 <ArrowLeftRightIcon /> Change wallet
               </Menu.Item>
-              <Menu.Separator className="my-1 h-px bg-border" />
+              <Menu.Separator className="my-1 h-px bg-rule" />
               <Menu.Item className={cn(menuItemClass, "text-destructive data-highlighted:text-destructive [&_svg]:text-destructive")} onClick={() => void signOut()}>
                 <LogOutIcon /> Sign out
               </Menu.Item>
@@ -199,7 +201,7 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
                 <div className="px-3 py-2 text-xs text-muted-foreground">
                   Connected as <span className="font-mono text-foreground">{truncateAddress(address ?? "")}</span>
                 </div>
-                <Menu.Separator className="my-1 h-px bg-border" />
+                <Menu.Separator className="my-1 h-px bg-rule" />
                 <Menu.Item className={menuItemClass} onClick={() => void copyAddress()}>
                   <CopyIcon /> Copy address
                 </Menu.Item>
@@ -228,7 +230,7 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
       <Menu.Trigger
         render={<Button size={size} variant="outline" className={cn("font-mono", className)} aria-label={triggerLabel} />}
       >
-        <span className="size-2 rounded-full bg-emerald-400" aria-hidden />
+        <span className="size-2 rounded-full bg-yes" aria-hidden />
         {truncateAddress(address ?? "")}
         {/* xl and up only: below that the trigger keeps its measured width, and the menu shows the balance. */}
         {typeof balance === "number" ? (
@@ -245,7 +247,7 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
               <div className="text-xs text-muted-foreground">Signed in</div>
               <div className="font-mono text-sm break-all">{truncateAddress(address ?? "", 8, 8)}</div>
               {/* Every width, 375px included: the balance first (foreground), then Season points and rank. */}
-              <div className="mt-2 flex flex-col gap-0.5 border-t border-white/[0.06] pt-2 text-xs tabular-nums">
+              <div className="mt-2 flex flex-col gap-0.5 border-t border-rule pt-2 text-xs tabular-nums">
                 {pointsLines.map((line, i) => (
                   <p key={line} className={i === 0 && pointsLines.length > 1 ? "font-medium text-foreground" : "text-muted-foreground"}>
                     {line}
@@ -253,7 +255,7 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
                 ))}
               </div>
             </div>
-            <Menu.Separator className="my-1 h-px bg-border" />
+            <Menu.Separator className="my-1 h-px bg-rule" />
             <Menu.LinkItem className={menuItemClass} render={<Link href="/profile" />}>
               <UserIcon /> Profile
             </Menu.LinkItem>
@@ -263,7 +265,7 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
             <Menu.Item className={menuItemClass} onClick={() => void changeWallet()}>
               <ArrowLeftRightIcon /> Change wallet
             </Menu.Item>
-            <Menu.Separator className="my-1 h-px bg-border" />
+            <Menu.Separator className="my-1 h-px bg-rule" />
             <Menu.Item className={cn(menuItemClass, "text-destructive data-highlighted:text-destructive [&_svg]:text-destructive")} onClick={() => void signOut()}>
               <LogOutIcon /> Sign out
             </Menu.Item>

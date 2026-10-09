@@ -124,7 +124,7 @@ describe("root layout metadata", () => {
     expect(metadata).toContain("capable: true");
     expect(metadata).not.toMatch(/^\s*other: \{/m);
     expect(metadata).not.toMatch(/"mobile-web-app-capable": "yes"/);
-    expect(layout).toContain('const THEME_COLOR = "#09090b"');
+    expect(layout).toContain('const THEME_COLOR = "#0b0b0c"');
   });
 });
 
@@ -141,13 +141,16 @@ describe("error pages and robots", () => {
     expect(globalError).toContain("<html");
   });
 
-  it("global-error renders standalone on the Mono near-black with a retry", () => {
+  it("global-error renders standalone on the Broadcast ink with a retry", () => {
     const html = renderToStaticMarkup(createElement(GlobalError, { error: Object.assign(new Error("x"), { digest: "d1" }), reset: () => undefined }));
     expect(html).toMatch(/^<html lang="en"/);
     // The page ground is the layout's theme-color, inline (globals.css is not loaded here).
-    expect(html).toMatch(/<body style="[^"]*background:#09090b/);
-    // The mark is the solid accent, inline, so it reads without any stylesheet.
-    expect(html).toContain('stroke="#3b82f6"');
+    expect(html).toMatch(/<body style="[^"]*background:#0b0b0c/);
+    // The mark is the solid cream, inline, so it reads without any stylesheet.
+    expect(html).toContain('stroke="#f3f0e8"');
+    // The retry is the page's one gold action (its cut drawn by the background, so focus is never clipped).
+    expect(html).toMatch(/<button[^>]*style="[^"]*#ffd23c/);
+    expect(html).not.toMatch(/<button[^>]*style="[^"]*clip-path/);
     expect(html).toContain("Try again");
     expect(html).toContain("Ref d1");
     for (const d of TAMGA_PATHS) expect(html).toContain(`d="${d}"`);
@@ -236,7 +239,7 @@ describe("opengraph-image / twitter-image", () => {
     return [];
   }
 
-  it("renders 1200x630 on the Mono near-black with the accent tamga, a Geist Dulo and the positioning line, fonts from Google as ArrayBuffers", async () => {
+  it("renders 1200x630 on the Broadcast ink with the cream tamga, a serif Dulo and the positioning line, fonts from Google as ArrayBuffers", async () => {
     const urls: string[] = [];
     vi.stubGlobal(
       "fetch",
@@ -250,28 +253,30 @@ describe("opengraph-image / twitter-image", () => {
     expect(ogContentType).toBe("image/png");
     expect(img.options).toMatchObject({ width: 1200, height: 630 });
     const fonts = img.options.fonts as { name: string; weight: number; data: ArrayBuffer }[];
-    // Geist is the only face: no serif is fetched or registered.
+    // The Broadcast pair: Archivo for the small lines, Instrument Serif (its one weight) for the wordmark.
     expect(fonts.map((f) => [f.name, f.weight])).toEqual([
-      ["Geist", 500],
-      ["Geist", 600],
+      ["Archivo", 500],
+      ["Instrument Serif", 400],
     ]);
     for (const f of fonts) expect(f.data).toBeInstanceOf(ArrayBuffer);
-    expect(urls.some((u) => u.includes("family=Geist:wght@600&text="))).toBe(true);
-    expect(urls.some((u) => u.includes("Instrument"))).toBe(false);
+    expect(urls.some((u) => u.includes("family=Instrument+Serif:wght@400&text="))).toBe(true);
+    expect(urls.some((u) => u.includes("family=Archivo:wght@500&text="))).toBe(true);
+    expect(urls.some((u) => u.includes("Geist"))).toBe(false);
 
     // Flat ground, no glow.
     const root = img.element as { props: { style: Record<string, string> } };
-    expect(root.props.style.backgroundColor).toBe("#09090b");
+    expect(root.props.style.backgroundColor).toBe("#0b0b0c");
     expect(root.props.style.backgroundImage).toBeUndefined();
     const all = texts(img.element);
     expect(all).toContain("Dulo");
     expect(all).toContain("The entertainment layer for xStocks.");
     const svg = JSON.stringify(img.element);
     for (const d of TAMGA_PATHS) expect(svg).toContain(d);
-    expect(svg).toContain('"stroke":"#3b82f6"');
-    // The wordmark is set in Geist 600, heavy and tight.
-    expect(svg).toMatch(/"fontFamily":"Geist","fontWeight":600,"fontSize":170/);
-    expect(svg).not.toContain("Instrument Serif");
+    expect(svg).toContain('"stroke":"#f3f0e8"');
+    expect(svg).not.toContain("#ffd23c");
+    // The wordmark is set in Instrument Serif, its one weight.
+    expect(svg).toMatch(/"fontFamily":"Instrument Serif","fontWeight":400,"fontSize":200/);
+    expect(svg).not.toContain("Geist");
   });
 
   it("falls back to the bundled sans (no custom fonts) when Google Fonts is unreachable, never throwing", async () => {

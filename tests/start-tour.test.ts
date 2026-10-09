@@ -786,7 +786,8 @@ describe("source pins", () => {
   });
 
   it("the progress bar only animates without reduced motion", () => {
-    expect(repoFile("src/components/ui/progress.tsx")).toContain('"h-full bg-primary transition-all motion-reduce:transition-none"');
+    // Cream, not gold: gold is the primary action and "now" only.
+    expect(repoFile("src/components/ui/progress.tsx")).toContain('"h-full bg-foreground transition-all motion-reduce:transition-none"');
   });
 
   it("saves nothing in the browser and never imports the server-only competition module", () => {

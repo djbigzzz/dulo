@@ -49,6 +49,12 @@ export interface ApiQueryOptions {
   refetchOnSessionChange?: boolean;
   /** Hold the first request until the session check settles (max SESSION_WAIT_MS). Default true. */
   awaitSession?: boolean;
+  /**
+   * False parks the hook: no request, no focus refetch, `loading` false and `data` null. For a
+   * caller that reads the same endpoint from a shared source when one is mounted (see
+   * src/components/layout/WeekData.tsx) and fetches on its own only when it is not. Default true.
+   */
+  enabled?: boolean;
 }
 
 export type { QueryKey } from "@/hooks/session-state";
@@ -67,7 +73,7 @@ export function useApiQuery<T>(
   key: QueryKey = "",
   opts: ApiQueryOptions = {},
 ): ApiQueryResult<T> {
-  const { refetchOnFocus = true, focusThrottleMs = 2000, refetchOnSessionChange = true, awaitSession = true } = opts;
+  const { refetchOnFocus = true, focusThrottleMs = 2000, refetchOnSessionChange = true, awaitSession = true, enabled = true } = opts;
   const session = useOptionalSession();
   const sessionLoading = session?.loading ?? false;
   const sessionVersion = refetchOnSessionChange ? (session?.sessionVersion ?? 0) : 0;
@@ -96,6 +102,7 @@ export function useApiQuery<T>(
   }, [awaitSession, sessionLoading]);
 
   React.useEffect(() => {
+    if (!enabled) return noop; // parked: a shared source answers for this caller
     if (waiting) return noop; // stays in the loading state; runs once the session settles
     const ac = new AbortController();
     let active = true;
@@ -121,12 +128,12 @@ export function useApiQuery<T>(
       active = false;
       ac.abort();
     };
-  }, [keyString, tick, sessionVersion, waiting]);
+  }, [keyString, tick, sessionVersion, waiting, enabled]);
 
   const refetch = React.useCallback(() => setTick((t) => t + 1), []);
 
   React.useEffect(() => {
-    if (!refetchOnFocus || typeof window === "undefined") return noop;
+    if (!enabled || !refetchOnFocus || typeof window === "undefined") return noop;
     const onFocus = () => {
       const ok = shouldRefetchOnFocus({
         hidden: document.visibilityState === "hidden",
@@ -142,10 +149,10 @@ export function useApiQuery<T>(
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onFocus);
     };
-  }, [refetchOnFocus, focusThrottleMs, refetch]);
+  }, [enabled, refetchOnFocus, focusThrottleMs, refetch]);
 
-  const loading = inFlight && data === null;
-  const refreshing = inFlight && data !== null;
+  const loading = enabled && inFlight && data === null;
+  const refreshing = enabled && inFlight && data !== null;
   return { data, error: loading ? null : error, errorStatus: loading ? null : errorStatus, loading, refreshing, refetch };
 }
 

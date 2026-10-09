@@ -4,11 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { Share2Icon } from "lucide-react";
 import { toast } from "sonner";
-import { api, apiGet, errorMessage, leagueApi, type CallMarketView, type CallPositionView, type CallSide, type PlaysResponse } from "@/lib/api-client";
+import { api, apiGet, errorMessage, type CallMarketView, type CallPositionView, type CallSide, type PlaysResponse } from "@/lib/api-client";
 import { APP_URL } from "@/lib/config";
 import { Progress } from "@/components/ui/progress";
 import { ErrorState } from "@/components/common/ErrorState";
 import { useApiQuery } from "@/components/common/useApiQuery";
+import { useCallsQuery, useLeagueQuery } from "@/components/layout/WeekData";
 import { useSession } from "@/hooks/useSession";
 import { useSignInIntent } from "@/hooks/useSignInIntent";
 import { MarketCard, MarketCardSkeleton } from "@/components/calls/MarketCard";
@@ -69,8 +70,9 @@ const NO_POSITIONS: CallPositionView[] = [];
 export default function StartPage() {
   const { session, user, refresh: refreshSession } = useSession();
   const sessionKey = session?.userId ?? "";
-  const q = useApiQuery((signal) => api.calls({ signal }), sessionKey);
-  const lq = useApiQuery((signal) => leagueApi.overview({ signal }), ["start:league", sessionKey]);
+  // The shell's shared reads (WeekData): the week track under the header reads the same two requests.
+  const q = useCallsQuery(sessionKey);
+  const lq = useLeagueQuery(["start:league", sessionKey]);
   const plays = useApiQuery<PlaysResponse | null>(
     (signal) => (sessionKey ? apiGet<PlaysResponse>("/api/v1/plays", { signal }) : Promise.resolve(null)),
     ["start:plays", sessionKey],

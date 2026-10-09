@@ -4,12 +4,22 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ------------------------------------------------------------------------
+ * Dulo design tokens: "Live Broadcast" (docs/DESIGN.md), chosen by the founder 9 Oct 2026,
+ * replaces Mono. A calm, well-made weekly show: near-black ground, cream text, Instrument Serif
+ * headlines, Archivo numbers and labels, mono only for price, source, age and time.
+ * Colour has one job each: gold = the one primary action and "now" (at most two on a screen),
+ * green / red = Yes / No and gain / loss, nothing else. Dark only: <html class="dark">.
+ * ---------------------------------------------------------------------- */
+
 @theme inline {
+  /* shadcn semantic tokens (components read these) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-mono);
   --font-heading: var(--font-sans);
+  --font-display: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -46,81 +56,144 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Broadcast primitives, as utilities: bg-ink-2, text-paper, text-mute, text-dim, border-rule,
+     border-rule-2, bg-signal, text-yes, bg-no/15 ... */
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-paper: var(--paper);
+  --color-mute: var(--mute);
+  --color-dim: var(--dim);
+  --color-rule: var(--rule);
+  --color-rule-2: var(--rule-2);
+  --color-signal: var(--signal);
+  --color-signal-foreground: var(--signal-foreground);
+  --color-yes: var(--yes);
+  --color-no: var(--no);
+  --color-focus: var(--focus);
+
+  /* Legacy names from earlier themes, kept so pages not yet rebuilt still read one palette.
+     Both resolve to cream: neither is a hue any more. New code uses the Broadcast names above. */
+  --color-ember: var(--ember);
+  --color-ember-light: var(--ember-light);
+  --color-ember-foreground: var(--ember-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-scoreboard: var(--scoreboard);
+  --color-scoreboard-foreground: var(--scoreboard-foreground);
+  --color-surface-solid: var(--surface-solid);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* next/font sets the family variables on <html> (src/app/layout.tsx); wire them into the stacks. */
+  --font-sans: var(--font-archivo), "Helvetica Neue", Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument-serif), "Times New Roman", ui-serif, Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Ground and surfaces: four steps of near-black, never a hue. */
+  --ink: #0b0b0c; /* page ground, theme-color, icon ground */
+  --ink-2: #121214; /* the week band, cards and panels */
+  --ink-3: #1a1a1d; /* popovers, quiet buttons, skeletons */
+  --ink-4: #232327; /* track base, logo wells, disabled fills */
+  /* Rules: cream at two strengths. 1px, solid, never a fade. */
+  --rule: rgb(243 240 232 / 0.085);
+  --rule-2: rgb(243 240 232 / 0.17);
+  /* Text: cream, then muted for every must-read small line (7.6:1 on ink), then dim for
+     secondary-only labels (5.3:1 on ink, 5.1:1 on ink-2; still AA for small text). */
+  --paper: #f3f0e8;
+  --mute: #a3a199;
+  --dim: #87857e;
+  /* Gold: the one primary action and the "now" marker, nothing else (13:1 for its ink on it). */
+  --signal: #ffd23c;
+  --signal-hover: #ffdc5f;
+  --signal-foreground: #161100;
+  /* Yes / No and gain / loss, only. */
+  --yes: #3ad08a;
+  --no: #ff5d6c;
+  /* Keyboard focus: a solid light blue (11:1 on ink), the one hue that means "focused" and
+     cannot be read as gold, Yes or No. Never add an alpha; rings pair it with
+     ring-offset-2 ring-offset-background so it never sits on a cream or gold fill. */
+  --focus: #8cc8ff;
+  /* Page gutter: 16px on a phone (the 390 mockup), 64px on a wide desktop (the 1440 mockup). */
+  --gutter: 16px;
+  /* The slanted cut on the gold primary button (size-dependent, set by the Button sizes). */
+  --cut: 8px;
+
+  /* Legacy aliases (see @theme above). */
+  --ember: var(--paper);
+  --ember-light: var(--paper);
+  --ember-deep: var(--paper);
+  --ember-foreground: var(--ink);
+  --gold: var(--paper);
+  --gold-light: var(--paper);
+  --gold-foreground: var(--ink);
+  --scoreboard: var(--ink-2);
+  --scoreboard-foreground: var(--paper);
+  --surface-solid: var(--ink-2);
 }
 
+@media (min-width: 640px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --gutter: 40px;
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --gutter: 64px;
+  }
+}
+
+/* shadcn semantic tokens, Broadcast values. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  color-scheme: dark;
+  --background: #0b0b0c;
+  --foreground: #f3f0e8;
+  --card: #121214;
+  --card-foreground: #f3f0e8;
+  --popover: #1a1a1d;
+  --popover-foreground: #f3f0e8;
+  /* The one primary action: gold with its dark ink. */
+  --primary: #ffd23c;
+  --primary-foreground: #161100;
+  /* Secondary is the cream solid ("Make a prediction"). */
+  --secondary: #f3f0e8;
+  --secondary-foreground: #0b0b0c;
+  --muted: #1a1a1d;
+  --muted-foreground: #a3a199;
+  --accent: #1a1a1d;
+  --accent-foreground: #f3f0e8;
+  --destructive: #ff5d6c;
+  --border: rgb(243 240 232 / 0.085);
+  --input: rgb(243 240 232 / 0.17);
+  --ring: var(--focus);
+  --chart-1: #f3f0e8;
+  --chart-2: #a3a199;
+  --chart-3: #87857e;
+  --chart-4: #3ad08a;
+  --chart-5: #ff5d6c;
+  /* Mostly square: 2px controls; cards (rounded-2xl) read as 3.6px. */
+  --radius: 0.125rem;
+  --sidebar: #121214;
+  --sidebar-foreground: #f3f0e8;
+  --sidebar-primary: #f3f0e8;
+  --sidebar-primary-foreground: #0b0b0c;
+  --sidebar-accent: #1a1a1d;
+  --sidebar-accent-foreground: #f3f0e8;
+  --sidebar-border: rgb(243 240 232 / 0.085);
+  --sidebar-ring: var(--focus);
 }
 
 @layer base {
   * {
     @apply border-border;
-    /* Solid focus token (never an alpha): see --focus below. */
+    /* Solid focus token (never an alpha): see --focus above. */
     outline-color: var(--focus);
   }
   /* Keyboard focus fallback for anything without its own ring. Utilities such as
@@ -134,107 +207,111 @@
   }
   html {
     @apply font-sans;
-  }
-}
-/* ------------------------------------------------------------------------
- * Dulo brand tokens (appended; the shadcn tokens above are left untouched).
- * "Mono": true neutral greys on near-black, white primary actions, ONE accent (electric blue)
- * for live data and focus. Dark by default: <html class="dark"> is set in src/app/layout.tsx.
- *
- * The token names are kept from the previous theme so every component reads the new palette:
- *   ember = the accent (live dots, "You", the active tab, the one headline number)
- *   gold  = a bright neutral for emphasis (icons, pills, rank 1); never a hue
- * ---------------------------------------------------------------------- */
-@theme inline {
-  --color-ember: var(--ember);
-  --color-ember-light: var(--ember-light);
-  --color-ember-foreground: var(--ember-foreground);
-  --color-gold: var(--gold);
-  --color-gold-foreground: var(--gold-foreground);
-  --color-scoreboard: var(--scoreboard);
-  --color-scoreboard-foreground: var(--scoreboard-foreground);
-  --color-surface-solid: var(--surface-solid);
-  --font-display: var(--font-display);
-}
-
-:root {
-  /* next/font sets these on <html> (see src/app/layout.tsx); wire them into the stacks. */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* Display = the same Geist, set heavy and tight (see .font-display below). No serif. */
-  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* Accent: electric blue. #3b82f6 for fills and bars (5.4:1 on #09090b), #60a5fa for text (7.8:1). */
-  --ember: #3b82f6;
-  --ember-light: #60a5fa;
-  --ember-deep: #2563eb;
-  --ember-foreground: #ffffff;
-  /* Bright neutral (zinc-200): 14.9:1 on #09090b. */
-  --gold: #e4e4e7;
-  --gold-light: #fafafa;
-  --gold-foreground: #09090b;
-  /* Keyboard focus: solid blue-400, 7.8:1 on #09090b. Never add an alpha; rings pair it with
-     ring-offset-2 ring-offset-background so it never sits on a white fill. */
-  --focus: #60a5fa;
-  --scoreboard: #0f0f11;
-  --scoreboard-foreground: #fafafa;
-  --surface-solid: #0f0f11;
-}
-
-/* "Mono": zinc-950 ground, flat solid surfaces, 1px hairlines, no glow. */
-.dark {
-  color-scheme: dark;
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #0f0f11;
-  --card-foreground: #fafafa;
-  --popover: #111113;
-  --popover-foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #09090b;
-  --secondary: #18181b;
-  --secondary-foreground: #fafafa;
-  --muted: #18181b;
-  /* zinc-400: 7.8:1 on #09090b, 7.3:1 on cards. */
-  --muted-foreground: #a1a1aa;
-  --accent: #1c1c1f;
-  --accent-foreground: #fafafa;
-  --border: rgb(255 255 255 / 0.08);
-  --input: rgb(255 255 255 / 0.1);
-  --ring: var(--focus);
-  --sidebar-primary: var(--ember);
-  --sidebar-primary-foreground: var(--ember-foreground);
-  --chart-1: var(--ember);
-  --radius: 0.5rem;
-}
-
-@layer base {
-  /* Cards are flat: one solid fill, a 1px hairline from the component, and a quiet drop shadow. */
-  .dark .bg-card {
-    background-image: none;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    -webkit-text-size-adjust: 100%;
   }
   .dark body {
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "cv11", "ss01";
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "kern" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
   .dark h1,
   .dark h2,
   .dark h3 {
-    letter-spacing: -0.025em;
+    letter-spacing: -0.01em;
+  }
+  /* Instrument Serif ships one weight. Never fake a bold: a `font-semibold` left on a serif headline
+     renders the real 400 face instead of a smeared synthetic one. */
+  .font-display {
+    font-synthesis-weight: none;
   }
   .dark ::selection {
-    background: color-mix(in oklch, var(--ember) 45%, transparent);
+    background: rgb(243 240 232 / 0.28);
     color: #fff;
   }
   .dark * {
     scrollbar-width: thin;
-    scrollbar-color: rgb(255 255 255 / 0.14) transparent;
+    scrollbar-color: rgb(243 240 232 / 0.16) transparent;
   }
 }
 
-/* Fixed page ground behind everything (rendered once in AppShell): flat near-black and a faint
-   grid that fades out under the header. No aurora, no grain. */
+/* ------------------------------------------------------------------------
+ * Broadcast utilities (docs/DESIGN.md "Type" and "Shapes").
+ * ---------------------------------------------------------------------- */
+
+/* The page container: 1312px of content between gutters of 16 to 64px (the mockup's .wrap).
+   The shell's header, week track, main and footer all use it, so edges line up down the page. */
+@utility page-wrap {
+  width: 100%;
+  max-width: calc(82rem + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Scoreboard numerals: Archivo's narrow cut, lining and tabular so a ticking clock never shifts.
+   Size and leading come from text-* / leading-* (e.g. `figure text-[6.25rem] leading-[0.8]`). */
+@utility figure {
+  font-family: var(--font-sans);
+  font-stretch: 74%;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Mono means price, source, age and time, and nothing else: 13px at 7.6:1. */
+@utility mono-meta {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--mute);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The only italics in the product: the FINAL stamp. */
+@utility stamp {
+  display: inline-block;
+  padding: 4px 7px 3px 6px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 800;
+  font-stretch: 112%;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Small wide capitals for the few markers that need them (LOCK, CLOSE, In the points). Sparingly:
+   Broadcast has no tiny tracked labels everywhere. */
+@utility label-caps {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  font-stretch: 112%;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* xStock and partner logos: one neutral treatment, so green and red keep their meaning. */
+@utility logo-greyscale {
+  filter: grayscale(1) contrast(1.15) brightness(0.92);
+  opacity: 0.9;
+}
+
+/* The slanted cut of the gold primary button, drawn on its ::before fill so the focus ring (a box
+   shadow on the button itself) is never clipped away. The Button sizes set --cut. */
+@utility cut-corner {
+  &::before {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%);
+  }
+}
+
+/* Fixed page ground behind everything (rendered once in AppShell): the ink, and the mockup's film
+   grain at its faintest, painted behind the content (never over text). */
 .app-backdrop {
   position: fixed;
   inset: 0;
@@ -246,30 +323,28 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
-  background-size: 64px 64px;
-  background-position: center top;
-  mask-image: radial-gradient(ellipse 70% 45% at 50% 0%, #000 10%, transparent 70%);
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app-backdrop::before {
+    display: none;
+  }
 }
 
-/* Hero surfaces were lit from the corner; in Mono they stay flat. Kept as no-ops so the class
-   names (and the tailwind-merge note in docs/DESIGN.md) still apply. */
+/* ------------------------------------------------------------------------
+ * Legacy helpers from earlier themes, kept as quiet no-ops or plain equivalents so pages that are
+ * not rebuilt yet keep rendering in the Broadcast palette. New code does not use them.
+ * ---------------------------------------------------------------------- */
 .ember-glow,
 .bg-ember-glow {
   background-image: none;
 }
-
-/* Former gradient text: solid. Headline accent words read as plain white; numbers keep weight. */
-.text-gradient-ember {
-  color: var(--foreground);
-}
+.text-gradient-ember,
 .text-gradient-gold {
   color: var(--foreground);
 }
-
-/* A plain 1px hairline drawn inside the element; pair with rounded-* and a bg. */
+/* A plain 1px rule drawn inside the element; pair with a bg. Kept out of cn() by callers. */
 .border-gradient {
   position: relative;
   isolation: isolate;
@@ -281,7 +356,7 @@
   z-index: -1;
   border-radius: inherit;
   padding: 1px;
-  background: rgb(255 255 255 / 0.1);
+  background: var(--rule-2);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -289,30 +364,30 @@
   mask-composite: exclude;
   pointer-events: none;
 }
-
-/* The one primary thing on a screen: a crisp ring, no halo. */
 .glow-ember {
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+  box-shadow: inset 0 0 0 1px var(--rule-2);
 }
 
-/* Wallet-adapter modal, restyled to the dark theme (base styles come from
+/* Wallet-adapter modal in the Broadcast palette (base styles from
  * @solana/wallet-adapter-react-ui/styles.css, imported in WalletProvider). */
 .dark .wallet-adapter-modal-overlay {
-  background: rgb(0 0 0 / 0.7);
-  backdrop-filter: blur(4px);
+  background: rgb(0 0 0 / 0.72);
+  backdrop-filter: blur(2px);
 }
 .dark .wallet-adapter-modal-wrapper {
   background: var(--popover);
   color: var(--popover-foreground);
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) * 1.4);
-  box-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius);
+  box-shadow: 0 32px 64px -24px rgb(0 0 0 / 0.8);
   font-family: var(--font-sans);
 }
 .dark .wallet-adapter-modal-title {
   color: var(--foreground);
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.1;
   letter-spacing: -0.01em;
 }
 .dark .wallet-adapter-modal-list .wallet-adapter-button {
@@ -322,24 +397,25 @@
 }
 .dark .wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover,
 .dark .wallet-adapter-modal-list .wallet-adapter-button:focus-visible {
-  background: var(--muted);
+  background: var(--ink-4);
 }
 .dark .wallet-adapter-modal-list-more {
   color: var(--muted-foreground);
 }
 .dark .wallet-adapter-modal-button-close {
-  background: var(--muted);
+  background: var(--ink-4);
 }
 .dark .wallet-adapter-modal-button-close svg {
   fill: var(--foreground);
 }
+/* The modal's own call to action is the cream solid: the page keeps its one gold action. */
 .dark .wallet-adapter-modal-middle .wallet-adapter-button {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--secondary);
+  color: var(--secondary-foreground);
   border-radius: var(--radius);
   font-family: var(--font-sans);
   font-weight: 600;
 }
 .dark .wallet-adapter-modal-middle .wallet-adapter-button:not([disabled]):hover {
-  background: color-mix(in oklch, var(--primary) 88%, black);
+  background: #e6e2d8;
 }

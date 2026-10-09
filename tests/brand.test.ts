@@ -76,10 +76,15 @@ describe.skipIf(tamgaModule === null)("Tamga", () => {
     expect(html).not.toContain("aria-hidden");
   });
 
-  it("wordmark renders the mark in ember and the word Dulo", () => {
+  it("wordmark renders the mark in Broadcast cream and the word Dulo in the serif", () => {
     const { Dulo } = mod();
     const html = renderToStaticMarkup(createElement(Dulo, {}));
-    expect(html).toContain("text-ember");
+    // The mark strokes the --paper cream inline (never gold: gold is the primary action and "now").
+    expect(html).toContain('stroke="#f3f0e8"');
+    expect(html).toContain("text-foreground");
+    expect(html).not.toContain("#ffd23c");
+    // "Dulo" is set in Instrument Serif (font-display), as in the mockup's header.
+    expect(html).toMatch(/<span class="[^"]*\bfont-display\b[^"]*"[^>]*>Dulo<\/span>/);
     expect(html).toContain(">Dulo</span>");
     const markOnly = renderToStaticMarkup(createElement(Dulo, { markOnly: true }));
     expect(markOnly).not.toContain(">Dulo</span>");
@@ -113,12 +118,14 @@ describe("static icons reuse the tamga paths", () => {
     "icons/apple-touch-icon.svg",
   ];
   for (const f of files) {
-    it(`${f} is an SVG on the Mono near-black with the solid blue accent tamga`, () => {
+    it(`${f} is an SVG on the Broadcast ink with the cream tamga`, () => {
       const svg = readFileSync(path.join(PUBLIC, f), "utf8");
       expect(svg).toContain("<svg");
-      // The page ground (--background, the layout's theme-color) and the --ember accent token.
-      expect(svg).toContain('fill="#09090b"');
-      expect(svg).toContain('stroke="#3b82f6"');
+      // The page ground (--background / --ink, the layout's theme-color) and the --paper cream.
+      expect(svg).toContain('fill="#0b0b0c"');
+      expect(svg).toContain('stroke="#f3f0e8"');
+      // Never gold: gold is the one primary action and "now".
+      expect(svg).not.toContain("#ffd23c");
       // Flat: no gradient fills or strokes.
       expect(svg).not.toMatch(/Gradient|url\(#/);
       expect(svg).toContain('stroke-linecap="square"');

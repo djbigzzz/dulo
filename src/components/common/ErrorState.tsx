@@ -20,7 +20,7 @@ export function ErrorState({ title = "Couldn't load this page", message, onRetry
       description={message || "The request did not go through. Check your connection and try again."}
       action={
         onRetry ? (
-          <Button variant="outline" size="sm" className="h-10 sm:h-8" onClick={onRetry}>
+          <Button variant="outline" size="lg" className="h-10" onClick={onRetry}>
             <RefreshCw data-icon="inline-start" aria-hidden />
             {retryLabel}
           </Button>

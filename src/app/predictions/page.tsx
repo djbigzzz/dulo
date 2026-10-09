@@ -5,7 +5,6 @@ import Link from "next/link";
 import { cn } from "cn";
 import { ArrowRightIcon, TargetIcon } from "lucide-react";
 import {
-  api,
   type CallMarketView,
   type CallPositionView,
   type CallSide,
@@ -21,7 +20,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { SeasonBadge, SeasonBadgeSkeleton } from "@/components/common/SeasonBadge";
 import { MarketSessionChip } from "@/components/common/MarketSessionChip";
-import { useApiQuery } from "@/components/common/useApiQuery";
+import { useCallsQuery } from "@/components/layout/WeekData";
 import { formatPoints } from "@/components/common/format";
 import { useSession } from "@/hooks/useSession";
 import { starterPointsHint } from "@/hooks/session-helpers";
@@ -67,7 +66,8 @@ export default function CallsPage() {
   const { session, user } = useSession();
   const starterPoints = user?.points?.starterPoints ?? 0;
   // Keyed on the session: signing in anywhere (header, banner, a side button) re-reads the board.
-  const q = useApiQuery((signal) => api.calls({ signal }), session?.userId ?? "");
+  // The shell's shared read (WeekData): the week track under the header reads the same request.
+  const q = useCallsQuery(session?.userId ?? "");
   const { refetch } = q;
 
   // One ticking clock for every countdown; the server's `now` anchors it against clock skew.

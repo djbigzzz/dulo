@@ -6,7 +6,7 @@ export interface EmptyStateProps extends React.ComponentProps<"div"> {
   title: string;
   description?: React.ReactNode;
   action?: React.ReactNode;
-  /** "card" (default) draws a glass panel; "plain" is for use inside drawers and cards. */
+  /** "card" (default) draws an ink-2 panel on a 1px rule; "plain" is for use inside drawers and cards. */
   variant?: "card" | "plain";
 }
 
@@ -16,18 +16,18 @@ export function EmptyState({ icon, title, description, action, variant = "card",
       role="status"
       className={cn(
         "flex flex-col items-center justify-center gap-2 text-center",
-        variant === "card" ? "rounded-2xl border border-white/[0.07] bg-card px-6 py-12 sm:py-14" : "px-2 py-8",
+        variant === "card" ? "rounded-md border border-rule bg-card px-6 py-12 sm:py-14" : "px-2 py-8",
         className,
       )}
       {...props}
     >
       {icon ? (
-        <div className="mb-2 flex size-12 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.06] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] [&>svg]:size-5">
+        <div className="mb-2 flex size-11 items-center justify-center rounded-full border border-rule-2 bg-ink-3 text-foreground [&>svg]:size-5">
           {icon}
         </div>
       ) : null}
-      <p className="font-display text-xl leading-tight font-semibold tracking-[-0.03em] text-foreground">{title}</p>
-      {description ? <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+      <p className="font-display text-[1.75rem] leading-[1.05] font-normal tracking-[-0.01em] text-balance text-foreground">{title}</p>
+      {description ? <p className="max-w-sm text-[0.9375rem] leading-relaxed text-muted-foreground">{description}</p> : null}
       {action ? <div className="mt-3">{action}</div> : null}
     </div>
   );

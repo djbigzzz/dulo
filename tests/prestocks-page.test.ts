@@ -404,16 +404,19 @@ describe("/prestocks page", () => {
     expect(h).toContain("US market");
   });
 
-  it("keeps one primary (solid white) action on the page (the trade form's submit) and every other control outline or ghost", () => {
+  it("keeps one primary (gold) action on the page (the trade form's submit) and every other control outline or ghost", () => {
     mocks.session.session = { userId: "u1" };
     loaded({ league: { data: leagueResponse({ signedIn: true }), error: null, loading: false }, plays: { data: playsResponse(undefined, true), error: null, loading: false } });
     const h = html(createElement(PreStocksView));
-    // The default button variant (src/components/ui/button.tsx) is the only solid white fill: count the
-    // elements whose class list carries both bg-primary and text-primary-foreground as whole tokens.
+    // The default button variant (src/components/ui/button.tsx) is the only gold fill (painted on its
+    // ::before, under the slanted cut): count the elements whose class list carries both
+    // before:bg-primary and text-primary-foreground as whole tokens.
     const primary = [...h.matchAll(/<(\w+)[^>]*\bclass="([^"]*)"/g)].filter(([, , cls]) => {
       const tokens = cls.split(/\s+/);
-      return tokens.includes("bg-primary") && tokens.includes("text-primary-foreground");
+      return tokens.includes("before:bg-primary") && tokens.includes("text-primary-foreground");
     });
+    // Nothing else on the page paints the gold as a plain background.
+    expect(h).not.toMatch(/class="[^"]*(?<![:\w-])bg-primary\b/);
     expect(primary).toHaveLength(1);
     const at = primary[0].index!;
     const button = h.slice(at, h.indexOf("</button>", at));

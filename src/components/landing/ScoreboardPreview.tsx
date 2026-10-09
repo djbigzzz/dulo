@@ -5,10 +5,8 @@ import Link from "next/link";
 import { ArrowRightIcon, ChevronRightIcon, TargetIcon, TrophyIcon, ZapIcon, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import {
-  api,
   apiGet,
   ApiClientError,
-  leagueApi,
   type CallMarketView,
   type CallsResponse,
   type LeaderboardResponse,
@@ -17,6 +15,8 @@ import {
 } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ApiQueryResult } from "@/components/common/useApiQuery";
+import { useCallsQuery, useLeagueQuery } from "@/components/layout/WeekData";
 import { PriceChip } from "@/components/common/PriceChip";
 import { displayName, formatPoints } from "@/components/common/format";
 import { NEXT_WEEK_MARKETS_COPY, liveStatus, lockLabel, marketQuestion, splitPct } from "@/components/calls/calls-format";
@@ -43,7 +43,9 @@ import { seasonTopRows } from "@/components/landing/scoreboard-mode";
  *   - GameTiles: the row under the hero, one live figure, one short line and one button per game;
  *   - SeasonTop: the Season top 3 in the closing section, once three real players exist (else nothing).
  *
- * Four endpoints, one request each per page load: the components share them through SHARED_READS.
+ * Four endpoints, one request each per page load. /calls and /league are the shell's shared reads
+ * (src/components/layout/WeekData.tsx), which the week track under the header also draws from;
+ * /plays and the Season top 3 are shared between this file's components through SHARED_READS.
  * Each component loads on its own, so one slow endpoint never blanks the rest.
  */
 
@@ -85,8 +87,13 @@ function useShared<T>(key: string, fetcher: () => Promise<T>): Loaded<T> {
   return state;
 }
 
-const useCalls = () => useShared<CallsResponse>("calls", () => api.calls());
-const useLeague = () => useShared<LeagueResponse>("league", () => leagueApi.overview());
+/** A shared query in this file's Loaded shape: an error only counts while there is nothing to show. */
+function fromQuery<T>(q: ApiQueryResult<T>): Loaded<T> {
+  return { data: q.data, error: q.data === null && q.error !== null, loading: q.loading };
+}
+
+const useCalls = (): Loaded<CallsResponse> => fromQuery(useCallsQuery("landing:calls"));
+const useLeague = (): Loaded<LeagueResponse> => fromQuery(useLeagueQuery("landing:league"));
 const usePlays = () => useShared<PlaysResponse>("plays", () => apiGet<PlaysResponse>("/api/v1/plays"));
 // Three rows are enough to decide: the board only lists real players with positive Season points.
 const useBoard = () => useShared<LeaderboardResponse>("board", () => apiGet<LeaderboardResponse>("/api/v1/leaderboard?limit=3"));

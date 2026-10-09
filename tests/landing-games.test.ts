@@ -340,9 +340,16 @@ describe("createSharedReads — one request per endpoint per page load", () => {
   it("wires every landing endpoint through the shared reads exactly once", () => {
     const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
     expect(src).toContain("const SHARED_READS = createSharedReads(");
-    for (const call of ["api.calls()", "leagueApi.overview()", '"/api/v1/plays"', '"/api/v1/leaderboard?limit=3"']) {
+    for (const call of ['"/api/v1/plays"', '"/api/v1/leaderboard?limit=3"']) {
       expect(src.split(call).length - 1, call).toBe(1);
     }
+    // /calls and /league are the shell's shared reads (the week track under the header draws on the
+    // same two requests): the landing takes them from WeekData once each and never fetches them itself.
+    for (const call of ["useCallsQuery(", "useLeagueQuery("]) expect(src.split(call).length - 1, call).toBe(1);
+    for (const call of ["api.calls(", "leagueApi.overview("]) expect(src, call).not.toContain(call);
+    const shared = repoFile("src/components/layout/WeekData.tsx");
+    for (const call of ["api.calls({ signal })", "leagueApi.overview({ signal })"]) expect(shared.split(call).length - 1, call).toBe(1);
+    expect(repoFile("src/components/layout/AppShell.tsx")).toContain("<WeekDataProvider>");
     // The hero ranking card was cut on 9 Oct 2026; the Season top 3 moved to the closing section.
     expect(src).not.toContain("export function RankCard");
     expect(src).toContain("export function SeasonTop");

@@ -26,12 +26,16 @@ export interface TamgaProps extends Omit<React.SVGProps<SVGSVGElement>, "width" 
   size?: number | string;
   /** Accessible name. When omitted the mark is decorative and hidden from AT. */
   title?: string;
-  /** "gradient" (name kept) strokes the mark in the solid brand accent; "current" uses the text colour. */
+  /**
+   * "gradient" (name kept from an earlier theme) strokes the mark in solid Broadcast cream, inline,
+   * so it reads without any stylesheet (offline page, global error, social card); "current" uses
+   * the text colour. The mark is never gold: gold is the primary action and "now" only.
+   */
   tone?: "current" | "gradient";
 }
 
-/** The accent the "gradient" tone strokes with (the --ember token, blue-500), so it also works without CSS. */
-const TAMGA_ACCENT = "#3b82f6";
+/** The cream the "gradient" tone strokes with (the --paper token), so it also works without CSS. */
+export const TAMGA_INK = "#f3f0e8";
 
 export function Tamga({ size = 24, className, title, tone = "current", ...props }: TamgaProps) {
   return (
@@ -40,7 +44,7 @@ export function Tamga({ size = 24, className, title, tone = "current", ...props 
       width={size}
       height={size}
       fill="none"
-      stroke={tone === "gradient" ? TAMGA_ACCENT : "currentColor"}
+      stroke={tone === "gradient" ? TAMGA_INK : "currentColor"}
       strokeWidth={TAMGA_STROKE}
       strokeLinecap="square"
       strokeLinejoin="miter"
@@ -59,7 +63,7 @@ export function Tamga({ size = 24, className, title, tone = "current", ...props 
 }
 
 export interface DuloProps {
-  /** Size of the tamga mark. Defaults to 28. */
+  /** Size of the tamga mark. Defaults to 28; the serif word scales with it. */
   size?: number | string;
   /** Hide the "Dulo" text and show only the mark. */
   markOnly?: boolean;
@@ -68,17 +72,19 @@ export interface DuloProps {
   textClassName?: string;
 }
 
-/** Wordmark: the accent tamga as the mark, followed by "Dulo". */
+/**
+ * Wordmark (the mockup's header): the cream tamga, then "Dulo" in Instrument Serif at about
+ * 1.15x the mark, nudged down 2px so the serif's x-height sits on the mark's optical centre.
+ */
 export function Dulo({ size = 28, markOnly = false, className, markClassName, textClassName }: DuloProps) {
+  const word = typeof size === "number" ? `${Math.round(size * 1.15)}px` : `calc(${size} * 1.15)`;
   return (
-    <span className={cn("inline-flex items-center gap-2 leading-none", className)}>
-      <Tamga size={size} title="Dulo" tone="gradient" className={cn("text-ember-light", markClassName)} />
+    <span className={cn("inline-flex items-center gap-2.5 leading-none", className)}>
+      <Tamga size={size} title="Dulo" tone="gradient" className={cn("text-foreground", markClassName)} />
       {markOnly ? null : (
         <span
-          className={cn(
-            "font-heading text-lg font-semibold tracking-tight text-foreground",
-            textClassName,
-          )}
+          className={cn("mt-0.5 font-display leading-none font-normal tracking-[0.005em] text-foreground", textClassName)}
+          style={{ fontSize: word }}
         >
           Dulo
         </span>

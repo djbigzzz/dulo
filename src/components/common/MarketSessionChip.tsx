@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { cn } from "cn";
-import { Badge } from "@/components/ui/badge";
 import {
   EARLY_CLOSE_MINUTES,
   isEarlyClose,
@@ -145,41 +144,43 @@ export function MarketSessionChip({ nowIso, className }: MarketSessionChipProps)
 
   const session = nowMs === null ? null : readSession(nowMs);
 
+  // Broadcast status line, not a pill: a still dot (green while the US session is open, dim when
+  // it is closed), the state and the countdown in cream, the rest in the muted grey.
   return (
-    <Badge
-      variant="outline"
+    <span
+      data-slot="market-session"
       // aria-live off: a screen reader should not hear the countdown tick over on its own.
       aria-live="off"
       title={session ? sessionTitle(session) : undefined}
       className={cn(
-        "h-6 gap-1.5 rounded-full px-2.5 text-xs font-medium tracking-wide tabular-nums text-muted-foreground",
+        "inline-flex h-6 items-center gap-2 text-[0.84375rem] leading-none font-medium whitespace-nowrap tabular-nums text-muted-foreground",
         className,
       )}
     >
       <span
         className={cn(
-          "size-1.5 shrink-0 rounded-full transition-colors duration-300 motion-reduce:transition-none",
-          session?.open ? "bg-ember" : "bg-muted-foreground/40",
+          "size-[7px] shrink-0 rounded-full transition-colors duration-300 motion-reduce:transition-none",
+          session?.open ? "bg-yes" : "bg-dim",
         )}
         aria-hidden
       />
       {session === null ? (
         <span>{SESSION_PLACEHOLDER}</span>
       ) : (
-        <>
+        <span>
           {/*
-            The long sentence needs 276px and the short form 147px, so the sentence only appears
-            from md, where every surface that mounts this chip has the room for it.
+            The long sentence needs about 276px and the short form 147px, so the sentence only
+            appears from md, where every surface that mounts this chip has the room for it.
           */}
           <span className="hidden md:inline">US&nbsp;market&nbsp;</span>
           {/* One text run, so a screen reader never hears both the short and the long form. */}
-          <span className="capitalize md:normal-case">{session.open ? "open" : "closed"}</span>
+          <span className="font-semibold text-foreground capitalize md:normal-case">{session.open ? "open" : "closed"}</span>
           <span>&nbsp;·&nbsp;</span>
           <span className="hidden md:inline">{sessionVerb(session)}&nbsp;</span>
-          <span className="text-foreground">{formatSessionCountdown(session.msUntil)}</span>
-        </>
+          <span className="font-semibold text-foreground">{formatSessionCountdown(session.msUntil)}</span>
+        </span>
       )}
-    </Badge>
+    </span>
   );
 }
 

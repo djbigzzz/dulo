@@ -7,7 +7,8 @@ import { ageSeconds, formatAge, formatUsd } from "@/components/common/format";
 
 /**
  * Presentational only. Takes a PriceQuote-shaped object (dates may be ISO strings on the wire)
- * and renders "$360.83 · Jupiter · 12s ago" with a muted "stale" tag. Never fetches.
+ * and renders "$360.83 · Jupiter · 12s ago" in mono (price, source and age are the only mono text
+ * in Broadcast) with a ruled "stale" tag. Never fetches.
  */
 export interface PriceChipQuote {
   price: number | null;
@@ -40,6 +41,9 @@ export function priceSourceLabel(source: PriceSourceName): string {
   return SOURCE_LABEL[source] ?? source;
 }
 
+/** A small ruled tag beside the age ("stale", "closed"): cream text on a 1px rule, no fill, no hue. */
+const TAG = "self-center rounded-sm border border-rule-2 px-1 py-px font-sans text-[0.6875rem] leading-none font-semibold text-foreground";
+
 export function PriceChip({ quote, symbol, tickMs = 15_000, className, session = true }: PriceChipProps) {
   // Ticking clock so "12s ago" keeps moving while the quote object stays the same.
   const [now, setNow] = React.useState(() => Date.now());
@@ -54,10 +58,13 @@ export function PriceChip({ quote, symbol, tickMs = 15_000, className, session =
   const hasPrice = quote.price !== null && quote.price !== undefined && Number.isFinite(quote.price);
   const stale = quote.stale === true || (!hasPrice && quote.source === "none");
 
+  // Broadcast: no pill. A mono line, "TSLAx $372.08 · Jupiter · 18s ago", the price in cream and
+  // its source and age in the muted grey (7.6:1), with small ruled tags for stale and closed.
   return (
     <span
+      data-slot="price-chip"
       className={cn(
-        "inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full border border-white/[0.08] bg-black/25 px-2.5 py-0.5 text-xs shadow-[inset_0_1px_0_rgb(255_255_255/0.04)]",
+        "inline-flex max-w-full flex-wrap items-baseline gap-x-1.5 gap-y-0.5 font-mono text-[0.8125rem] leading-[1.35] tracking-[-0.01em] text-muted-foreground tabular-nums",
         className,
       )}
       title={
@@ -68,28 +75,16 @@ export function PriceChip({ quote, symbol, tickMs = 15_000, className, session =
           : "No price available"
       }
     >
-      {symbol ? <span className="font-medium">{symbol}</span> : null}
-      <span className={cn("font-mono tabular-nums", !hasPrice && "text-muted-foreground")}>
+      {symbol ? <span className="font-medium text-foreground">{symbol}</span> : null}
+      <span className={cn("font-medium", hasPrice ? "text-foreground" : "text-muted-foreground")}>
         {hasPrice ? formatUsd(quote.price) : "No price"}
       </span>
-      <span className="text-muted-foreground" aria-hidden>
-        ·
-      </span>
-      <span className="text-muted-foreground">{priceSourceLabel(quote.source)}</span>
-      <span className="text-muted-foreground" aria-hidden>
-        ·
-      </span>
-      <span className="text-muted-foreground">{formatAge(age)}</span>
-      {stale ? (
-        <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-px text-xs font-medium tracking-wide text-muted-foreground">
-          stale
-        </span>
-      ) : null}
-      {session && quote.marketOpen === false && hasPrice ? (
-        <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-px text-xs font-medium tracking-wide text-muted-foreground">
-          closed
-        </span>
-      ) : null}
+      <span aria-hidden>·</span>
+      <span>{priceSourceLabel(quote.source)}</span>
+      <span aria-hidden>·</span>
+      <span>{formatAge(age)}</span>
+      {stale ? <span className={TAG}>stale</span> : null}
+      {session && quote.marketOpen === false && hasPrice ? <span className={TAG}>closed</span> : null}
     </span>
   );
 }

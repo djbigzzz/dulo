@@ -12,7 +12,7 @@
  * (the icons are cache-first, so a new look only reaches installed apps through a new version).
  */
 
-const CACHE_VERSION = "dulo-v3";
+const CACHE_VERSION = "dulo-v4";
 const PRECACHE = [
   "/offline",
   "/favicon.svg",
@@ -86,7 +86,7 @@ async function networkFirstNavigation(request) {
     const offline = await cache.match(OFFLINE_URL);
     if (offline) return offline;
     return new Response(
-      "<!doctype html><title>Offline</title><body style=\"background:#09090b;color:#fafafa;font-family:system-ui,sans-serif;padding:2rem\"><h1>You are offline</h1><p>Dulo needs a connection to read your on-chain activity.</p>",
+      "<!doctype html><title>Offline</title><body style=\"background:#0b0b0c;color:#f3f0e8;font-family:system-ui,sans-serif;padding:2rem\"><h1 style=\"font-family:'Times New Roman',serif;font-weight:400\">You are offline</h1><p>Dulo needs a connection to read your on-chain activity.</p>",
       { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
     );
   }

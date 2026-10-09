@@ -33,7 +33,7 @@ describe("focus token", () => {
   const css = read("src/app/globals.css");
 
   it("defines a solid --focus colour and points --ring at it", () => {
-    expect(css).toMatch(/--focus:\s*#60a5fa;/);
+    expect(css).toMatch(/--focus:\s*#8cc8ff;/);
     expect(css).toMatch(/\.dark\s*\{[^}]*--ring:\s*var\(--focus\);/);
   });
 
@@ -52,14 +52,16 @@ describe("focus token", () => {
       const [r, g, b] = [1, 3, 5].map((i) => lin(parseInt(hex.slice(i, i + 2), 16)));
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
-    // Mono: blue-400 on the zinc-950 ground (7.8:1), well over the 3:1 non-text minimum.
-    const ratio = (lum("#60a5fa") + 0.05) / (lum("#09090b") + 0.05);
+    // Broadcast: a light blue on the ink ground (11:1), well over the 3:1 non-text minimum, and a hue
+    // that cannot be read as the gold primary, a Yes or a No.
+    const ratio = (lum("#8cc8ff") + 0.05) / (lum("#0b0b0c") + 0.05);
     expect(ratio).toBeGreaterThan(7);
+    for (const taken of ["#ffd23c", "#3ad08a", "#ff5d6c", "#f3f0e8"]) expect(css).not.toMatch(new RegExp(`--focus:\\s*${taken};`));
   });
 });
 
 describe("ui primitives focus ring", () => {
-  it("no component anywhere in src keeps the translucent ring-ring/50 (about 2.7:1 under Mono)", () => {
+  it("no component anywhere in src keeps the translucent ring-ring/50 (well under 3:1 on the ink)", () => {
     const walk = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : /\.(tsx?|css)$/.test(e.name) ? [path.join(dir, e.name)] : []));
     const files = walk(path.join(ROOT, "src"));

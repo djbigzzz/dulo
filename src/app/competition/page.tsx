@@ -5,7 +5,7 @@ import { useSession } from "@/hooks/useSession";
 import { useInView } from "@/hooks/useInView";
 import { ArrowLeftRight, Share2, Sprout, Trophy } from "lucide-react";
 import { cn } from "cn";
-import { api, leagueApi, type LeagueResponse, type PlaysResponse } from "@/lib/api-client";
+import { api, type LeagueResponse, type PlaysResponse } from "@/lib/api-client";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,7 @@ import { SignInBanner } from "@/components/common/SignInBanner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { useApiQuery } from "@/components/common/useApiQuery";
+import { useLeagueQuery } from "@/components/layout/WeekData";
 import { MarketSessionChip } from "@/components/common/MarketSessionChip";
 import { PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
 import { preIpoToken } from "@/components/prestocks/tokens";
@@ -123,7 +124,8 @@ const RULES = (
 export default function LeaguePage() {
   const { session, refresh: refreshSession } = useSession();
   const sessionKey = session?.userId ?? "";
-  const q = useApiQuery((signal) => leagueApi.overview({ signal }), sessionKey);
+  // The shell's shared read (WeekData): the week track under the header reads the same request.
+  const q = useLeagueQuery(sessionKey);
   const { refetch } = q;
   // Scout progress comes from the quests board (PlayProgress); only fetched when signed in.
   const plays = useApiQuery<PlaysResponse | null>(() => (sessionKey ? api.plays() : Promise.resolve(null)), sessionKey, { refetchOnFocus: false });

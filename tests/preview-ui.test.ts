@@ -99,7 +99,9 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     // Both buttons drop their fixed height and stretch to the wrapper, with the size's own height as the floor.
     expect(branch).toMatch(/className=\{cn\("h-auto grow font-semibold", PAIR_MIN\[size\]\.h\)\}/);
     expect(branch).toMatch(/className=\{cn\("aspect-square h-auto w-auto shrink-0 p-0", PAIR_MIN\[size\]\.h, PAIR_MIN\[size\]\.w\)\}/);
-    expect(src).toMatch(/lg: \{ h: "min-h-9", w: "min-w-9" \}/);
+    expect(src).toMatch(/lg: \{ h: "min-h-10", w: "min-w-10" \}/);
+    // The floor is the size's own height (Broadcast's lg button is 40px).
+    expect(repoFile("src/components/ui/button.tsx")).toMatch(/\blg: "h-10 /);
   });
 
   it("states the welcome offer before sign-in, directly above the buttons, from the points policy", () => {

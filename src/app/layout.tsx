@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import WalletProvider from "@/components/wallet/WalletProvider";
 import { AppShell } from "@/components/layout/AppShell";
@@ -7,18 +7,38 @@ import { RegisterSW } from "@/components/pwa/RegisterSW";
 import { Toaster } from "@/components/ui/sonner";
 import { APP_NAME, APP_URL, POSITIONING, SEASON_NAME } from "@/lib/config";
 
-/** One variable family for everything: body text and the heavy, tight display headlines (`font-display`). */
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/**
+ * "Live Broadcast" type (docs/DESIGN.md):
+ *   Instrument Serif  headlines, questions and section names (`font-display`, one weight: 400);
+ *   Archivo           numbers, labels and UI (`font-sans`), variable with its width axis so the
+ *                     narrow scoreboard cut (`font-stretch-75%`) and the wide label cut
+ *                     (`font-stretch-semi-expanded`) come from one file; italic only for FINAL stamps;
+ *   IBM Plex Mono     price, source, age and time only (`font-mono`, `mono-meta`).
+ */
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  axes: ["wdth"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
+  weight: "400",
+  display: "swap",
 });
 
-const THEME_COLOR = "#09090b";
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+});
+
+/** The Broadcast ground (--background, "ink"): the status bar, the splash and every icon sit on it. */
+const THEME_COLOR = "#0b0b0c";
 const TITLE = `${APP_NAME} — ${SEASON_NAME}`;
 
 function safeUrl(u: string): URL | undefined {
@@ -86,9 +106,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   // The next/font variable classes go on <html>, not <body>: globals.css reads
-  // var(--font-geist-sans) inside :root, which would be undefined if set on <body>.
+  // var(--font-archivo) and the others inside :root, which would be undefined if set on <body>.
   return (
-    <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${archivo.variable} ${instrumentSerif.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <body className="antialiased">
         <WalletProvider>
           <AppShell>{children}</AppShell>
