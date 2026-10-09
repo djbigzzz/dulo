@@ -7,12 +7,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Ember gradient with a lit top edge and a soft halo; brightens on hover.
+        // Solid white, black text: the one primary action. No gradient, no halo. Disabled reads as a
+        // quiet grey well (white at half opacity would turn muddy grey with black text).
         default:
-          "border-[#ff8a4a]/40 bg-[linear-gradient(180deg,#ff8a4c_0%,#ff6a2a_48%,#e8501d_100%)] font-semibold text-ember-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_1px_2px_rgb(0_0_0/0.4),0_8px_22px_-10px_rgb(255_106_42/0.7)] hover:brightness-110 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.4),0_1px_2px_rgb(0_0_0/0.4),0_10px_30px_-10px_rgb(255_106_42/0.85)]",
-        // Glass: faint fill, hairline border, lit top edge.
+          "border-primary bg-primary font-semibold text-primary-foreground shadow-[0_1px_2px_rgb(0_0_0/0.4)] hover:border-[#d4d4d8] hover:bg-[#d4d4d8] disabled:border-white/[0.08] disabled:bg-white/[0.06] disabled:text-foreground/45 disabled:opacity-100 disabled:shadow-none",
+        // Quiet: transparent fill, 1px neutral hairline.
         outline:
-          "border-white/10 bg-white/[0.035] text-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.06)] hover:border-white/15 hover:bg-white/[0.07] aria-expanded:bg-white/[0.07]",
+          "border-white/[0.14] bg-transparent text-foreground hover:border-white/25 hover:bg-white/[0.05] aria-expanded:bg-white/[0.05]",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:

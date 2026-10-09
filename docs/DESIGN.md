@@ -1,54 +1,64 @@
-# Dulo design system — "Obsidian & Khan's Gold"
+# Dulo design system — "Mono"
 
-The look should read as a premium product (Linear / Stripe / Vercel tier) with a heritage signature: the House of Dulo tamga in gold, warm obsidian surfaces, one ember action colour. Dark only.
+Mono, chosen by the founder 9 Oct 2026, replaces Obsidian & Khan's Gold (the warm obsidian ground, gold tamga, ember action colour and Instrument Serif headlines are retired).
+
+Product-grade restraint (Linear / Vercel tier): true neutral greys on near-black `#09090b`, white primary buttons with black text, one electric-blue accent for live data and focus, heavy tight Geist headlines, flat surfaces with thin 1px hairlines. No gradients, no aurora, no grain, no glow; a faint grid at the top of the page is the only texture. Dark only.
 
 ## Palette (tokens in `src/app/globals.css`)
 
+The token names `ember` and `gold` are kept from the previous theme so every component reads the new values: `ember` is the accent, `gold` is a bright neutral. Neither is orange or gold any more.
+
 | Role | Token / class | Value | Use |
 |---|---|---|---|
-| Page | `bg-background` + `.app-backdrop` (AppShell) | `#0a0908` with ember/gold aurora, fading grid, grain | Never paint a page background yourself |
-| Text | `text-foreground` | `#f4f1ea` warm white | Body and titles |
-| Secondary text | `text-muted-foreground` | `#a9a299` warm grey | Labels, hints |
-| Surface | `bg-card` | translucent warm charcoal; auto sheen + inner highlight | Every card/panel |
-| Solid surface | `bg-surface-solid` / `bg-popover` | `#141210` / `#15130f` | Sticky bars, sheets, dialogs, anything over scrolling content |
-| Hairline | `border-white/[0.07]` (cards), `border-white/[0.05]` (rows) | | Never `border-border` on new surfaces |
-| Action | `bg-primary` via `<Button>` default | ember gradient + halo | ONE primary action per view |
-| Ember text | `.text-gradient-ember` | `#ff9452 → #ff6a2a → #e2471a` | Headline accent word, the one headline number |
-| Heritage | `text-gold`, `.text-gradient-gold`, `border-gold/20`, `bg-gold/[0.06]` | `#d8b46a` | Eyebrows, rank #1 / podium, badges, Season chips, "Listed" status |
-| Positive / negative | `text-emerald-400` / `text-rose-400` | | Returns, Yes/No, complete/failed only |
+| Page | `bg-background` + `.app-backdrop` (AppShell) | `#09090b` with a faint grid that fades out under the header; also `THEME_COLOR` in `layout.tsx`, the manifest colours and the icon ground | Never paint a page background yourself |
+| Text | `text-foreground` | `#fafafa` | Body and titles |
+| Secondary text | `text-muted-foreground` | `#a1a1aa` (7.8:1) | Labels, hints, eyebrows, the second half of a two-tone headline |
+| Surface | `bg-card` | `#0f0f11`, flat, quiet drop shadow | Every card/panel |
+| Solid surface | `bg-surface-solid` / `bg-popover` | `#0f0f11` / `#111113` | Sticky bars, sheets, dialogs |
+| Hairline | `border-white/[0.08]` | | Cards, rows, dividers (solid, never a fade) |
+| Action | `bg-primary` via `<Button>` default | `#fafafa` fill, `#09090b` text | ONE primary action per view |
+| Accent | `bg-ember`, `text-ember-light` | `#3b82f6` fills, `#60a5fa` text (7.8:1) | Live dots, the one headline number in a StatStrip, "You" rows and chips, quest progress, the current tour step, focus rings, the tamga |
+| Bright neutral | `text-gold`, `bg-gold/[0.06]`, `border-gold/20` | `#e4e4e7` | Icons in tiles, neutral pills ("Primary", "pre-IPO"), rank 1 |
+| Positive / negative | `text-emerald-300/400` / `text-rose-300/400` | | Returns, Yes/No, complete/failed only |
+| Warning | `amber-300` | | Stale prices only |
 
-Silver and bronze for ranks 2 and 3: `text-zinc-300` with `bg-zinc-300/10 border-zinc-300/20`, and `text-[#d49a6a]` with `bg-[#d49a6a]/10 border-[#d49a6a]/25`.
+Ranks 1 / 2 / 3 are three steps of grey: white (`border-white/40 bg-white/[0.12]`), `zinc-300`, `zinc-400`. The label (1st / 2nd / 3rd) and the podium height carry the order, not a metal colour.
+
+Badge artwork (`src/lib/badges/`) follows Mono too (9 Oct 2026, before any badge was minted): flat near-black medallions, no glow, one tone each, neutral metals plus the one accent: First Position blue `#60a5fa`, Diamond Hands cold steel `#cbd5e1`, Earnings Holder pewter `#a1a1aa`, Portfolio Match chrome `#e4e4e7`, Podium Finish platinum `#fafafa`. The motif ids (`ember`, `ice`, `gold`, `violet`, `laurel`) are kept as stable keys in the API and the metadata "Accent" trait; they name the motif, not the colour.
+
+Brand assets follow the same palette: the tamga is solid `#3b82f6` on `#09090b` in `public/favicon.svg`, `public/icons/*.svg` and the PNG app icons rendered from them (opaque, full-bleed), and in the social card (`src/app/opengraph-image.tsx`, copied to `docs/brand/og.png`).
 
 ## Type
 
-- **Display serif** `font-display` (Instrument Serif, weight 400, italic available): page titles (PageHeader does this), landing hero headline and section titles, big empty-state headlines. Sizes: hero `text-5xl sm:text-7xl leading-[0.98]`; section `text-3xl sm:text-4xl`. Put one accent phrase in `italic` and/or `.text-gradient-ember`. Never use the serif below `text-2xl`, for numbers, or for UI controls.
+- **Display** `font-display` = Geist (the same variable family as the UI), always `font-semibold` with negative tracking: hero `text-[2.5rem] sm:text-6xl lg:text-[4rem] tracking-[-0.045em] leading-[1.02]`; page titles (PageHeader) `text-[2rem] sm:text-4xl md:text-5xl tracking-[-0.04em]`; section titles `text-2xl sm:text-3xl tracking-[-0.035em]`. No serif, no italics. For emphasis, set the secondary half in `text-muted-foreground` (two-tone), never a colour.
 - **Sans** (Geist): everything else. Card titles `text-base font-semibold tracking-tight`; body `text-sm`/`text-base leading-relaxed`.
-- **Numbers**: tabular numerals are global. Big numbers `text-2xl–4xl font-semibold tracking-tight`. Use `font-mono` only for addresses, codes and tickers, never for prose labels.
-- **Labels / eyebrows**: `text-xs font-medium tracking-[0.14em] uppercase text-muted-foreground` (or `text-gold` for section eyebrows). No text below `text-xs`.
+- **Numbers**: tabular numerals are global. Big live figures `font-medium tracking-[-0.05em]`; stat values `font-semibold tracking-[-0.04em]`. `font-mono` only for addresses, codes and tickers.
+- **Labels / eyebrows**: `text-xs font-medium tracking-[0.08em–0.14em] uppercase text-muted-foreground` (section eyebrows too; never the accent). No text below `text-xs`, and no body text under `text-muted-foreground/80` (5.2:1).
+- **Standalone pages** (`global-error.tsx`, the `/offline` fallbacks, the social card): no stylesheet or web font can be relied on, so they carry the same values inline: `#09090b` ground, `#fafafa` text, `#a1a1aa` secondary, the `#3b82f6` tamga, a system-sans (or Geist) title at weight 600 with negative tracking.
 
 ## Surfaces and depth
 
-- Cards: `rounded-2xl border border-white/[0.07] bg-card` (sheen and shadow come automatically). Inner padding `p-5 sm:p-6` for feature cards, `p-4` for dense ones.
-- Interactive cards: add `transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.04]`.
-- Hero / featured panel: `rounded-3xl bg-card ember-glow border-gradient` (use `ember-glow`, never `bg-ember-glow`, inside cn(): tailwind-merge drops `bg-card` otherwise) (gradient hairline from gold to ember).
-- Inset wells (inputs, chips inside cards, pool bars): `rounded-xl bg-black/25 border border-white/[0.06] shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]`.
-- Dividers: `h-px bg-gradient-to-r from-transparent via-white/10 to-transparent`.
-- Icon tiles: `size-10 rounded-xl border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]`, icon `text-gold` (or ember for the primary item).
-- Radius scale: controls `rounded-lg/xl`, cards `rounded-2xl`, hero `rounded-3xl`, chips/pills `rounded-full`.
+- Cards: `rounded-2xl border border-white/[0.08] bg-card`. Inner padding `p-5 sm:p-6` for feature cards, `p-4` for dense ones.
+- Interactive cards: `transition-colors hover:border-white/[0.14] hover:bg-white/[0.03]`. No lift.
+- Hero / featured panel: `rounded-2xl` (the landing card) or `rounded-3xl` (page heroes) with `bg-card border-gradient`. `.border-gradient` now draws a plain 1px hairline, and `ember-glow` is a no-op kept for compatibility; if you keep it, keep it outside cn() (tailwind-merge reads it as a background and drops `bg-card`), and never use `bg-ember-glow`.
+- Inset wells (inputs, chips inside cards, pool bars): `rounded-lg bg-black/25 border border-white/[0.06]`.
+- Dividers: `h-px bg-white/[0.08]`.
+- Icon tiles: `size-10 rounded-xl border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]`, icon `text-gold` (the bright neutral), or the accent only when the tile is live.
+- Radius: `--radius` is `0.5rem`. Controls `rounded-lg`, cards `rounded-2xl` (about 14px), chips/pills `rounded-full`.
 
 ## Components (already themed — use, don't restyle)
 
-`Button` (default = ember gradient; `outline` = glass; `ghost`), `Badge variant="outline"` (glass pill), `Table` (uppercase muted headers, hairline rows), `Card`, `PageHeader` (serif title, gold eyebrow, collapsible details), `StatStrip` (tones: `ember` gradient, `gold` gradient, `positive`, `negative`), `SignInBanner` (gradient hairline), `Tamga tone="gradient"`.
+`Button` (default = solid white, black text; disabled = grey well; `outline` = transparent with a 1px hairline; `ghost`), `Badge variant="outline"`, `Table`, `Card`, `PageHeader` (heavy sans title, muted eyebrow, collapsible details), `StatStrip` (tones: `ember` = accent number, `gold` = white, `positive`, `negative`), `SignInBanner` (flat card), `Tamga tone="gradient"` (name kept: solid accent stroke).
 
 ## Motion
 
-Subtle only: `transition-all duration-300`; entrances `animate-in fade-in-0 slide-in-from-bottom-2 duration-500` on page sections (tw-animate-css is installed); no bouncing, no parallax. Respect `motion-reduce:` for anything that moves.
+Subtle only: `transition-colors duration-200`; entrances `animate-in fade-in-0 slide-in-from-bottom-2 duration-500`. No bouncing, no parallax, no glow pulses beyond the one live dot. Respect `motion-reduce:`.
 
 ## Rules
 
-1. One ember primary action per screen. Everything else is `outline` or `ghost`.
-2. Gold means heritage and rank, never an action.
-3. No flat `bg-ember/10` blocks, no `border-border`, no `rounded-md` cards, no `text-[10px]`.
-4. Generous spacing: sections `gap-8 sm:gap-12`, page sections separated by `mt-12 sm:mt-16` on the landing.
+1. One white primary action per screen (the `<Button>` default). Everything else is `outline` or `ghost`.
+2. One accent, and it means live or focused. Never decorate with it.
+3. No gradients (fills, text, borders or dividers), no glows, no aurora or grain, no serif, no italics, no `rounded-md` cards, no `text-[10px]`.
+4. Generous spacing: sections `gap-8 sm:gap-12`, landing sections `mt-20 sm:mt-28`.
 5. Every price keeps its source and age (PriceChip). Points only, no cash value.
 6. Must look right at 375px with no horizontal scroll.

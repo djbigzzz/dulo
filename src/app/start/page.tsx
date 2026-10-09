@@ -18,7 +18,7 @@ import { TradeForm, TradeFormSkeleton } from "@/components/league/TradeForm";
 import { ScoutChip } from "@/components/league/ScoutChip";
 import { findScoutPlay, scoutProgress } from "@/components/league/scout";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
-import { START_PATH, competitionLine, rankShareOnXUrl, shareOnXUrl } from "@/components/start/share";
+import { START_PATH, competitionLineParts, rankShareOnXUrl, shareOnXUrl } from "@/components/start/share";
 import { TourStep } from "@/components/start/TourStep";
 import { BoardStepBody, QuestsStepBody, TOUR_LINK, TourFinish } from "@/components/start/TourBodies";
 import {
@@ -76,7 +76,7 @@ export default function StartPage() {
     ["start:plays", sessionKey],
     { refetchOnFocus: false },
   );
-  const compLine = competitionLine(lq.data?.league ?? null);
+  const compLine = competitionLineParts(lq.data?.league ?? null);
   const { refetch } = q;
   const refetchLeague = lq.refetch;
   const refetchPlays = plays.refetch;
@@ -395,8 +395,17 @@ export default function StartPage() {
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{TOUR_COPY.eyebrow}</p>
         <h1 className="text-3xl font-semibold text-balance sm:text-4xl">{tourHeading(tour, finished)}</h1>
         {compLine ? (
-          <Link href="/competition" className="mx-auto mt-1 inline-flex rounded-full border border-ember/30 bg-ember/10 px-3 py-1 text-xs font-medium text-pretty text-foreground hover:bg-ember/15">
-            {compLine}
+          // A neutral status pill (Mono: the accent marks live data, never an action); the dot is the live part.
+          <Link
+            href="/competition"
+            className="mx-auto mt-1 inline-flex items-start gap-2 rounded-full border border-white/[0.1] bg-white/[0.03] px-3 py-1 text-xs font-medium text-pretty text-foreground transition-colors hover:bg-white/[0.06]"
+          >
+            {compLine.live ? <span className="mt-[0.3125rem] size-1.5 shrink-0 rounded-full bg-ember" aria-hidden /> : null}
+            <span>
+              {compLine.before}
+              <span className="whitespace-nowrap">{compLine.countdown}</span>
+              {compLine.after}
+            </span>
           </Link>
         ) : null}
         {signedIn ? (

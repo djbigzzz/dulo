@@ -36,7 +36,7 @@ export function MirrorAnyWallet({ className }: { className?: string }) {
   return (
     <section className={cn("rounded-2xl border border-white/[0.07] bg-card p-4 sm:p-5", className)} aria-labelledby={`${inputId}-title`}>
       <div className="flex items-start gap-3">
-        <span className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.06)] sm:flex [&>svg]:size-4.5" aria-hidden>
+        <span className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] sm:flex [&>svg]:size-4.5" aria-hidden>
           <Search />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -64,7 +64,7 @@ export function MirrorAnyWallet({ className }: { className?: string }) {
               spellCheck={false}
               aria-invalid={error !== null}
               aria-describedby={error ? errorId : undefined}
-              className={cn(WELL, "h-11 min-w-0 flex-1 px-3.5 font-mono text-sm md:text-sm dark:bg-black/25")}
+              className={cn(WELL, "h-11 min-w-0 px-3.5 font-mono text-sm sm:flex-1 md:text-sm dark:bg-black/25")}
             />
             <Button type="submit" size="lg" className="h-11 shrink-0 rounded-xl px-5 font-semibold">
               Copy

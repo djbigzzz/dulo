@@ -150,7 +150,7 @@ describe("points UI — /predictions", () => {
   const src = read("src/app/predictions/page.tsx");
 
   it("labels the balance and says when it includes starter points", () => {
-    expect(src).toContain('label: "Your points balance"');
+    expect(src).toContain('label: "Points balance"');
     expect(src).not.toContain("Your spendable points");
     expect(src).toContain("starterPointsHint(starterPoints, me.spendablePoints)");
     expect(src).toMatch(/user\?\.points\?\.starterPoints/);

@@ -8,10 +8,10 @@ export const alt = "Dulo: The entertainment layer for xStocks.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const OBSIDIAN = "#0a0908";
-const WARM_WHITE = "#f4f1ea";
-const WARM_GREY = "#a9a299";
-const GOLD = "#d8b46a";
+const INK = "#09090b";
+const WHITE = "#fafafa";
+const GREY = "#a1a1aa";
+const ACCENT = "#3b82f6";
 
 const WORDMARK = "Dulo";
 const TAGLINE = "The entertainment layer for xStocks.";
@@ -47,29 +47,22 @@ async function loadGoogleFont(family: string, weight: number, text: string): Pro
 
 type OgFont = { name: string; data: ArrayBuffer; weight: 400 | 500 | 600; style: "normal" };
 
-/**
- * Instrument Serif for the wordmark, Geist (the app's UI face) for everything else. Passing `fonts`
- * replaces next/og's bundled sans, so the serif is only used when Geist loaded too; otherwise the
- * "Dulo" subset would be the only font and leak its glyphs into the sans lines.
- */
-async function loadFonts(): Promise<{ fonts: OgFont[] | undefined; serif: boolean }> {
-  const [serif, sans500, sans600] = await Promise.all([
-    loadGoogleFont("Instrument Serif", 400, glyphs(WORDMARK)),
+/** Geist (the app's only face) at 500 and 600. Without it the card falls back to next/og's bundled sans. */
+async function loadFonts(): Promise<OgFont[] | undefined> {
+  const [sans500, sans600] = await Promise.all([
     loadGoogleFont("Geist", 500, glyphs(EYEBROW, FOOTER)),
-    loadGoogleFont("Geist", 600, glyphs(TAGLINE)),
+    loadGoogleFont("Geist", 600, glyphs(TAGLINE, WORDMARK)),
   ]);
-  if (!sans500 || !sans600) return { fonts: undefined, serif: false };
-  const fonts: OgFont[] = [
+  if (!sans500 || !sans600) return undefined;
+  return [
     { name: "Geist", data: sans500, weight: 500, style: "normal" },
     { name: "Geist", data: sans600, weight: 600, style: "normal" },
   ];
-  if (serif) fonts.push({ name: "Instrument Serif", data: serif, weight: 400, style: "normal" });
-  return { fonts, serif: Boolean(serif) };
 }
 
-/** Social card, 1200x630: obsidian ground with a low ember glow, gold-gradient tamga, serif "Dulo", the positioning line. */
+/** Social card, 1200x630: flat near-black ground, the accent tamga, a heavy tight "Dulo", the positioning line. */
 export default async function OpenGraphImage() {
-  const { fonts, serif } = await loadFonts();
+  const fonts = await loadFonts();
   const sansFamily = fonts ? "Geist" : "sans serif";
 
   return new ImageResponse(
@@ -82,47 +75,38 @@ export default async function OpenGraphImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "72px 88px",
-          backgroundColor: OBSIDIAN,
-          backgroundImage:
-            "radial-gradient(circle at 88% -10%, rgba(255,106,42,0.26) 0%, rgba(255,106,42,0) 52%), radial-gradient(circle at 0% 110%, rgba(216,180,106,0.12) 0%, rgba(216,180,106,0) 46%)",
-          color: WARM_WHITE,
+          backgroundColor: INK,
+          color: WHITE,
           fontFamily: sansFamily,
         }}
       >
-        <div style={{ display: "flex", fontSize: 24, fontWeight: 500, letterSpacing: 4, textTransform: "uppercase", color: GOLD }}>
+        <div style={{ display: "flex", fontSize: 24, fontWeight: 500, letterSpacing: 4, textTransform: "uppercase", color: GREY }}>
           {EYEBROW}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
             <svg width={168} height={168} viewBox="0 0 64 64" fill="none">
-              <defs>
-                <linearGradient id="og-tamga" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#f0d9a4" />
-                  <stop offset="55%" stopColor={GOLD} />
-                  <stop offset="100%" stopColor="#b8893f" />
-                </linearGradient>
-              </defs>
               {TAMGA_PATHS.map((d) => (
-                <path key={d} d={d} stroke="url(#og-tamga)" strokeWidth={TAMGA_STROKE} strokeLinecap="square" strokeLinejoin="miter" />
+                <path key={d} d={d} stroke={ACCENT} strokeWidth={TAMGA_STROKE} strokeLinecap="square" strokeLinejoin="miter" />
               ))}
             </svg>
             <div
               style={{
                 display: "flex",
-                fontFamily: serif ? "Instrument Serif" : sansFamily,
-                fontWeight: serif ? 400 : 600,
-                fontSize: serif ? 210 : 170,
+                fontFamily: sansFamily,
+                fontWeight: 600,
+                fontSize: 170,
                 lineHeight: 1,
-                letterSpacing: serif ? -4 : -6,
-                color: WARM_WHITE,
+                letterSpacing: -8,
+                color: WHITE,
                 paddingBottom: 12,
               }}
             >
               {WORDMARK}
             </div>
           </div>
-          <div style={{ display: "flex", fontSize: 50, fontWeight: 600, letterSpacing: -1, color: WARM_WHITE }}>{TAGLINE}</div>
+          <div style={{ display: "flex", fontSize: 50, fontWeight: 600, letterSpacing: -1.5, color: WHITE }}>{TAGLINE}</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -130,11 +114,11 @@ export default async function OpenGraphImage() {
             style={{
               display: "flex",
               width: "100%",
-              height: 2,
-              backgroundImage: "linear-gradient(90deg, rgba(216,180,106,0.55) 0%, rgba(255,106,42,0.55) 50%, rgba(255,106,42,0) 100%)",
+              height: 1,
+              backgroundColor: "rgba(255,255,255,0.14)",
             }}
           />
-          <div style={{ display: "flex", fontSize: 26, fontWeight: 500, color: WARM_GREY }}>{FOOTER}</div>
+          <div style={{ display: "flex", fontSize: 26, fontWeight: 500, color: GREY }}>{FOOTER}</div>
         </div>
       </div>
     ),

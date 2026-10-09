@@ -32,7 +32,7 @@ export function PartnerLogo({ name, logoUrl, size = 32, className }: PartnerLogo
   return (
     <span
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-[linear-gradient(160deg,rgb(255_245_230/0.08),rgb(255_245_230/0.02))] font-heading font-semibold tracking-tight text-foreground/70 uppercase ring-1 ring-white/[0.08] select-none",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-white/[0.05] font-heading font-semibold tracking-tight text-foreground/70 uppercase ring-1 ring-white/[0.08] select-none",
         radius,
         text,
         className,

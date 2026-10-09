@@ -106,11 +106,11 @@ function useServerNow(serverNow: string | undefined, ms = 30_000): number {
 }
 
 /**
- * The hero's one raised surface: near-opaque warm glass, a lit top edge and a deep soft shadow.
+ * The hero's one raised surface: a flat solid panel, a 1px hairline and a deep, quiet drop shadow.
  * Kept out of cn(): tailwind-merge would read `border-gradient` as a border colour.
  */
 const SURFACE =
-  "border-gradient relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(180deg,rgb(31_27_23/0.92)_0%,rgb(17_15_13/0.96)_100%)] shadow-[inset_0_1px_0_rgb(255_245_230/0.07),0_40px_90px_-40px_rgb(0_0_0/0.95)] backdrop-blur-xl";
+  "border-gradient relative overflow-hidden rounded-2xl bg-[#0f0f11] shadow-[0_32px_64px_-32px_rgb(0_0_0/0.9)]";
 
 /** Skeleton tuned to the glass surface (the default bg-muted reads too flat here). */
 function Bar({ className }: { className?: string }) {
@@ -135,8 +135,8 @@ function yesWidth(m: CallMarketView): string {
   return `${Math.round((m.odds.total === 0 ? 0.5 : m.odds.yesProb) * 100)}%`;
 }
 
-/** Large live figures (the split, the tiles): the sans face, light and tight, so a 1 never reads as an l. */
-const FIGURE = "font-sans font-light tracking-[-0.045em] tabular-nums";
+/** Large live figures (the split, the tiles): the sans face, medium and tight; tabular so columns hold. */
+const FIGURE = "font-sans font-medium tracking-[-0.05em] tabular-nums";
 const SPLIT_FIGURE = cn(FIGURE, "text-[3.25rem] leading-[0.85]");
 
 /** The featured split: two large figures, Yes and No, over one thin bar. */
@@ -181,7 +181,7 @@ function CompactRow({ market }: { market: CallMarketView }) {
       <Link
         href="/predictions"
         aria-label={name}
-        className="group -mx-2 flex min-h-12 items-center gap-3 lg:[@media(max-height:860px)]:min-h-10 rounded-xl px-2 text-sm outline-none transition-colors hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
+        className="group -mx-2 flex min-h-12 items-center gap-3 lg:[@media(max-height:860px)]:min-h-10 rounded-lg px-2 text-sm outline-none transition-colors hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
       >
         <span className="min-w-0 flex-1 truncate text-muted-foreground">
           <span className="font-medium text-foreground">{market.ticker}</span>
@@ -215,20 +215,20 @@ function CompactRow({ market }: { market: CallMarketView }) {
 
 /** The live dot and its label, top left of the card. */
 function LiveLabel({ open }: { open: boolean }) {
-  // Entries closed: a still gold dot, not the live pulse, until Friday's settle.
+  // Entries closed: a still grey dot, not the live pulse, until Friday's settle.
   if (!open) {
     return (
-      <span className="inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap text-gold">
-        <span className="size-1.5 rounded-full bg-gold" aria-hidden />
+      <span className="inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap text-muted-foreground">
+        <span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden />
         This week&apos;s prediction
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap text-emerald-300">
+    <span className="inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap text-ember-light">
       <span className="relative flex size-1.5" aria-hidden>
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/70 motion-reduce:animate-none" />
-        <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-ember/60 motion-reduce:animate-none" />
+        <span className="relative inline-flex size-1.5 rounded-full bg-ember" />
       </span>
       Live right now
     </span>
@@ -313,7 +313,7 @@ function Notice({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col">
       <span className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
-        <TargetIcon className="size-3.5 text-gold" aria-hidden />
+        <TargetIcon className="size-3.5 text-muted-foreground" aria-hidden />
         Friday predictions
       </span>
       <p className="mt-5 text-xl leading-snug font-medium text-balance text-foreground">{children}</p>
@@ -378,11 +378,6 @@ export function LivePredictions({ className }: { className?: string }) {
         className,
       )}`}
     >
-      {/* One ember bloom in the top corner: the only glow on the first screen. */}
-      <div
-        className="pointer-events-none absolute -top-40 -right-32 -z-10 size-96 rounded-full bg-[radial-gradient(closest-side,rgb(255_106_42/0.16),transparent)]"
-        aria-hidden
-      />
       <h2 id="live-predictions-title" className="sr-only">
         This week&apos;s predictions
       </h2>
@@ -425,7 +420,7 @@ export function GameTiles({ className }: { className?: string }) {
       <h2 id="games-title" className="sr-only">
         Three games, one Season leaderboard
       </h2>
-      <ul className="grid divide-y divide-white/[0.06] overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <ul className="grid divide-y divide-white/[0.08] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0c0e] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         {GAME_TILE_ORDER.map((key) => {
           const copy = TILE_COPY[key];
           const Icon = TILE_ICON[key];
@@ -433,7 +428,7 @@ export function GameTiles({ className }: { className?: string }) {
           return (
             <li key={key} className="flex min-w-0 flex-col gap-4 p-5 sm:gap-5 sm:p-6 lg:[@media(max-height:860px)]:gap-3.5 lg:[@media(max-height:860px)]:py-5">
               <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Icon className={cn("size-4", key === "predictions" ? "text-ember" : "text-gold")} aria-hidden />
+                <Icon className="size-4 text-muted-foreground" aria-hidden />
                 {copy.title}
               </h3>
               <div
@@ -488,7 +483,7 @@ export function SeasonTop({ className }: { className?: string }) {
         className,
       )}
     >
-      <span className="w-full text-xs font-medium tracking-[0.16em] text-gold uppercase sm:w-auto">Season top 3</span>
+      <span className="w-full text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase sm:w-auto">Season top 3</span>
       {top.map((r) => (
         <span key={r.userId} className="inline-flex min-w-0 items-center gap-1.5">
           <span className="text-muted-foreground tabular-nums">#{r.rank}</span>

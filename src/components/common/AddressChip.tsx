@@ -57,7 +57,7 @@ export function AddressChip({ address, chainId, chars = 4, copy = true, explorer
           type="button"
           onClick={onCopy}
           aria-label={copied ? "Copied" : "Copy address"}
-          className="inline-flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="inline-flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
         >
           {copied ? <Check className="size-3" aria-hidden /> : <Copy className="size-3" aria-hidden />}
         </button>
@@ -68,7 +68,7 @@ export function AddressChip({ address, chainId, chars = 4, copy = true, explorer
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Open in explorer"
-          className="inline-flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="inline-flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
         >
           <ExternalLink className="size-3" aria-hidden />
         </a>

@@ -124,7 +124,7 @@ describe("root layout metadata", () => {
     expect(metadata).toContain("capable: true");
     expect(metadata).not.toMatch(/^\s*other: \{/m);
     expect(metadata).not.toMatch(/"mobile-web-app-capable": "yes"/);
-    expect(layout).toContain('const THEME_COLOR = "#0a0908"');
+    expect(layout).toContain('const THEME_COLOR = "#09090b"');
   });
 });
 
@@ -141,10 +141,13 @@ describe("error pages and robots", () => {
     expect(globalError).toContain("<html");
   });
 
-  it("global-error renders standalone on obsidian with a retry", () => {
+  it("global-error renders standalone on the Mono near-black with a retry", () => {
     const html = renderToStaticMarkup(createElement(GlobalError, { error: Object.assign(new Error("x"), { digest: "d1" }), reset: () => undefined }));
     expect(html).toMatch(/^<html lang="en"/);
-    expect(html).toContain("#0a0908");
+    // The page ground is the layout's theme-color, inline (globals.css is not loaded here).
+    expect(html).toMatch(/<body style="[^"]*background:#09090b/);
+    // The mark is the solid accent, inline, so it reads without any stylesheet.
+    expect(html).toContain('stroke="#3b82f6"');
     expect(html).toContain("Try again");
     expect(html).toContain("Ref d1");
     for (const d of TAMGA_PATHS) expect(html).toContain(`d="${d}"`);
@@ -233,7 +236,7 @@ describe("opengraph-image / twitter-image", () => {
     return [];
   }
 
-  it("renders 1200x630 on obsidian with the tamga, serif Dulo and the positioning line, fonts from Google as ArrayBuffers", async () => {
+  it("renders 1200x630 on the Mono near-black with the accent tamga, a Geist Dulo and the positioning line, fonts from Google as ArrayBuffers", async () => {
     const urls: string[] = [];
     vi.stubGlobal(
       "fetch",
@@ -247,23 +250,28 @@ describe("opengraph-image / twitter-image", () => {
     expect(ogContentType).toBe("image/png");
     expect(img.options).toMatchObject({ width: 1200, height: 630 });
     const fonts = img.options.fonts as { name: string; weight: number; data: ArrayBuffer }[];
+    // Geist is the only face: no serif is fetched or registered.
     expect(fonts.map((f) => [f.name, f.weight])).toEqual([
       ["Geist", 500],
       ["Geist", 600],
-      ["Instrument Serif", 400],
     ]);
     for (const f of fonts) expect(f.data).toBeInstanceOf(ArrayBuffer);
-    expect(urls.some((u) => u.includes("family=Instrument+Serif:wght@400&text="))).toBe(true);
+    expect(urls.some((u) => u.includes("family=Geist:wght@600&text="))).toBe(true);
+    expect(urls.some((u) => u.includes("Instrument"))).toBe(false);
 
+    // Flat ground, no glow.
     const root = img.element as { props: { style: Record<string, string> } };
-    expect(root.props.style.backgroundColor).toBe("#0a0908");
-    expect(root.props.style.backgroundImage).toMatch(/radial-gradient\(.*rgba\(255,106,42/);
+    expect(root.props.style.backgroundColor).toBe("#09090b");
+    expect(root.props.style.backgroundImage).toBeUndefined();
     const all = texts(img.element);
     expect(all).toContain("Dulo");
     expect(all).toContain("The entertainment layer for xStocks.");
     const svg = JSON.stringify(img.element);
     for (const d of TAMGA_PATHS) expect(svg).toContain(d);
-    expect(svg).toContain('"fontFamily":"Instrument Serif"');
+    expect(svg).toContain('"stroke":"#3b82f6"');
+    // The wordmark is set in Geist 600, heavy and tight.
+    expect(svg).toMatch(/"fontFamily":"Geist","fontWeight":600,"fontSize":170/);
+    expect(svg).not.toContain("Instrument Serif");
   });
 
   it("falls back to the bundled sans (no custom fonts) when Google Fonts is unreachable, never throwing", async () => {

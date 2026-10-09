@@ -33,8 +33,8 @@ export function TargetList({ rows, metric, chainId, className }: TargetListProps
             key={`${row.address}-${row.rank}`}
             className={cn(
               ITEM,
-              "transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.04] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-              row.rank === 1 && "bg-gradient-to-r from-gold/[0.07] to-transparent",
+              "transition-colors duration-200 hover:border-white/[0.14] hover:bg-white/[0.03] motion-reduce:transition-none",
+              row.rank === 1 && "bg-white/[0.03]",
             )}
           >
             <RankBadge rank={row.rank} className="size-8" />

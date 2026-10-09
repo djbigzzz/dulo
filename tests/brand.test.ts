@@ -113,11 +113,14 @@ describe("static icons reuse the tamga paths", () => {
     "icons/apple-touch-icon.svg",
   ];
   for (const f of files) {
-    it(`${f} is an SVG on the dark background with the ember tamga`, () => {
+    it(`${f} is an SVG on the Mono near-black with the solid blue accent tamga`, () => {
       const svg = readFileSync(path.join(PUBLIC, f), "utf8");
       expect(svg).toContain("<svg");
-      expect(svg).toContain('fill="#0b0b0f"');
-      expect(svg).toContain('stroke="#ff6b1a"');
+      // The page ground (--background, the layout's theme-color) and the --ember accent token.
+      expect(svg).toContain('fill="#09090b"');
+      expect(svg).toContain('stroke="#3b82f6"');
+      // Flat: no gradient fills or strokes.
+      expect(svg).not.toMatch(/Gradient|url\(#/);
       expect(svg).toContain('stroke-linecap="square"');
       for (const d of EXPECTED_PATHS) expect(svg).toContain(`d="${d}"`);
     });

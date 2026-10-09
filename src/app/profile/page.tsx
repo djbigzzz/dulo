@@ -61,11 +61,11 @@ export default function ProfilePage() {
   return profile ? <ProfileBody profile={profile} /> : <SignedOut />;
 }
 
-const SECTION_TITLE = "font-display text-2xl leading-tight font-normal sm:text-3xl";
+const SECTION_TITLE = "font-display text-xl leading-tight font-semibold tracking-[-0.03em] sm:text-2xl";
 const LIST = "divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card";
 const ICON_TILE =
-  "flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]";
-const DIVIDER = "h-px bg-gradient-to-r from-transparent via-white/10 to-transparent";
+  "flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]";
+const DIVIDER = "h-px bg-white/[0.08]";
 
 function SectionHead({ id, title, hint, action }: { id: string; title: string; hint?: string; action?: React.ReactNode }) {
   return (
@@ -79,7 +79,7 @@ function SectionHead({ id, title, hint, action }: { id: string; title: string; h
         </div>
         {action}
       </div>
-      <div className="h-px bg-gradient-to-r from-white/[0.12] via-white/[0.05] to-transparent" aria-hidden />
+      <div className="h-px bg-white/[0.08]" aria-hidden />
     </div>
   );
 }
@@ -99,13 +99,13 @@ function SignedOut() {
         className="border-gradient relative flex flex-col overflow-hidden rounded-3xl bg-card ember-glow px-5 py-8 animate-in duration-500 fade-in-0 slide-in-from-bottom-2 sm:px-10 sm:py-12"
       >
         <div className="mx-auto flex max-w-xl flex-col items-center gap-3 text-center">
-          <p className="flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-gold uppercase">
-            <span className="h-px w-5 bg-gradient-to-r from-gold/0 to-gold/80" aria-hidden />
+          <p className="flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+            <span className="h-px w-5 bg-white/25" aria-hidden />
             Soulbound Badges
-            <span className="h-px w-5 bg-gradient-to-l from-gold/0 to-gold/80" aria-hidden />
+            <span className="h-px w-5 bg-white/25" aria-hidden />
           </p>
-          <h2 id="badge-preview" className="font-display text-4xl leading-[1.02] font-normal tracking-[-0.015em] sm:text-5xl">
-            Badges you can <span className="text-gradient-ember italic">earn</span>
+          <h2 id="badge-preview" className="font-display text-3xl leading-[1.05] font-semibold tracking-[-0.04em] sm:text-4xl">
+            Badges you can <span className="text-gradient-ember">earn</span>
           </h2>
           <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
             Soulbound tokens minted to your wallet. They cannot be sold or transferred.
@@ -115,7 +115,7 @@ function SignedOut() {
         <div className="relative mt-10">
           <ShelfGlow className="-inset-x-4 -inset-y-8" />
           <BadgePreviewGrid className="relative" />
-          <div className="relative mx-auto mt-8 h-px max-w-3xl bg-gradient-to-r from-transparent via-gold/30 to-transparent" aria-hidden />
+          <div className="relative mx-auto mt-8 h-px max-w-3xl bg-white/[0.08]" aria-hidden />
         </div>
 
         <ul className="mt-10 grid gap-5 sm:grid-cols-3 sm:gap-6">
@@ -172,7 +172,7 @@ function ProfileBody({ profile }: { profile: UserProfile }) {
       <PageHeader
         className="mb-0"
         eyebrow="Profile"
-        title={<span className={cn(!profile.handle && "font-mono")}>{name}</span>}
+        title={<span className={cn(!profile.handle && "font-mono tracking-normal")}>{name}</span>}
         description={profile.handle && primary ? <AddressChip address={primary.address} chainId={primary.chainId} explorer /> : undefined}
         stats={
           <div className="flex flex-col gap-2">

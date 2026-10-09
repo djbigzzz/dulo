@@ -40,14 +40,14 @@ const XSTOCK_LOGO = (symbol: string) => `https://xstocks-metadata.backed.fi/logo
 
 /** Inset well: pool bars, position rows, the settled result. */
 const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]";
-const DIVIDER = "h-px bg-gradient-to-r from-transparent via-white/10 to-transparent";
+const DIVIDER = "h-px bg-white/[0.08]";
 const PILL = "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium whitespace-nowrap";
 
 function XStockLogo({ symbol, ticker }: { symbol: string; ticker: string }) {
   const [failed, setFailed] = React.useState(false);
   React.useEffect(() => setFailed(false), [symbol]);
   return (
-    <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.03] font-mono text-xs font-semibold text-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]">
+    <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.03] font-mono text-xs font-semibold text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
       {failed ? (
         ticker.slice(0, 4)
       ) : (
@@ -95,10 +95,11 @@ function StatusChip({ market, nowMs }: { market: CallMarketView; nowMs: number }
     );
   }
   return (
-    <span className={cn(PILL, "border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-300 shadow-[inset_0_1px_0_rgb(255_245_230/0.05)]")}>
+    // Live: the accent, not emerald (emerald is the Yes side and "Yes won" in this same slot).
+    <span className={cn(PILL, "border-ember/30 bg-ember/[0.08] text-ember-light shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]")}>
       <span className="relative flex size-1.5" aria-hidden>
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60 motion-reduce:animate-none" />
-        <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-ember opacity-60 motion-reduce:animate-none" />
+        <span className="relative inline-flex size-1.5 rounded-full bg-ember" />
       </span>
       Open
     </span>
@@ -166,7 +167,7 @@ export function MarketCard({ market, positions, nowMs, signedIn, onPlace, classN
       data-market-id={market.id}
       data-status={status}
       className={cn(
-        "h-full gap-5 [--card-spacing:--spacing(5)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.04] hover:ring-white/[0.12] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        "h-full gap-5 [--card-spacing:--spacing(5)] transition-colors duration-200 hover:bg-white/[0.03] hover:ring-white/[0.14] motion-reduce:transition-none",
         status === "void" && "ring-white/[0.05]",
         className,
       )}
@@ -186,8 +187,8 @@ export function MarketCard({ market, positions, nowMs, signedIn, onPlace, classN
         <CardTitle className="text-xl leading-snug font-semibold tracking-tight text-balance">{marketQuestion(market)}</CardTitle>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-gold/20 bg-gold/[0.06] px-3 text-xs shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]">
-            <span className="font-medium tracking-[0.08em] text-gold uppercase">Strike</span>
+          <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-gold/20 bg-gold/[0.06] px-3 text-xs shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
+            <span className="font-medium tracking-[0.08em] text-muted-foreground uppercase">Strike</span>
             <span className="font-semibold text-foreground tabular-nums">{formatUsd(market.strike)}</span>
           </span>
           {!done && market.quote ? <PriceChip quote={market.quote} symbol={market.symbol} className="max-w-full" /> : null}
@@ -273,7 +274,7 @@ export function MarketCard({ market, positions, nowMs, signedIn, onPlace, classN
                       onClick={() => onPlace?.(market, side)}
                       aria-label={`${sideButtonLabel(market.odds, side)}. ${signedIn ? (held ? "Add to your prediction" : "Make a prediction") : "Sign in to make a prediction"}`}
                       className={cn(
-                        "flex h-12 min-w-0 items-center justify-between gap-2 rounded-xl border px-3.5 whitespace-nowrap shadow-[inset_0_1px_0_rgb(255_245_230/0.08),0_1px_2px_rgb(0_0_0/0.3)] transition-all duration-200 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px",
+                        "flex h-12 min-w-0 items-center justify-between gap-2 rounded-xl border px-3.5 whitespace-nowrap shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_1px_2px_rgb(0_0_0/0.3)] transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-card active:translate-y-px",
                         held ? SIDE_STYLE[side].held : SIDE_STYLE[side].idle,
                       )}
                     >

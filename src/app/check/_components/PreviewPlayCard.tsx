@@ -19,7 +19,7 @@ import { RuleDisclosure } from "@/components/plays/RuleDisclosure";
 import { PREVIEW_STATUS_LABEL } from "@/app/check/_components/check-format";
 
 const PILL = "inline-flex h-7 w-fit items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium whitespace-nowrap";
-const PILL_GLASS = "border-white/[0.08] bg-white/[0.03] text-muted-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.05)]";
+const PILL_GLASS = "border-white/[0.08] bg-white/[0.03] text-muted-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]";
 
 const STATUS_STYLE: Record<PreviewPlayStatus, { icon: React.ComponentType<{ className?: string }>; className: string }> = {
   qualifies: { icon: CheckCircle2, className: "border-emerald-400/25 bg-emerald-400/10 text-emerald-400" },
@@ -51,7 +51,7 @@ export function PreviewPlayCard({ play, onProof }: { play: PreviewPlayView; onPr
       )}
     >
       {qualifies ? (
-        <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" aria-hidden />
+        <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-emerald-400/40" aria-hidden />
       ) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">

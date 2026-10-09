@@ -18,10 +18,10 @@ export interface PartnerCardProps {
 export { PARTNER_MARKS_NOTICE } from "@/components/common/compliance";
 
 const LOGO_TILE =
-  "flex shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] p-1 shadow-[inset_0_1px_0_rgb(255_245_230/0.06),0_8px_20px_-12px_rgb(0_0_0/0.7)]";
-const DIVIDER = "h-px bg-gradient-to-r from-transparent via-white/10 to-transparent";
+  "flex shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] p-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_8px_20px_-12px_rgb(0_0_0/0.7)]";
+const DIVIDER = "h-px bg-white/[0.08]";
 
-/** "Quests live" as a gold pill with a check; "Coming soon" as a muted dashed pill. */
+/** "Quests live" as a bright neutral pill with a check; "Coming soon" as a muted dashed pill. */
 export function ListingPill({ label, className }: { label: PartnerListingLabel; className?: string }) {
   const soon = label === "Coming soon";
   return (
@@ -48,7 +48,7 @@ export function PartnerCard({ partner, className }: PartnerCardProps) {
     <Link
       href={`/partners/${encodeURIComponent(partner.slug)}`}
       className={cn(
-        "group flex h-full flex-col gap-4 rounded-2xl border border-white/[0.07] bg-card p-5 outline-none transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.04] focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-6",
+        "group flex h-full flex-col gap-4 rounded-2xl border border-white/[0.07] bg-card p-5 outline-none transition-colors duration-200 hover:border-white/[0.14] hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none sm:p-6",
         className,
       )}
     >
@@ -87,13 +87,13 @@ export function ListProjectCard({ className }: { className?: string }) {
     <a
       href="#list"
       className={cn(
-        "border-gradient group flex h-full flex-col gap-4 rounded-2xl bg-card p-5 outline-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.04] focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-6",
+        "border-gradient group flex h-full flex-col gap-4 rounded-2xl bg-card p-5 outline-none transition-colors duration-200 hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none sm:p-6",
         className,
       )}
     >
       <div className="flex items-center gap-4">
         <span
-          className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.06] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.08),0_0_24px_-8px_rgb(216_180_106/0.5)]"
+          className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.06] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]"
           aria-hidden
         >
           <Plus className="size-5" />
@@ -152,11 +152,11 @@ export function ListProjectSection({
       aria-labelledby="list-title"
       className={cn("scroll-mt-24 rounded-2xl border border-white/[0.07] bg-card p-6 sm:p-8", className)}
     >
-      <p className="flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-gold uppercase">
-        <span className="h-px w-5 bg-gradient-to-r from-gold/0 to-gold/80" aria-hidden />
+      <p className="flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+        <span className="h-px w-5 bg-white/25" aria-hidden />
         For projects
       </p>
-      <h2 id="list-title" className="mt-3 font-display text-3xl leading-tight font-normal sm:text-4xl">
+      <h2 id="list-title" className="mt-3 font-display text-2xl leading-tight font-semibold tracking-[-0.035em] sm:text-3xl">
         List your project
       </h2>
       <div className={cn(DIVIDER, "my-6")} aria-hidden />
@@ -164,7 +164,7 @@ export function ListProjectSection({
         {points.map((p) => (
           <li key={p} className="flex items-start gap-3 text-sm leading-relaxed text-muted-foreground">
             <span
-              className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-gold/25 bg-gold/[0.08] text-gold shadow-[0_0_14px_-4px_rgb(216_180_106/0.5)]"
+              className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-gold/25 bg-gold/[0.08] text-gold"
               aria-hidden
             >
               <Check className="size-3.5" strokeWidth={2.75} />

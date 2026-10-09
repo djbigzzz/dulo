@@ -368,7 +368,7 @@ describe("docs economy — honest claims across every doc", () => {
       /(close|deadline)[^.]{0,60}18 Sep 2026|(close|deadline|submissions?|judging)[^.]{0,60}\b9 Oct|which is binding|(work|plan) (to|for) the earlier (date|one)/i;
     expect("Submissions close Fri 9 Oct 2026, 16:00 ET").toMatch(STALE);
     expect("judging runs to 9 Oct").toMatch(STALE);
-    expect("1,497 tests across 73 files on 9 Oct 2026").not.toMatch(STALE);
+    expect("1,504 tests across 73 files on 9 Oct 2026").not.toMatch(STALE);
     for (const [rel, text] of [
       ["README.md", README],
       ["docs/SUBMISSION.md", SUBMISSION],

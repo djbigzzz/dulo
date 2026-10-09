@@ -8,7 +8,7 @@ import { PREVIEW_STATUS_LABEL, groupPreviewPlays, hasPreIpoHolding, hasPreIpoQue
 import { PreviewPlayCard } from "@/app/check/_components/PreviewPlayCard";
 
 const GRID = "grid gap-4 sm:grid-cols-2";
-const TILE = "flex size-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]";
+const TILE = "flex size-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]";
 
 /** Group headings on the check board, in the order they are shown. */
 export const QUALIFIES_HEADING = PREVIEW_STATUS_LABEL.qualifies;
@@ -105,7 +105,7 @@ export function PreviewBoard({ data, onProof, className }: { data: PreviewRespon
           data-slot="check-in-platform"
           className="group rounded-2xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 text-sm transition-colors open:bg-white/[0.03] sm:px-5 [&_summary::-webkit-details-marker]:hidden"
         >
-          <summary className="flex cursor-pointer list-none items-center gap-3 outline-none select-none focus-visible:text-ember">
+          <summary className="flex cursor-pointer list-none items-center gap-3 outline-none select-none focus-visible:text-ember-light">
             <span className={cn(TILE, "text-gold")} aria-hidden>
               <Gamepad2 className="size-4" />
             </span>

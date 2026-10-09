@@ -34,7 +34,7 @@ const CHAIN_ID = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 export const PRE_IPO_PAGE_TITLE = "Pre-IPO tokens, 24/7";
 export const PRE_IPO_PAGE_DESCRIPTION = "Trade them with virtual cash in this week's competition, complete pre-IPO quests, and see what the mint says.";
 
-const DIVIDER = "h-px bg-gradient-to-r from-white/[0.12] via-white/[0.05] to-transparent";
+const DIVIDER = "h-px bg-white/[0.08]";
 const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-4";
 
 function SectionHeading({ id, eyebrow, title, hint }: { id: string; eyebrow: string; title: React.ReactNode; hint?: React.ReactNode }) {
@@ -42,8 +42,8 @@ function SectionHeading({ id, eyebrow, title, hint }: { id: string; eyebrow: str
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
         <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-medium tracking-[0.14em] text-gold uppercase">{eyebrow}</p>
-          <h2 id={id} className="font-display text-3xl leading-none font-normal sm:text-4xl">
+          <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">{eyebrow}</p>
+          <h2 id={id} className="font-display text-2xl leading-tight font-semibold tracking-[-0.035em] sm:text-3xl">
             {title}
           </h2>
         </div>
@@ -70,7 +70,7 @@ export interface PreStocksViewProps {
  * pre-IPO tokens with the caller's pre-IPO positions, the four pre-IPO quests with live progress,
  * and the corporate actions read from the mints. Every read goes through /api/v1.
  *
- * Hierarchy (22 Sep): the trade form's submit is the page's one ember action; every other control
+ * Hierarchy (22 Sep): the trade form's submit is the page's one primary (white) action; every other control
  * is outline or ghost, the sign-in banner's Connect included. The compliance pair prints once, in
  * the header details. Under lg the trade section comes before the board (CSS order; the DOM keeps
  * board, trade, quests, actions), so a phone reaches the action first.
@@ -197,7 +197,7 @@ export function PreStocksView({ className }: PreStocksViewProps) {
       {/* a + b. The board and the trade section: DOM order board, trade; under lg the trade section shows first. */}
       <div className="flex flex-col gap-10 sm:gap-12">
         <section aria-labelledby="pre-ipo-board" className="flex min-w-0 flex-col gap-5">
-          <SectionHeading id="pre-ipo-board" eyebrow="The board" title="Eight pre-IPO tokens" hint="DEX price from Jupiter, the issuer's mark from PreStocks, and Jupiter's 24h move." />
+          <SectionHeading id="pre-ipo-board" eyebrow="The board" title="Pre-IPO tokens" hint="DEX price from Jupiter, the issuer's mark from PreStocks, and Jupiter's 24h move." />
           {symbols.loading ? (
             <PreIpoBoardSkeleton />
           ) : symbols.error ? (
@@ -209,7 +209,7 @@ export function PreStocksView({ className }: PreStocksViewProps) {
 
         <section aria-labelledby="pre-ipo-trade" data-slot="pre-ipo-trade" className="order-first flex min-w-0 flex-col gap-5 lg:order-none">
           <SectionHeading id="pre-ipo-trade" eyebrow="Weekly competition (virtual cash)" title="Trade with virtual cash" hint={PRE_IPO_TRADE_NOTE} />
-          {/* Outline Connect: the trade form below carries the page's one ember action. */}
+          {/* Outline Connect: the trade form below carries the page's one primary action. */}
           <SignInBanner
             title={`Sign in to trade with ${startingCash} of virtual cash.`}
             hint="Same account and same leaderboard as your xStock paper trades."

@@ -59,9 +59,9 @@ function useIsMobile(): boolean {
 }
 
 const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]";
-const LIFTED = "shadow-[inset_0_1px_0_rgb(255_245_230/0.08),0_1px_2px_rgb(0_0_0/0.35)]";
+const LIFTED = "shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_1px_2px_rgb(0_0_0/0.35)]";
 const ICON_TILE =
-  "flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]";
+  "flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]";
 const ROW_LINK =
   "group/row flex min-h-14 items-center gap-3 px-4 py-3 text-sm outline-none transition-colors duration-200 hover:bg-white/[0.03] focus-visible:bg-white/[0.05]";
 
@@ -193,7 +193,7 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
               onClick={() => setSide(s)}
               onKeyDown={(e) => onRadioKeyDown(s, e)}
               className={cn(
-                "flex h-14 flex-col items-center justify-center gap-0.5 rounded-lg border text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                "flex h-14 flex-col items-center justify-center gap-0.5 rounded-lg border text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-popover",
                 active
                   ? cn(LIFTED, s === "yes" ? "border-emerald-400/40 bg-emerald-400/[0.12] text-emerald-300" : "border-rose-400/40 bg-rose-400/[0.12] text-rose-300")
                   : "border-transparent text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
@@ -270,7 +270,7 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-black/20 bg-[radial-gradient(90%_120%_at_100%_0%,rgb(255_106_42/0.12),transparent_60%)] p-4 text-sm shadow-[inset_0_1px_0_rgb(255_245_230/0.05)]">
+      <div className="flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-black/20 p-4 text-sm shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]">
         <div className="flex items-end justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <span className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">If {sideLabel(side)} is right, points back</span>
@@ -288,7 +288,7 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
             {preview === null ? null : <span className="text-sm text-muted-foreground">pts</span>}
           </span>
         </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
+        <div className="h-px bg-white/[0.08]" aria-hidden />
         <PoolBar odds={previewOdds} highlight={side} />
         <p className="text-xs leading-relaxed text-muted-foreground">
           Pools move until the lock, so your points back are set at settlement. {STAKE_LEAVES_SCORE_COPY}
@@ -335,7 +335,15 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
               ) : null}
             </SheetHeader>
             <div className={cn("px-5", submitButton ? "pb-2" : "pb-[max(1.25rem,env(safe-area-inset-bottom))]")}>{body}</div>
-            {submitButton ? <SheetFooter className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">{submitButton}</SheetFooter> : null}
+            {/*
+              Pinned to the bottom of the scrolling sheet, so the one action is on screen on a 667px phone
+              too. mx-px keeps the panel's 1px side hairline visible past the footer's solid fill.
+            */}
+            {submitButton ? (
+              <SheetFooter className="sticky bottom-0 z-10 mx-px border-t border-white/[0.08] bg-popover p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                {submitButton}
+              </SheetFooter>
+            ) : null}
           </div>
         </SheetContent>
       </Sheet>

@@ -86,7 +86,7 @@ const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_
 
 const selectClass = cn(
   WELL,
-  "h-11 w-full min-w-0 appearance-none pr-9 pl-3 text-sm font-semibold outline-none transition-colors hover:border-white/[0.1] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 [&>option]:bg-popover [&>option]:text-popover-foreground",
+  "h-11 w-full min-w-0 appearance-none pr-9 pl-3 text-sm font-semibold outline-none transition-colors hover:border-white/[0.1] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:opacity-50 [&>option]:bg-popover [&>option]:text-popover-foreground",
 );
 
 const LABEL = "text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase";
@@ -217,11 +217,11 @@ export function TradeForm({ league, signedIn, serverNow = null, refreshKey = "",
               aria-pressed={active}
               onClick={() => setSide(value)}
               className={cn(
-                "h-9 rounded-[10px] border text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                "h-9 rounded-md border text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-card",
                 active
                   ? value === "buy"
-                    ? "border-emerald-400/25 bg-emerald-400/[0.14] text-emerald-300 shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_4px_14px_-6px_rgb(52_211_153/0.45)]"
-                    : "border-rose-400/25 bg-rose-400/[0.14] text-rose-300 shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_4px_14px_-6px_rgb(251_113_133/0.45)]"
+                    ? "border-emerald-400/25 bg-emerald-400/[0.14] text-emerald-300 shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]"
+                    : "border-rose-400/25 bg-rose-400/[0.14] text-rose-300 shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]"
                   : "border-transparent text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
               )}
             >

@@ -6,6 +6,7 @@ import { cn } from "cn";
 import type { LeaderboardRow } from "@/lib/api-client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { buttonVariants } from "@/components/ui/button";
 import { AddressChip } from "@/components/common/AddressChip";
 import { formatPoints } from "@/components/common/format";
 import { MedalChip } from "@/components/leaderboard/Podium";
@@ -67,12 +68,12 @@ export function LeaderboardTableRow({
       className={cn(
         "group/row h-14",
         isMe &&
-          "bg-[linear-gradient(90deg,rgb(255_106_42/0.10),rgb(255_106_42/0.02)_45%,transparent)] shadow-[inset_2px_0_0_var(--ember)] hover:bg-[linear-gradient(90deg,rgb(255_106_42/0.14),rgb(255_106_42/0.03)_45%,transparent)] data-[state=selected]:bg-transparent",
+          "bg-ember/[0.06] shadow-[inset_2px_0_0_var(--ember)] hover:bg-ember/[0.09] data-[state=selected]:bg-ember/[0.06]",
         pinned && "border-0",
       )}
     >
       <TableCell className="pl-4 sm:pl-5">
-        <MedalChip rank={row.rank} className={cn(isMe && row.rank > 3 && "text-ember")} />
+        <MedalChip rank={row.rank} className={cn(isMe && row.rank > 3 && "text-ember-light")} />
       </TableCell>
       <TableCell className="max-w-[52vw] sm:max-w-none">
         <span className="flex min-w-0 items-center gap-2">
@@ -83,11 +84,12 @@ export function LeaderboardTableRow({
           ) : (
             <span className="text-muted-foreground">Anonymous</span>
           )}
-          {isMe ? <span className="shrink-0 rounded-full border border-ember/30 bg-ember/10 px-2 py-0.5 text-xs font-medium text-ember">You</span> : null}
+          {isMe ? <span className="shrink-0 rounded-full border border-ember/30 bg-ember/10 px-2 py-0.5 text-xs font-medium text-ember-light">You</span> : null}
           {row.address && !isMe ? (
             <Link
               href={`/copy/${encodeURIComponent(row.address)}`}
-              className="ml-auto inline-flex h-8 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-3 text-xs font-medium text-muted-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.06)] transition-all hover:border-white/15 hover:bg-white/[0.07] hover:text-foreground focus-visible:border-ring focus-visible:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              // The same quiet outline button as /copy's rows (DESIGN.md: controls rounded-lg, pills are for tags).
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto h-8 shrink-0 rounded-lg")}
               aria-label={`Copy the portfolio of ${row.handle ?? row.address}`}
               title="See this wallet's allocation and open prefilled Jupiter swaps"
             >
@@ -102,7 +104,7 @@ export function LeaderboardTableRow({
           "pr-4 text-right font-semibold tracking-tight tabular-nums sm:pr-5",
           row.rank <= 3 ? "text-base" : "text-sm",
           row.rank === 1 && "text-gold",
-          isMe && "text-ember",
+          isMe && "text-ember-light",
         )}
       >
         {formatPoints(row.points)}

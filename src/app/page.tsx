@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 const ENTER = "animate-in fade-in-0 slide-in-from-bottom-2 duration-500 fill-mode-both motion-reduce:animate-none";
 
 /** The landing's large buttons: two per row on phones, side by side from sm. */
-const BIG = "h-12 rounded-xl px-4 text-[0.9375rem] sm:px-6 sm:text-base";
+const BIG = "h-11 rounded-lg px-4 text-[0.9375rem] sm:px-5";
 const OUTLINE = cn(buttonVariants({ variant: "outline", size: "lg" }), BIG);
 const PRIMARY = cn(buttonVariants({ size: "lg" }), BIG);
 
@@ -39,12 +39,12 @@ export default function Home() {
         <div className={cn("flex min-w-0 flex-col", ENTER)}>
           <h1
             id="hero-title"
-            className="font-display text-[2.75rem] leading-[0.95] font-normal tracking-[-0.02em] text-balance text-foreground sm:text-7xl lg:text-[4.75rem]"
+            className="font-display text-[2.5rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance text-foreground sm:text-6xl lg:text-[4rem]"
           >
             The entertainment layer for{" "}
-            <span className="text-gradient-ember pr-[0.08em] whitespace-nowrap italic">xStocks.</span>
+            <span className="text-gradient-ember whitespace-nowrap">xStocks.</span>
           </h1>
-          <p className="mt-4 font-display text-[1.625rem] leading-tight font-normal text-balance text-foreground/65 sm:mt-5 sm:text-3xl">
+          <p className="mt-4 font-display text-xl leading-snug font-medium tracking-[-0.025em] text-balance text-muted-foreground sm:mt-5 sm:text-2xl">
             Predict. Compete. Complete on-chain quests.
           </p>
           {/*
@@ -55,13 +55,13 @@ export default function Home() {
           <SessionSwitch
             signedIn={
               <p className="mt-7 flex max-w-md items-start gap-3 text-base leading-relaxed text-pretty text-foreground/85">
-                <span className="mx-1 mt-[0.5625rem] size-2 shrink-0 rounded-full bg-emerald-400" aria-hidden />
+                <span className="mx-1 mt-[0.5625rem] size-2 shrink-0 rounded-full bg-muted-foreground" aria-hidden />
                 <span>You&apos;re signed in.</span>
               </p>
             }
             signedOut={
               <p className="mt-7 flex max-w-md items-start gap-3 text-base leading-relaxed text-pretty text-foreground/85">
-                <GiftIcon className="mt-[0.3rem] size-4 shrink-0 text-gold" aria-hidden />
+                <GiftIcon className="mt-[0.3rem] size-4 shrink-0 text-muted-foreground" aria-hidden />
                 <span>{WELCOME_OFFER_LINE}</span>
               </p>
             }
@@ -74,7 +74,7 @@ export default function Home() {
             </Link>
           </div>
           {/* One quiet status line (the US session, the one pre-IPO hook), then the compliance line. */}
-          <div className="mt-9 flex flex-col gap-2 border-t border-white/[0.06] pt-5 sm:mt-12">
+          <div className="mt-9 flex flex-col gap-2 border-t border-white/[0.08] pt-5 sm:mt-12">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <MarketSessionChip className="h-5 border-0 bg-transparent px-0 tracking-normal" />
               <span className="text-xs text-muted-foreground/40" aria-hidden>
@@ -113,8 +113,8 @@ export default function Home() {
         className="mt-20 grid scroll-mt-24 gap-6 outline-none sm:mt-28 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-16"
       >
         <div className="flex flex-col gap-3">
-          <h2 id="check-title" className="font-display text-4xl leading-none font-normal text-foreground sm:text-5xl">
-            Check <span className="italic">any wallet</span>
+          <h2 id="check-title" className="font-display text-3xl leading-tight font-semibold tracking-[-0.035em] text-foreground sm:text-4xl">
+            Check <span className="text-muted-foreground">any wallet</span>
           </h2>
           <p className="max-w-sm text-base leading-relaxed text-muted-foreground">
             See any wallet&apos;s xStocks and the quests it already meets. No sign-in, nothing stored.
@@ -129,14 +129,10 @@ export default function Home() {
         aria-labelledby="cta"
         className="relative isolate mt-24 flex flex-col items-center overflow-hidden px-2 pt-14 pb-6 text-center sm:mt-32"
       >
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-full bg-[radial-gradient(45%_55%_at_50%_30%,rgb(255_106_42/0.1),transparent)]"
-          aria-hidden
-        />
-        <div className="pointer-events-none absolute inset-x-[15%] top-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" aria-hidden />
-        <Tamga tone="gradient" size={56} className="opacity-90" />
-        <h2 id="cta" className="mt-6 font-display text-5xl leading-none font-normal text-foreground sm:text-6xl">
-          Season 0 is <span className="text-gradient-ember pr-[0.08em] italic">live</span>
+        <div className="pointer-events-none absolute inset-x-[15%] top-0 h-px bg-white/[0.08]" aria-hidden />
+        <Tamga tone="gradient" size={44} />
+        <h2 id="cta" className="mt-6 font-display text-4xl leading-tight font-semibold tracking-[-0.04em] text-foreground sm:text-5xl">
+          Season 0 is <span className="text-gradient-ember">live</span>
         </h2>
         <p className="mt-4 text-base text-muted-foreground">Three games, one leaderboard.</p>
         {/* The landing top 3: renders nothing until three real players have Season points. */}

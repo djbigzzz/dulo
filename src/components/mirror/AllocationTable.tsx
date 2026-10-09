@@ -16,11 +16,11 @@ export interface AllocationTableProps {
 }
 
 /**
- * A warm, harmonious palette derived from ember / gold / neutral (legs are sorted by weight, so
- * the largest positions get the strongest colours). Emerald / rose stay reserved for gains and
+ * Blues alternating with neutral greys (legs are sorted by weight, so the largest positions get
+ * the strongest colours). Emerald / rose stay reserved for gains and
  * losses. Legs past the palette reuse it.
  */
-const SWATCHES = ["#ff6a2a", "#d8b46a", "rgb(244 241 234 / 0.7)", "#a9a299", "#7c6f60", "#ff9452", "#b88a3e", "#5a5048"];
+const SWATCHES = ["#3b82f6", "#e4e4e7", "#93c5fd", "#a1a1aa", "#1d4ed8", "#71717a", "#60a5fa", "#3f3f46"];
 
 function swatch(i: number): string {
   return SWATCHES[i % SWATCHES.length];
@@ -58,7 +58,7 @@ export function AllocationTable({ legs, quotes, totalUsd, className }: Allocatio
         ))}
       </div>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
+      <div className="h-px bg-white/[0.08]" aria-hidden />
 
       <ul className="flex flex-col">
         {legs.map((leg, i) => {

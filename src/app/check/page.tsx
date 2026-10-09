@@ -10,7 +10,7 @@ export default function CheckIndexPage() {
         eyebrow="No sign-in needed"
         title={
           <>
-            Check <span className="italic">any wallet</span>
+            Check <span className="text-muted-foreground">any wallet</span>
           </>
         }
         description="Paste a Solana address. Dulo reads its xStocks straight from Token-2022 balances, multiplier-correct, and shows which on-chain quests that wallet already meets."

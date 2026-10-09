@@ -20,7 +20,7 @@ export function PointsChip({ points, signed = false, size = "sm", muted = false,
     <Badge
       variant="outline"
       className={cn(
-        "gap-1 tabular-nums shadow-[inset_0_1px_0_rgb(255_245_230/0.05)] [&>svg]:text-gold",
+        "gap-1 tabular-nums shadow-[inset_0_1px_0_rgb(255_255_255/0.05)] [&>svg]:text-gold",
         size === "md" && "h-6 px-2.5 text-xs [&>svg]:size-3.5!",
         size === "lg" && "h-8 px-3 text-sm [&>svg]:size-4!",
         muted && "text-muted-foreground [&>svg]:text-muted-foreground",

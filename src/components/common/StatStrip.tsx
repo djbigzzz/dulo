@@ -6,14 +6,14 @@ export interface Stat {
   value: React.ReactNode;
   /** Small muted line under the value. */
   hint?: React.ReactNode;
-  /** "ember" highlights the headline number of the page; use it at most once per strip. */
+  /** "ember" highlights the headline number of the page in the accent; use it at most once per strip. */
   tone?: "default" | "ember" | "gold" | "positive" | "negative";
 }
 
 const TONE: Record<NonNullable<Stat["tone"]>, string> = {
   default: "text-foreground",
-  ember: "text-gradient-ember",
-  gold: "text-gradient-gold",
+  ember: "text-ember-light",
+  gold: "text-foreground",
   positive: "text-emerald-400",
   negative: "text-rose-400",
 };
@@ -27,7 +27,7 @@ export function StatStrip({ stats, className }: { stats: Stat[]; className?: str
   return (
     <dl
       className={cn(
-        "grid grid-cols-2 overflow-hidden rounded-2xl border border-white/[0.07] bg-card",
+        "grid grid-cols-2 overflow-hidden rounded-2xl border border-white/[0.08] bg-card",
         stats.length >= 4 ? "md:grid-cols-4" : stats.length === 3 ? "md:grid-cols-3" : "",
         className,
       )}
@@ -36,13 +36,13 @@ export function StatStrip({ stats, className }: { stats: Stat[]; className?: str
         <div
           key={s.label}
           className={cn(
-            "-mr-px -mb-px flex min-w-0 flex-col gap-1 border-r border-b border-white/[0.06] px-4 py-3 sm:px-5 sm:py-4",
+            "-mr-px -mb-px flex min-w-0 flex-col gap-1 border-r border-b border-white/[0.08] px-4 py-3 sm:px-5 sm:py-4",
             // An odd count leaves a hole in the 2-column phone grid: let the last tile span it.
             stats.length % 2 === 1 && i === stats.length - 1 && "col-span-2 md:col-span-1",
           )}
         >
-          <dt className="truncate text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">{s.label}</dt>
-          <dd className={cn("w-fit max-w-full truncate text-2xl font-semibold tracking-tight tabular-nums sm:text-[1.9rem] sm:leading-tight", TONE[s.tone ?? "default"])}>
+          <dt className="truncate text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">{s.label}</dt>
+          <dd className={cn("w-fit max-w-full truncate text-2xl font-semibold tracking-[-0.04em] tabular-nums sm:text-[1.75rem] sm:leading-tight", TONE[s.tone ?? "default"])}>
             {s.value}
           </dd>
           {/* Phones: the half-width tile is too narrow for one line, so the hint wraps to two. From sm: one line. */}

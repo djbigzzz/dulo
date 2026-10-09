@@ -33,7 +33,7 @@ describe("focus token", () => {
   const css = read("src/app/globals.css");
 
   it("defines a solid --focus colour and points --ring at it", () => {
-    expect(css).toMatch(/--focus:\s*#f0d9a4;/);
+    expect(css).toMatch(/--focus:\s*#60a5fa;/);
     expect(css).toMatch(/\.dark\s*\{[^}]*--ring:\s*var\(--focus\);/);
   });
 
@@ -52,16 +52,20 @@ describe("focus token", () => {
       const [r, g, b] = [1, 3, 5].map((i) => lin(parseInt(hex.slice(i, i + 2), 16)));
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
-    const ratio = (lum("#f0d9a4") + 0.05) / (lum("#0a0908") + 0.05);
-    expect(ratio).toBeGreaterThan(14);
+    // Mono: blue-400 on the zinc-950 ground (7.8:1), well over the 3:1 non-text minimum.
+    const ratio = (lum("#60a5fa") + 0.05) / (lum("#09090b") + 0.05);
+    expect(ratio).toBeGreaterThan(7);
   });
 });
 
 describe("ui primitives focus ring", () => {
-  it("no primitive keeps the translucent ring-ring/50", () => {
-    const dir = path.join(ROOT, "src/components/ui");
-    for (const file of readdirSync(dir)) {
-      expect(readFileSync(path.join(dir, file), "utf8"), file).not.toMatch(/ring-ring\/50/);
+  it("no component anywhere in src keeps the translucent ring-ring/50 (about 2.7:1 under Mono)", () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : /\.(tsx?|css)$/.test(e.name) ? [path.join(dir, e.name)] : []));
+    const files = walk(path.join(ROOT, "src"));
+    expect(files.length).toBeGreaterThan(50);
+    for (const file of files) {
+      expect(readFileSync(file, "utf8"), path.relative(ROOT, file)).not.toMatch(/ring-ring\/50/);
     }
   });
 
@@ -171,6 +175,14 @@ describe("header layout", () => {
 
   it("clears the tab bar under the footer until lg", () => {
     expect(shell).toContain("pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-0");
+  });
+
+  it("keeps the header's Connect outline, so each page's own primary is its one white action, and rings the logo solid", () => {
+    expect(shell).toContain('<ConnectButton variant="outline" />');
+    expect(shell).not.toMatch(/<ConnectButton\s*\/>/);
+    const logo = shell.match(/<Link\s+href="\/"\s+className="([^"]+)"/);
+    expect(logo).not.toBeNull();
+    for (const cls of SOLID_RING) expect(logo![1].split(" ")).toContain(cls);
   });
 });
 

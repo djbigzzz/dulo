@@ -22,11 +22,11 @@ export function EmptyState({ icon, title, description, action, variant = "card",
       {...props}
     >
       {icon ? (
-        <div className="mb-2 flex size-12 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.06] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.08),0_0_24px_-8px_rgb(216_180_106/0.45)] [&>svg]:size-5">
+        <div className="mb-2 flex size-12 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.06] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] [&>svg]:size-5">
           {icon}
         </div>
       ) : null}
-      <p className="font-display text-2xl leading-tight font-normal tracking-[-0.01em] text-foreground">{title}</p>
+      <p className="font-display text-xl leading-tight font-semibold tracking-[-0.03em] text-foreground">{title}</p>
       {description ? <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
       {action ? <div className="mt-3">{action}</div> : null}
     </div>

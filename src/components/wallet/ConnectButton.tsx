@@ -37,7 +37,7 @@ const PAIR_MIN: Record<NonNullable<ConnectButtonProps["size"]>, { h: string; w: 
 };
 
 const menuItemClass =
-  "flex h-10 cursor-default items-center gap-2 rounded-lg px-3 text-sm outline-none select-none data-highlighted:bg-muted data-highlighted:text-foreground data-disabled:opacity-50 sm:h-8 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground";
+  "flex h-10 cursor-default items-center gap-2 rounded-lg px-3 text-sm outline-none select-none data-highlighted:bg-white/[0.08] data-highlighted:text-foreground focus-visible:ring-1 focus-visible:ring-[var(--focus)] focus-visible:ring-inset data-disabled:opacity-50 sm:h-8 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground";
 
 /**
  * Wallet entry point for the header.
@@ -55,8 +55,9 @@ export interface ConnectButtonProps {
   className?: string;
   size?: "sm" | "default" | "lg";
   /**
-   * "default" is the ember button. Pass "outline" where another control is the view's one ember
-   * action (the /prestocks sign-in banner sits beside the trade form's own Connect).
+   * "default" is the primary (white) button. Pass "outline" where another control is the view's one primary
+   * action: the header (every page owns its own primary), and the /prestocks and /competition sign-in
+   * banners, which sit beside the trade form's own Connect.
    */
   variant?: "default" | "outline";
 }
@@ -122,7 +123,7 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
           {signingIn ? (
             <Loader2Icon className="animate-spin" data-icon="inline-start" />
           ) : (
-            <span className="size-2 rounded-full bg-amber-400 shadow-[0_0_8px_theme(colors.amber.400)]" aria-hidden />
+            <span className="size-2 rounded-full bg-amber-300" aria-hidden />
           )}
           {truncateAddress(address ?? "")}
           <ChevronDownIcon data-icon="inline-end" className="text-muted-foreground" />
@@ -227,7 +228,7 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
       <Menu.Trigger
         render={<Button size={size} variant="outline" className={cn("font-mono", className)} aria-label={triggerLabel} />}
       >
-        <span className="size-2 rounded-full bg-emerald-400 shadow-[0_0_8px_theme(colors.emerald.400)]" aria-hidden />
+        <span className="size-2 rounded-full bg-emerald-400" aria-hidden />
         {truncateAddress(address ?? "")}
         {/* xl and up only: below that the trigger keeps its measured width, and the menu shows the balance. */}
         {typeof balance === "number" ? (

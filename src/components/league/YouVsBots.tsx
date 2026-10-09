@@ -122,7 +122,7 @@ export function YouVsBots({ me, rows, className }: YouVsBotsProps) {
       {/* Decorative: every number in it is already in the sentence above. */}
       <span className="block h-1.5 w-full overflow-hidden rounded-full border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]" aria-hidden>
         <span
-          className="block h-full rounded-full bg-gradient-to-r from-gold/60 to-gold transition-[width] duration-500 motion-reduce:transition-none"
+          className="block h-full rounded-full bg-foreground/80 transition-[width] duration-500 motion-reduce:transition-none"
           style={{ width: `${(share * 100).toFixed(1)}%` }}
         />
       </span>

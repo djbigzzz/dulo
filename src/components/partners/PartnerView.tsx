@@ -83,32 +83,60 @@ export function isPreIpoPartner(slug: string, plays: ReadonlyArray<{ key: string
 export function CorporateActionsSection({ actions, className }: { actions: ReadonlyArray<CorporateActionView> | null | undefined; className?: string }) {
   const rows = Array.isArray(actions) ? actions.filter((a) => a && typeof a.assetId === "string" && typeof a.symbol === "string") : [];
   if (rows.length === 0) return null;
+  // A short list (PreStocks) shows whole, in the API's order. A long one (xStocks records a small
+  // adjustment per mint) shows its largest changes first and folds the rest, so the quests stay in reach.
+  const capped = rows.length > CORPORATE_ACTIONS_SHOWN;
+  const shown = capped ? [...rows].sort((x, y) => changeSize(y) - changeSize(x)).slice(0, CORPORATE_ACTIONS_SHOWN) : rows;
+  const rest = capped ? rows.filter((r) => !shown.includes(r)) : [];
   return (
     <section aria-labelledby="partner-corporate-actions" data-slot="corporate-actions" className={cn("flex flex-col gap-4 pt-2", className)}>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-medium tracking-[0.14em] text-gold uppercase">Read from the mint</p>
-          <h2 id="partner-corporate-actions" className="font-display text-3xl leading-none font-normal sm:text-4xl">
+          <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">Read from the mint</p>
+          <h2 id="partner-corporate-actions" className="font-display text-2xl leading-tight font-semibold tracking-[-0.035em] sm:text-3xl">
             Corporate actions
           </h2>
         </div>
-        <div className="h-px bg-gradient-to-r from-white/[0.12] via-white/[0.05] to-transparent" aria-hidden />
+        <div className="h-px bg-white/[0.08]" aria-hidden />
       </div>
-      <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
-        {rows.map((a) => (
-          <li key={a.assetId} data-slot="corporate-action" data-kind={a.kind} className="flex flex-col gap-2 px-4 py-3 sm:px-5 sm:py-4">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="font-mono text-sm font-semibold">{a.symbol}</span>
-              <IssuerPill source={a.source} />
-              <span className="text-sm text-foreground">{corporateActionLabel(a)}</span>
-              <span className="text-sm text-muted-foreground tabular-nums">{corporateActionWhen(a)}</span>
-              <span className="text-sm text-muted-foreground tabular-nums sm:ml-auto">{multiplierChangeLabel(a)}</span>
-            </div>
-            <p className="text-xs leading-relaxed text-pretty text-muted-foreground">{CORPORATE_ACTION_EXPLANATION}</p>
-          </li>
-        ))}
-      </ul>
+      <CorporateActionList rows={shown} />
+      {rest.length > 0 ? (
+        <details data-slot="corporate-actions-more" className="group [&_summary::-webkit-details-marker]:hidden">
+          <summary className={cn(buttonVariants({ variant: "outline" }), "h-10 w-fit cursor-pointer list-none")}>
+            <span className="group-open:hidden">Show the other {rest.length.toLocaleString("en-US")} actions</span>
+            <span className="hidden group-open:inline">Hide the other {rest.length.toLocaleString("en-US")} actions</span>
+          </summary>
+          <CorporateActionList rows={rest} className="mt-4" />
+        </details>
+      ) : null}
     </section>
+  );
+}
+
+/** Rows shown before the rest fold away (the largest changes first). */
+export const CORPORATE_ACTIONS_SHOWN = 6;
+
+/** How far an action moves the multiplier, either way: a 5-for-1 split is larger than a 0.3% rebase. */
+function changeSize(a: CorporateActionView): number {
+  return Number.isFinite(a.ratio) && a.ratio > 0 ? Math.abs(Math.log(a.ratio)) : 0;
+}
+
+function CorporateActionList({ rows, className }: { rows: ReadonlyArray<CorporateActionView>; className?: string }) {
+  return (
+    <ul className={cn("divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card", className)}>
+      {rows.map((a) => (
+        <li key={a.assetId} data-slot="corporate-action" data-kind={a.kind} className="flex flex-col gap-2 px-4 py-3 sm:px-5 sm:py-4">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-mono text-sm font-semibold">{a.symbol}</span>
+            <IssuerPill source={a.source} />
+            <span className="text-sm text-foreground">{corporateActionLabel(a)}</span>
+            <span className="text-sm text-muted-foreground tabular-nums">{corporateActionWhen(a)}</span>
+            <span className="text-sm text-muted-foreground tabular-nums sm:ml-auto">{multiplierChangeLabel(a)}</span>
+          </div>
+          <p className="text-xs leading-relaxed text-pretty text-muted-foreground">{CORPORATE_ACTION_EXPLANATION}</p>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -152,7 +180,7 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
       <section aria-labelledby="partner-plays" className="flex flex-col gap-5 pt-2">
         <div className="flex flex-col gap-4">
           <div className="flex items-end justify-between gap-4">
-            <h2 id="partner-plays" className="font-display text-3xl leading-none font-normal sm:text-4xl">
+            <h2 id="partner-plays" className="font-display text-2xl leading-tight font-semibold tracking-[-0.035em] sm:text-3xl">
               Quests
             </h2>
             <Link href="/quests" className={cn(buttonVariants({ variant: "ghost" }), "group/link h-10 shrink-0 sm:h-8")}>
@@ -160,7 +188,7 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
               <ArrowRight data-icon="inline-end" className="transition-transform group-hover/link:translate-x-0.5" aria-hidden />
             </Link>
           </div>
-          <div className="h-px bg-gradient-to-r from-white/[0.12] via-white/[0.05] to-transparent" aria-hidden />
+          <div className="h-px bg-white/[0.08]" aria-hidden />
         </div>
 
         {plays.length === 0 ? (

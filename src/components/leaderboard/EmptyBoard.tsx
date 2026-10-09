@@ -18,7 +18,7 @@ const WAYS = [
 ] as const;
 
 const GLASS = "rounded-2xl border border-white/[0.07] bg-card";
-const EYEBROW = "text-xs font-medium tracking-[0.14em] text-gold uppercase";
+const EYEBROW = "text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase";
 
 function formatPnl(pct: number): string {
   const sign = pct > 0 ? "+" : pct < 0 ? "−" : "";
@@ -54,8 +54,8 @@ export function WaysToScore({ className }: { className?: string }) {
     >
       <div className="flex max-w-xl flex-col gap-3">
         <p className={EYEBROW}>Ways to score</p>
-        <h2 id="be-first" className="font-display text-4xl leading-[1.05] font-normal">
-          Be first on the <span className="text-gradient-ember italic">board</span>
+        <h2 id="be-first" className="font-display text-3xl leading-[1.05] font-semibold tracking-[-0.04em]">
+          Be first on the <span className="text-gradient-ember">board</span>
         </h2>
         <p className="text-base leading-relaxed text-muted-foreground">Nobody has scored this Season yet. Any of these puts you at #1.</p>
       </div>
@@ -64,17 +64,17 @@ export function WaysToScore({ className }: { className?: string }) {
           <li key={href} className="min-w-0">
             <Link
               href={href}
-              className="group flex h-full items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgb(255_245_230/0.05)] backdrop-blur-sm transition-all duration-300 outline-none hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.05] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:flex-col sm:items-start sm:gap-5 sm:p-5"
+              className="group flex h-full items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgb(255_255_255/0.05)] backdrop-blur-sm transition-colors duration-200 outline-none hover:border-white/[0.14] hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none sm:flex-col sm:items-start sm:gap-5 sm:p-5"
             >
               <span className="flex shrink-0 items-center justify-between sm:w-full">
                 <span
-                  className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]"
                   aria-hidden
                 >
                   <Icon className="size-5" />
                 </span>
                 <ArrowUpRight
-                  className="hidden size-4 text-muted-foreground transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground sm:block"
+                  className="hidden size-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground sm:block"
                   aria-hidden
                 />
               </span>
@@ -123,7 +123,7 @@ export function LeaguePreview({ data, loading, className }: { data: LeagueRespon
               <li key={row.userId} className={cn(i > 0 && "border-t border-white/[0.05]")}>
                 <Link
                   href="/competition"
-                  className="flex min-h-14 items-center gap-3 rounded-xl px-2 py-2 transition-colors outline-none hover:bg-white/[0.03] focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="flex min-h-14 items-center gap-3 rounded-xl px-2 py-2 transition-colors outline-none hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
                 >
                   <MedalChip rank={row.rank} />
                   <span className="flex min-w-0 flex-1 items-center gap-2">
@@ -139,7 +139,7 @@ export function LeaguePreview({ data, loading, className }: { data: LeagueRespon
             ))}
           </ol>
         )}
-        <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
+        <div className="h-px bg-white/[0.08]" aria-hidden />
         <p className="text-xs leading-relaxed text-muted-foreground">
           House bots trade for company and never earn points. Real players in the top 10 with {MIN_TRADES_FOR_WEEKLY_POINTS}+ trades on Friday do.
         </p>

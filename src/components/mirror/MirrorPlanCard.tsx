@@ -35,14 +35,14 @@ const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_
 function Step({ n, title, description, children, done = false, last = false }: { n: number; title: string; description?: React.ReactNode; children: React.ReactNode; done?: boolean; last?: boolean }) {
   return (
     <li className={cn("relative flex gap-3 sm:gap-4", !last && "pb-7")}>
-      {/* Thin gold-to-nothing connector between step numerals. */}
-      {last ? null : <span className="absolute top-10 bottom-2 left-[15.5px] w-px bg-gradient-to-b from-gold/60 via-gold/25 to-white/[0.05]" aria-hidden />}
+      {/* Thin neutral connector between step numerals. */}
+      {last ? null : <span className="absolute top-10 bottom-2 left-[15.5px] w-px bg-white/[0.12]" aria-hidden />}
       <span
         className={cn(
           "relative flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold tabular-nums transition-colors duration-300",
           done
             ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
-            : "border-gold/30 bg-[linear-gradient(180deg,rgb(240_217_164/0.16),rgb(216_180_106/0.04))] text-[#f0d9a4] shadow-[inset_0_1px_0_rgb(255_240_200/0.2)]",
+            : "border-white/25 bg-white/[0.06] text-foreground",
         )}
         aria-hidden
       >
@@ -113,7 +113,7 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">Dulo never touches your funds. Every swap happens in Jupiter, signed by you.</p>
       </div>
-      <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
+      <div className="my-5 h-px bg-white/[0.08]" aria-hidden />
       <div>
         <ol className="flex flex-col">
           <Step
@@ -139,7 +139,7 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
                     className={cn(
                       "h-9 min-w-12 rounded-[10px] px-2.5 font-medium tabular-nums",
                       budget === amount
-                        ? "border-white/15 bg-white/[0.09] text-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.1)]"
+                        ? "border-white/15 bg-white/[0.09] text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.1)]"
                         : "border-transparent bg-transparent text-muted-foreground shadow-none hover:text-foreground",
                     )}
                     aria-pressed={budget === amount}

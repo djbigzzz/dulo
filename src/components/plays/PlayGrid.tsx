@@ -23,8 +23,8 @@ export interface PlayGridProps {
 }
 
 const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";
-const TILE = "flex shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]";
-const DIVIDER = "h-px bg-gradient-to-r from-white/[0.12] via-white/[0.05] to-transparent";
+const TILE = "flex shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]";
+const DIVIDER = "h-px bg-white/[0.08]";
 
 /** Group headings on the board. */
 export const IN_PLATFORM_HEADING = "In-platform quests: points and virtual cash";

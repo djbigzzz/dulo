@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import WalletProvider from "@/components/wallet/WalletProvider";
 import { AppShell } from "@/components/layout/AppShell";
@@ -7,6 +7,7 @@ import { RegisterSW } from "@/components/pwa/RegisterSW";
 import { Toaster } from "@/components/ui/sonner";
 import { APP_NAME, APP_URL, POSITIONING, SEASON_NAME } from "@/lib/config";
 
+/** One variable family for everything: body text and the heavy, tight display headlines (`font-display`). */
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -17,15 +18,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/** Display serif for page titles and landing headlines only (`font-display`); UI text stays Geist. */
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-});
-
-const THEME_COLOR = "#0a0908";
+const THEME_COLOR = "#09090b";
 const TITLE = `${APP_NAME} — ${SEASON_NAME}`;
 
 function safeUrl(u: string): URL | undefined {
@@ -95,7 +88,7 @@ export default function RootLayout({
   // The next/font variable classes go on <html>, not <body>: globals.css reads
   // var(--font-geist-sans) inside :root, which would be undefined if set on <body>.
   return (
-    <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body className="antialiased">
         <WalletProvider>
           <AppShell>{children}</AppShell>

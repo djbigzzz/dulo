@@ -36,7 +36,7 @@ export function TargetHeader({ target, now, actions }: TargetHeaderProps) {
           </span>
         ) : (
           <span className="inline-flex max-w-full items-center gap-2">
-            <AddressChip address={target.address} chainId={target.chainId} chars={6} explorer className="h-9 text-base" />
+            <AddressChip address={target.address} chainId={target.chainId} chars={6} explorer className="h-9 text-base font-medium tracking-normal" />
             {target.isBot ? <BotMarker className="[&>svg]:size-5" /> : null}
           </span>
         )
@@ -46,7 +46,7 @@ export function TargetHeader({ target, now, actions }: TargetHeaderProps) {
           {target.handle ? <AddressChip address={target.address} chainId={target.chainId} chars={5} explorer /> : null}
           <span
             className={cn(
-              "inline-flex h-6 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 text-xs font-medium text-foreground/90 shadow-[inset_0_1px_0_rgb(255_245_230/0.06)] [&>svg]:size-3.5 [&>svg]:text-muted-foreground",
+              "inline-flex h-6 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 text-xs font-medium text-foreground/90 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] [&>svg]:size-3.5 [&>svg]:text-muted-foreground",
             )}
             title={chip.title}
           >

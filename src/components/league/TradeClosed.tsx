@@ -29,7 +29,7 @@ export function TradeClosed({ league, serverNow, lastSettled, chainId, className
     <div className={cn("flex flex-col gap-5", className)}>
       <div className="flex items-start gap-3">
         <span
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]"
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]"
           aria-hidden
         >
           <Lock className="size-4" />
@@ -52,7 +52,7 @@ export function TradeClosed({ league, serverNow, lastSettled, chainId, className
 
       {podium.length > 0 && lastSettled ? (
         <div className="flex flex-col gap-2.5">
-          <p className="text-xs font-medium tracking-[0.14em] text-gold uppercase">Week of {formatUtcDayMonth(lastSettled.weekStart)} podium</p>
+          <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">Week of {formatUtcDayMonth(lastSettled.weekStart)} podium</p>
           <ol className="flex flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-black/20 shadow-[inset_0_1px_2px_rgb(0_0_0/0.35)]">
             {podium.map((row, i) => (
               <li
@@ -60,7 +60,7 @@ export function TradeClosed({ league, serverNow, lastSettled, chainId, className
                 className={cn(
                   "flex h-12 items-center gap-2.5 px-3",
                   i > 0 && "border-t border-white/[0.05]",
-                  row.rank === 1 && "bg-gradient-to-r from-gold/[0.07] to-transparent",
+                  row.rank === 1 && "bg-white/[0.03]",
                 )}
               >
                 <RankBadge rank={row.rank} />

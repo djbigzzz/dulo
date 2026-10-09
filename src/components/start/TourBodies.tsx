@@ -9,7 +9,7 @@ import { TOUR_COPY, TOUR_HREFS } from "@/components/start/tour";
 
 /** The quiet text link every step ends with. */
 export const TOUR_LINK =
-  "inline-flex min-h-10 items-center text-sm text-muted-foreground underline decoration-white/20 underline-offset-4 transition-colors hover:text-foreground hover:decoration-ember sm:min-h-0";
+  "inline-flex min-h-10 items-center text-sm text-muted-foreground underline decoration-white/20 underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground/60 sm:min-h-0";
 
 /** The step's buttons and links: stacked full width on a phone, one row from sm. */
 const ACTIONS = "flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4";
@@ -112,7 +112,7 @@ export function TourFinish({ rankShareUrl }: { rankShareUrl: string | null }) {
     <section
       data-slot="tour-finish"
       aria-labelledby="tour-finish-title"
-      className="flex scroll-mt-20 flex-col items-center gap-4 rounded-2xl border border-ember/30 bg-card p-5 text-center"
+      className="flex scroll-mt-20 flex-col items-center gap-4 rounded-2xl border border-white/[0.08] bg-card p-5 text-center"
     >
       <div className="flex flex-col gap-2">
         {/* tabIndex -1: the page moves focus here when the finish card opens on its own. */}

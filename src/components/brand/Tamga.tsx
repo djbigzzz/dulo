@@ -26,19 +26,21 @@ export interface TamgaProps extends Omit<React.SVGProps<SVGSVGElement>, "width" 
   size?: number | string;
   /** Accessible name. When omitted the mark is decorative and hidden from AT. */
   title?: string;
-  /** "gradient" strokes the mark from heritage gold to ember; "current" uses the text colour. */
+  /** "gradient" (name kept) strokes the mark in the solid brand accent; "current" uses the text colour. */
   tone?: "current" | "gradient";
 }
 
+/** The accent the "gradient" tone strokes with (the --ember token, blue-500), so it also works without CSS. */
+const TAMGA_ACCENT = "#3b82f6";
+
 export function Tamga({ size = 24, className, title, tone = "current", ...props }: TamgaProps) {
-  const gradientId = `tamga-${React.useId().replace(/:/g, "")}`;
   return (
     <svg
       viewBox="0 0 64 64"
       width={size}
       height={size}
       fill="none"
-      stroke={tone === "gradient" ? `url(#${gradientId})` : "currentColor"}
+      stroke={tone === "gradient" ? TAMGA_ACCENT : "currentColor"}
       strokeWidth={TAMGA_STROKE}
       strokeLinecap="square"
       strokeLinejoin="miter"
@@ -49,15 +51,6 @@ export function Tamga({ size = 24, className, title, tone = "current", ...props 
       {...props}
     >
       {title ? <title>{title}</title> : null}
-      {tone === "gradient" ? (
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#f0d9a4" />
-            <stop offset="45%" stopColor="#d8b46a" />
-            <stop offset="100%" stopColor="#ff6a2a" />
-          </linearGradient>
-        </defs>
-      ) : null}
       {TAMGA_PATHS.map((d) => (
         <path key={d} d={d} />
       ))}
@@ -75,11 +68,11 @@ export interface DuloProps {
   textClassName?: string;
 }
 
-/** Wordmark: the ember tamga as the mark, followed by "Dulo". */
+/** Wordmark: the accent tamga as the mark, followed by "Dulo". */
 export function Dulo({ size = 28, markOnly = false, className, markClassName, textClassName }: DuloProps) {
   return (
     <span className={cn("inline-flex items-center gap-2 leading-none", className)}>
-      <Tamga size={size} title="Dulo" tone="gradient" className={cn("text-ember", markClassName)} />
+      <Tamga size={size} title="Dulo" tone="gradient" className={cn("text-ember-light", markClassName)} />
       {markOnly ? null : (
         <span
           className={cn(

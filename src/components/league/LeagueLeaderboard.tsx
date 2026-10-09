@@ -25,11 +25,11 @@ const EQUITY_COL = "hidden sm:table-cell";
 /** Glass panel shared by every League table. */
 export const LEAGUE_PANEL = "overflow-hidden rounded-2xl border border-white/[0.07] bg-card";
 
-/** Metallic gold / silver / bronze chips for the podium (DESIGN.md), a plain muted number below it. */
+/** Rank chips for the podium as three steps of grey (white, zinc-300, zinc-400), a plain muted number below it. */
 const MEDAL: Record<number, string> = {
-  1: "border-[#e6c27a]/55 bg-[linear-gradient(160deg,rgb(246_227_180/0.42)_0%,rgb(216_180_106/0.22)_45%,rgb(150_110_45/0.28)_100%)] text-[#fbe9bf] shadow-[inset_0_1px_0_rgb(255_244_214/0.45),0_0_16px_-4px_rgb(216_180_106/0.6)]",
-  2: "border-zinc-300/35 bg-[linear-gradient(160deg,rgb(228_228_231/0.3)_0%,rgb(161_161_170/0.14)_50%,rgb(113_113_122/0.2)_100%)] text-zinc-200 shadow-[inset_0_1px_0_rgb(255_255_255/0.3)]",
-  3: "border-[#d49a6a]/45 bg-[linear-gradient(160deg,rgb(232_180_136/0.32)_0%,rgb(212_154_106/0.16)_50%,rgb(140_90_50/0.24)_100%)] text-[#e9b48a] shadow-[inset_0_1px_0_rgb(255_225_200/0.3)]",
+  1: "border-white/40 bg-white/[0.12] text-foreground",
+  2: "border-zinc-300/25 bg-zinc-300/[0.08] text-zinc-300",
+  3: "border-zinc-400/20 bg-zinc-400/[0.06] text-zinc-400",
 };
 
 export function RankBadge({ rank, className }: { rank: number; className?: string }) {
@@ -113,7 +113,7 @@ export function LeagueLeaderboard({ rows, chainId, showDelta = true, className }
               aria-current={row.isMe ? "true" : undefined}
               className={cn(
                 "h-14 hover:bg-white/[0.035]",
-                row.rank === 1 && "bg-gradient-to-r from-gold/[0.07] to-transparent",
+                row.rank === 1 && "bg-white/[0.03]",
                 row.isMe && "bg-white/[0.03]",
               )}
             >
@@ -121,7 +121,7 @@ export function LeagueLeaderboard({ rows, chainId, showDelta = true, className }
                 className={cn(
                   "relative pl-4 sm:pl-5",
                   row.isMe &&
-                    "before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-full before:bg-gradient-to-b before:from-[#ff9452] before:to-[#e2471a] before:shadow-[0_0_12px_rgb(255_106_42/0.6)]",
+                    "before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-full before:bg-ember",
                 )}
               >
                 <span className="inline-flex items-center gap-2">
@@ -140,7 +140,7 @@ export function LeagueLeaderboard({ rows, chainId, showDelta = true, className }
                   )}
                   {row.isBot ? <BotMarker /> : null}
                   {row.isMe ? (
-                    <span className="inline-flex h-5 shrink-0 items-center rounded-full border border-ember/25 bg-ember/[0.08] px-1.5 text-xs font-semibold text-[#ff9452]">You</span>
+                    <span className="inline-flex h-5 shrink-0 items-center rounded-full border border-ember/25 bg-ember/[0.08] px-1.5 text-xs font-semibold text-ember-light">You</span>
                   ) : null}
                 </span>
               </TableCell>

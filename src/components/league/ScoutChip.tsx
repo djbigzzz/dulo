@@ -19,10 +19,10 @@ export function ScoutChip({ progress, className }: { progress: ScoutProgress | n
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium tabular-nums transition-colors duration-300 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium tabular-nums transition-colors duration-300 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         complete
           ? "border-emerald-400/25 bg-emerald-400/[0.08] text-emerald-300"
-          : "border-white/[0.08] bg-white/[0.03] text-muted-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.06)] hover:border-white/15 hover:text-foreground",
+          : "border-white/[0.08] bg-white/[0.03] text-muted-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] hover:border-white/15 hover:text-foreground",
         className,
       )}
     >

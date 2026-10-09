@@ -132,8 +132,10 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     // Phones read the pitch, then the status line, then the live card.
     expect(hero.indexOf("<MarketSessionChip")).toBeGreaterThan(hero.indexOf("Check a wallet"));
     expect(hero.indexOf("<MarketSessionChip")).toBeLessThan(hero.indexOf("<LivePredictions"));
-    // The H1 steps down below sm so Connect sits on the first 375 px screen.
-    expect(landing).toMatch(/id="hero-title"\s+className="font-display text-\[2\.75rem\] /);
+    // The H1 steps down below sm so Connect sits on the first 375 px screen (Mono: 40px, then 60px from sm),
+    // set heavy and tight in Geist, never the old serif italic.
+    expect(landing).toMatch(/id="hero-title"\s+className="font-display text-\[2\.5rem\] [^"]*\bfont-semibold\b[^"]*\bsm:text-6xl\b/);
+    expect(landing.slice(landing.indexOf('id="hero-title"'), landing.indexOf("</h1>"))).not.toContain("italic");
   });
 
   it("signed in, the hero's first button is the next step, never the wallet chip again", () => {

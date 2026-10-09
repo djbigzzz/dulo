@@ -11,8 +11,12 @@ export interface SignInBannerProps {
   title: string;
   /** Optional second line; keep it under ~80 characters. */
   hint?: string;
-  /** The Connect button's look: "outline" where the page has another ember action (see ConnectButton). */
-  connectVariant?: "default" | "outline";
+  /**
+   * The Connect button's look: "outline" where the page has another primary action (see ConnectButton).
+   * "lg-outline": white under lg, outline from lg, where a side panel that only shows from lg carries
+   * the page's own white Connect (/competition's trade panel; on a phone the banner is the action).
+   */
+  connectVariant?: "default" | "outline" | "lg-outline";
   className?: string;
 }
 
@@ -31,12 +35,12 @@ export function SignInBanner({ title, hint, connectVariant = "default", classNam
     <div
       className={cn(
         // One row on every width so the page content starts higher on a phone.
-        "border-gradient flex items-center justify-between gap-3 rounded-2xl bg-[linear-gradient(100deg,rgb(255_106_42/0.09),rgb(216_180_106/0.04)_55%,rgb(255_245_230/0.02))] px-3 py-2.5 sm:px-4 sm:py-3",
+        "border-gradient flex items-center justify-between gap-3 rounded-2xl bg-card px-3 py-2.5 sm:px-4 sm:py-3",
         className,
       )}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="hidden size-9 shrink-0 items-center justify-center rounded-xl border border-ember/25 bg-ember/10 text-ember shadow-[inset_0_1px_0_rgb(255_245_230/0.08)] sm:flex" aria-hidden>
+        <span className="hidden size-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.1] bg-white/[0.04] text-foreground sm:flex" aria-hidden>
           <WalletIcon className="size-4" />
         </span>
         <div className="min-w-0">
@@ -44,7 +48,14 @@ export function SignInBanner({ title, hint, connectVariant = "default", classNam
           {hint ? <p className="hidden text-sm text-muted-foreground sm:block">{hint}</p> : null}
         </div>
       </div>
-      <ConnectButton size="lg" variant={connectVariant} className="h-10 shrink-0" />
+      {connectVariant === "lg-outline" ? (
+        <>
+          <ConnectButton size="lg" className="h-10 shrink-0 lg:hidden" />
+          <ConnectButton size="lg" variant="outline" className="hidden h-10 shrink-0 lg:inline-flex" />
+        </>
+      ) : (
+        <ConnectButton size="lg" variant={connectVariant} className="h-10 shrink-0" />
+      )}
     </div>
   );
 }

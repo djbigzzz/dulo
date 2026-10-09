@@ -165,12 +165,12 @@ export default function CallsPage() {
   const stats: Stat[] | null = q.data
     ? [
         { label: "Open predictions", value: openCount },
-        { label: "Points in the pools", value: formatPoints(inPlay), tone: "ember", hint: "Includes house-bot seed points" },
+        { label: "Pooled points", value: formatPoints(inPlay), tone: "ember", hint: "Includes house-bot seed points" },
         { label: "Locks in", value: lockMs === null ? "—" : formatCountdown(lockMs), hint: lockMs === null ? (allDone ? "All settled" : "All locked") : "Soonest prediction" },
         ...(me
           ? [
               {
-                label: "Your points balance",
+                label: "Points balance",
                 value: formatPoints(me.spendablePoints),
                 hint: starterPointsHint(starterPoints, me.spendablePoints),
               } satisfies Stat,
@@ -239,7 +239,7 @@ export default function CallsPage() {
             ))}
           </ul>
 
-          <p className="-mt-2 flex items-center justify-center gap-3 text-center text-sm text-muted-foreground"><span className="hidden h-px w-10 bg-gradient-to-r from-transparent to-white/15 sm:block" aria-hidden />{footer}<span className="hidden h-px w-10 bg-gradient-to-l from-transparent to-white/15 sm:block" aria-hidden /></p>
+          <p className="-mt-2 flex items-center justify-center gap-3 text-center text-sm text-muted-foreground"><span className="hidden h-px w-10 bg-white/15 sm:block" aria-hidden />{footer}<span className="hidden h-px w-10 bg-white/15 sm:block" aria-hidden /></p>
         </>
       )}
 

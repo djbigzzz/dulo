@@ -11,14 +11,14 @@ import { formatSignedPct, formatSignedUsd, formatUsdWhole, pnlClass } from "@/co
 export function RankDelta({ delta, className }: { delta: number | null; className?: string }) {
   if (delta === null) {
     return (
-      <span className={cn("inline-flex items-center text-xs text-muted-foreground/50", className)} title="No previous rank yet" aria-label="No previous rank">
+      <span className={cn("inline-flex items-center text-xs text-muted-foreground", className)} title="No previous rank yet" aria-label="No previous rank">
         –
       </span>
     );
   }
   if (delta === 0) {
     return (
-      <span className={cn("inline-flex items-center text-muted-foreground/40", className)} title="Unchanged" aria-label="Unchanged">
+      <span className={cn("inline-flex items-center text-muted-foreground/70", className)} title="Unchanged" aria-label="Unchanged">
         <Minus className="size-3" aria-hidden />
       </span>
     );
@@ -71,7 +71,7 @@ export function AccountCard({ me, startingCashUsd, className }: AccountCardProps
         </h2>
         <span className="text-xs text-muted-foreground">Virtual cash</span>
       </div>
-      <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
+      <div className="h-px bg-white/[0.08]" aria-hidden />
       <div className="grid grid-cols-2 sm:grid-cols-4">
         <Stat label="Cash" value={formatUsd(cash)} />
         <Stat label="P&L" value={formatSignedUsd(pnlUsd)} sub={`vs ${formatUsdWhole(startingCashUsd)} start`} className={pnlClass(pnlUsd)} />

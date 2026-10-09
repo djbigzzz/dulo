@@ -63,14 +63,14 @@ export function PlayFilterBar({ value, onChange, counts, className }: PlayFilter
       aria-label="Filter quests"
       onKeyDown={onKeyDown}
       className={cn(
-        "relative inline-flex w-full rounded-xl border border-white/[0.07] bg-white/[0.025] p-1 shadow-[inset_0_1px_0_rgb(255_245_230/0.04),0_1px_2px_rgb(0_0_0/0.3)] backdrop-blur-sm sm:w-fit",
+        "relative inline-flex w-full rounded-xl border border-white/[0.07] bg-white/[0.025] p-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.04),0_1px_2px_rgb(0_0_0/0.3)] backdrop-blur-sm sm:w-fit",
         className,
       )}
     >
       {pill ? (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-y-1 rounded-lg bg-white/[0.08] shadow-[inset_0_1px_0_rgb(255_245_230/0.12),0_1px_3px_rgb(0_0_0/0.45)] ring-1 ring-white/[0.06] transition-[left,width] duration-300 ease-out motion-reduce:transition-none"
+          className="pointer-events-none absolute inset-y-1 rounded-lg bg-white/[0.08] shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_1px_3px_rgb(0_0_0/0.45)] ring-1 ring-white/[0.06] transition-[left,width] duration-300 ease-out motion-reduce:transition-none"
           style={{ left: pill.left, width: pill.width }}
         />
       ) : null}
@@ -89,7 +89,7 @@ export function PlayFilterBar({ value, onChange, counts, className }: PlayFilter
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(f.value)}
             className={cn(
-              "relative z-10 flex h-9 min-w-0 flex-auto items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-medium whitespace-nowrap transition-colors duration-200 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:flex-none sm:gap-1.5 sm:px-3.5",
+              "relative z-10 flex h-9 min-w-0 flex-auto items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-medium whitespace-nowrap transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-inset sm:flex-none sm:gap-1.5 sm:px-3.5",
               selected ? "text-foreground" : "text-muted-foreground hover:text-foreground",
               selected && !pill && "bg-white/[0.08]",
             )}

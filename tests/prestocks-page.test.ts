@@ -404,13 +404,20 @@ describe("/prestocks page", () => {
     expect(h).toContain("US market");
   });
 
-  it("keeps one ember action on the page (the trade form's submit) and every other control outline or ghost", () => {
+  it("keeps one primary (solid white) action on the page (the trade form's submit) and every other control outline or ghost", () => {
     mocks.session.session = { userId: "u1" };
     loaded({ league: { data: leagueResponse({ signedIn: true }), error: null, loading: false }, plays: { data: playsResponse(undefined, true), error: null, loading: false } });
     const h = html(createElement(PreStocksView));
-    const ember = h.match(/bg-\[linear-gradient\(180deg,#ff8a4c/g) ?? [];
-    expect(ember).toHaveLength(1);
-    const button = h.slice(h.lastIndexOf("<button", h.indexOf("bg-[linear-gradient(180deg,#ff8a4c")), h.indexOf("</button>", h.indexOf("bg-[linear-gradient(180deg,#ff8a4c")));
+    // The default button variant (src/components/ui/button.tsx) is the only solid white fill: count the
+    // elements whose class list carries both bg-primary and text-primary-foreground as whole tokens.
+    const primary = [...h.matchAll(/<(\w+)[^>]*\bclass="([^"]*)"/g)].filter(([, , cls]) => {
+      const tokens = cls.split(/\s+/);
+      return tokens.includes("bg-primary") && tokens.includes("text-primary-foreground");
+    });
+    expect(primary).toHaveLength(1);
+    const at = primary[0].index!;
+    const button = h.slice(at, h.indexOf("</button>", at));
+    expect(button.startsWith("<button")).toBe(true);
     expect(button).toContain('type="submit"');
     expect(button).toContain("Paper buy");
     // Signed out, the banner's Connect is outline (the form's own Connect is the action); the source says so.
@@ -434,9 +441,9 @@ describe("/prestocks page", () => {
     const form = h.match(/<section class="([^"]+)" aria-labelledby="pre-ipo-trade-form"/);
     expect(form).not.toBeNull();
     expect(form![1].split(" ")).toEqual(expect.arrayContaining(["order-first", "lg:order-none", "lg:col-start-2", "border-gradient", "bg-card"]));
-    // Section eyebrows in gold.
+    // Section eyebrows, in the muted grey (Mono keeps the one accent for live data).
     for (const eyebrow of ["The board", "Weekly competition (virtual cash)", "Quests"]) {
-      expect(h).toContain(`<p class="text-xs font-medium tracking-[0.14em] text-gold uppercase">${eyebrow}</p>`);
+      expect(h).toContain(`<p class="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">${eyebrow}</p>`);
     }
   });
 

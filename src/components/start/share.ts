@@ -35,13 +35,35 @@ export function rankShareOnXUrl(rank: number, pnlPct: number, url: string): stri
   return `https://x.com/intent/post?text=${encodeURIComponent(rankShareText(rank, pnlPct, url))}`;
 }
 
+type LeagueCountdowns = { open: boolean; closesIn: number | null; opensIn: number | null };
+
+/**
+ * competitionLine in three runs around the countdown, so /start can keep "3h 03m" on one line
+ * inside its pill; `live` is true while this week's competition is open.
+ */
+export function competitionLineParts(
+  league: LeagueCountdowns | null,
+): { before: string; countdown: string; after: string; live: boolean } | null {
+  if (!league) return null;
+  if (league.open && league.closesIn !== null) {
+    return { before: "This week's competition (virtual cash) is live: ", countdown: formatCountdown(league.closesIn), after: " left.", live: true };
+  }
+  if (league.opensIn !== null) {
+    return {
+      before: "Next week's competition (virtual cash) opens in ",
+      countdown: formatCountdown(league.opensIn),
+      after: ". Sign in now and start with $10,000 of virtual cash.",
+      live: false,
+    };
+  }
+  return null;
+}
+
 /**
  * The /start line about the weekly competition (virtual cash), from /api/v1/league's countdowns:
  * open -> how long is left; weekend -> when the next week opens; otherwise null.
  */
-export function competitionLine(league: { open: boolean; closesIn: number | null; opensIn: number | null } | null): string | null {
-  if (!league) return null;
-  if (league.open && league.closesIn !== null) return `This week's competition (virtual cash) is live: ${formatCountdown(league.closesIn)} left.`;
-  if (league.opensIn !== null) return `Next week's competition (virtual cash) opens in ${formatCountdown(league.opensIn)}. Sign in now and start with $10,000 of virtual cash.`;
-  return null;
+export function competitionLine(league: LeagueCountdowns | null): string | null {
+  const parts = competitionLineParts(league);
+  return parts ? `${parts.before}${parts.countdown}${parts.after}` : null;
 }

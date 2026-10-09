@@ -16,6 +16,8 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { useApiQuery } from "@/components/common/useApiQuery";
 import { MarketSessionChip } from "@/components/common/MarketSessionChip";
+import { PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
+import { preIpoToken } from "@/components/prestocks/tokens";
 import { formatPoints, formatUsd } from "@/components/common/format";
 import { AccountCard } from "@/components/league/AccountCard";
 import { LeagueCountdownValue, countdownTarget } from "@/components/league/LeagueCountdown";
@@ -150,6 +152,9 @@ export default function LeaguePage() {
   const league = data?.league ?? null;
   const signedIn = data?.signedIn ?? false;
   const startingCash = formatUsdWhole(data?.startingCashUsd ?? 10_000);
+  // A pre-IPO token in a table puts PRE_IPO_COMPLIANCE_LINE under that table (the footer carries COMPLIANCE_LINE).
+  const preIpoInPositions = (data?.me?.positions ?? []).some((p) => preIpoToken(p.symbol) !== null);
+  const preIpoInTrades = (data?.me?.trades ?? []).some((t) => preIpoToken(t.symbol) !== null);
   const scout = signedIn ? scoutProgress(findScoutPlay(plays.data), data?.me?.trades.length ?? 0) : null;
 
   const onPlaced = React.useCallback(() => {
@@ -196,8 +201,9 @@ export default function LeaguePage() {
         </p>
       </div>
 
+      {/* From lg the trade panel's Connect is the page's one white action, so the banner's steps down to outline. */}
       <div ref={bannerRef} data-slot="league-sign-in" className="empty:hidden">
-        <SignInBanner title={`Sign in to trade with ${startingCash} of virtual cash.`} />
+        <SignInBanner title={`Sign in to trade with ${startingCash} of virtual cash.`} connectVariant="lg-outline" />
       </div>
 
       {q.loading ? (
@@ -240,6 +246,7 @@ export default function LeaguePage() {
                       Positions
                     </SectionTitle>
                     <PositionsTable positions={data.me?.positions ?? []} />
+                    {preIpoInPositions ? <PreIpoComplianceLine /> : null}
                   </section>
                 </>
               ) : null}
@@ -265,6 +272,7 @@ export default function LeaguePage() {
                     Your trades
                   </SectionTitle>
                   <RecentTrades trades={data.me.trades} />
+                  {preIpoInTrades ? <PreIpoComplianceLine /> : null}
                 </section>
               ) : null}
 
@@ -306,7 +314,7 @@ export default function LeaguePage() {
             <Button
               size="lg"
               className={cn(
-                "h-11 rounded-full px-4 text-base font-semibold shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_12px_32px_-8px_rgb(255_106_42/0.6),0_4px_12px_rgb(0_0_0/0.5)] transition-opacity duration-200 md:h-12 md:px-5",
+                "h-11 rounded-full px-4 text-base font-semibold shadow-[0_12px_32px_-8px_rgb(0_0_0/0.8),0_4px_12px_rgb(0_0_0/0.5)] transition-opacity duration-200 md:h-12 md:px-5",
                 hideFab && "pointer-events-none invisible opacity-0",
               )}
               onClick={() => setSheetOpen(true)}
@@ -320,7 +328,7 @@ export default function LeaguePage() {
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetContent
               side="bottom"
-              className="max-h-[92dvh] gap-0 overflow-y-auto rounded-t-3xl border-white/[0.08] bg-popover pb-[env(safe-area-inset-bottom,0px)] shadow-[inset_0_1px_0_rgb(255_245_230/0.06),0_-24px_64px_rgb(0_0_0/0.6)] data-[side=bottom]:border-t"
+              className="max-h-[92dvh] gap-0 overflow-y-auto rounded-t-3xl border-white/[0.08] bg-popover pb-[env(safe-area-inset-bottom,0px)] shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_-24px_64px_rgb(0_0_0/0.6)] data-[side=bottom]:border-t"
             >
               <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-white/15" aria-hidden />
               <SheetHeader className="px-5 pt-3 pr-12 pb-4">
@@ -330,13 +338,21 @@ export default function LeaguePage() {
                 </div>
                 <SheetDescription>{tradeDescription}</SheetDescription>
               </SheetHeader>
-              <div className="h-px shrink-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
+              <div className="h-px shrink-0 bg-white/[0.08]" aria-hidden />
               <div className="px-5 pt-5 pb-4">{sheetOpen ? tradePanel : null}</div>
             </SheetContent>
           </Sheet>
         </>
       )}
     </div>
+  );
+}
+
+function PreIpoComplianceLine() {
+  return (
+    <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
+      {PRE_IPO_COMPLIANCE_LINE}
+    </p>
   );
 }
 

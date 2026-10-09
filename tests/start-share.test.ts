@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { START_PATH, competitionLine, rankShareOnXUrl, rankShareText, shareOnXUrl, shareText } from "@/components/start/share";
+import { START_PATH, competitionLine, competitionLineParts, rankShareOnXUrl, rankShareText, shareOnXUrl, shareText } from "@/components/start/share";
 
 // /start share post: the prefilled X text a player can post after a prediction. Plain names only
 // (points only, no betting words), and the link back to /start.
@@ -40,5 +40,14 @@ describe("rank share and the competition line", () => {
     expect(competitionLine({ open: false, closesIn: null, opensIn: 26 * 3600_000 })).toBe("Next week's competition (virtual cash) opens in 1d 2h. Sign in now and start with $10,000 of virtual cash.");
     expect(competitionLine({ open: false, closesIn: null, opensIn: null })).toBeNull();
     expect(competitionLine(null)).toBeNull();
+    // /start renders the same line in runs, so the countdown never breaks across two lines in its pill.
+    expect(competitionLineParts({ open: true, closesIn: 3 * 3600_000 + 3 * 60_000, opensIn: null })).toEqual({
+      before: "This week's competition (virtual cash) is live: ",
+      countdown: "3h 03m",
+      after: " left.",
+      live: true,
+    });
+    expect(competitionLineParts({ open: false, closesIn: null, opensIn: 26 * 3600_000 })).toMatchObject({ countdown: "1d 2h", live: false });
+    expect(competitionLineParts(null)).toBeNull();
   });
 });

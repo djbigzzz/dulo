@@ -46,10 +46,10 @@ export function PublicWalletList({ rows, chainId, className }: PublicWalletListP
         return (
           <li
             key={row.address}
-            className={cn(ITEM, "transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.04] motion-reduce:transition-none motion-reduce:hover:translate-y-0")}
+            className={cn(ITEM, "transition-colors duration-200 hover:border-white/[0.14] hover:bg-white/[0.03] motion-reduce:transition-none")}
           >
             <span
-              className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-muted-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.06)] [&>svg]:size-4"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-muted-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] [&>svg]:size-4"
               aria-hidden
             >
               <Globe />

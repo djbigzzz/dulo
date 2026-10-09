@@ -7,7 +7,7 @@ export interface PageHeaderProps extends Omit<React.ComponentProps<"header">, "t
   /** Small label above the title. */
   eyebrow?: React.ReactNode;
   title: React.ReactNode;
-  /** Rendered after the title in muted italic, e.g. "· Week of 14 Sep". */
+  /** Rendered after the title in muted grey, e.g. "· Week of 14 Sep". */
   suffix?: React.ReactNode;
   /** One sentence. Longer explanations belong in `details`. */
   description?: React.ReactNode;
@@ -24,7 +24,7 @@ export interface PageHeaderProps extends Omit<React.ComponentProps<"header">, "t
   extrasLastOnMobile?: boolean;
 }
 
-/** Strip a leading "·" from legacy suffixes; the serif italic carries the separation on its own. */
+/** Strip a leading "·" from legacy suffixes; the muted colour carries the separation on its own. */
 function cleanSuffix(suffix: React.ReactNode): React.ReactNode {
   return typeof suffix === "string" ? suffix.replace(/^\s*·\s*/, "") : suffix;
 }
@@ -34,8 +34,8 @@ export function PageHeader({ eyebrow, title, suffix, description, actions, stats
     <>
       {stats}
       {details ? (
-        <details className="group rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-2 text-sm text-muted-foreground transition-colors open:bg-white/[0.03] [&_summary::-webkit-details-marker]:hidden">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 font-medium text-foreground/90 outline-none select-none hover:text-foreground focus-visible:text-ember">
+        <details className="group rounded-2xl border border-white/[0.08] bg-transparent px-4 py-2 text-sm text-muted-foreground transition-colors open:bg-white/[0.03] [&_summary::-webkit-details-marker]:hidden">
+          <summary className="-mx-2 flex cursor-pointer list-none items-center justify-between gap-2 rounded-md px-2 py-1 font-medium text-foreground/90 outline-none select-none hover:text-foreground focus-visible:text-ember-light focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background">
             How it works
             <ChevronDownIcon className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" aria-hidden />
           </summary>
@@ -49,14 +49,14 @@ export function PageHeader({ eyebrow, title, suffix, description, actions, stats
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex min-w-0 flex-col gap-2">
           {eyebrow ? (
-            <p className="flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-gold uppercase">
-              <span className="h-px w-5 bg-gradient-to-r from-gold/0 to-gold/80" aria-hidden />
+            <p className="flex items-center gap-2 text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
+              <span className="h-px w-5 bg-white/25" aria-hidden />
               {eyebrow}
             </p>
           ) : null}
-          <h1 className="font-display text-[2rem] leading-[1.02] font-normal tracking-[-0.015em] text-foreground sm:text-5xl md:text-6xl">
+          <h1 className="font-display text-[2rem] leading-[1.05] font-semibold tracking-[-0.04em] text-balance text-foreground sm:text-4xl md:text-5xl">
             {title}
-            {suffix ? <span className="text-muted-foreground/80 italic"> {cleanSuffix(suffix)}</span> : null}
+            {suffix ? <span className="font-medium text-muted-foreground"> {cleanSuffix(suffix)}</span> : null}
           </h1>
           {description ? <p className="max-w-2xl text-base leading-relaxed text-muted-foreground">{description}</p> : null}
         </div>

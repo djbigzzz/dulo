@@ -21,7 +21,7 @@ export interface PartnerHeaderProps {
 
 const HERO = "border-gradient relative flex flex-col gap-6 overflow-hidden rounded-3xl bg-card ember-glow p-6 sm:p-10";
 const LOGO_TILE =
-  "flex shrink-0 items-center justify-center rounded-[1.4rem] border border-white/[0.1] bg-white/[0.04] p-1.5 shadow-[inset_0_1px_0_rgb(255_245_230/0.08),0_16px_40px_-16px_rgb(0_0_0/0.8)]";
+  "flex shrink-0 items-center justify-center rounded-[1.4rem] border border-white/[0.1] bg-white/[0.04] p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_16px_40px_-16px_rgb(0_0_0/0.8)]";
 
 /** Simple X wordmark; lucide dropped brand icons. */
 function XMark({ className }: { className?: string }) {
@@ -47,7 +47,7 @@ export function PartnerHeader({ partner, livePlays, notice = null, className }: 
           <PartnerLogo name={partner.name} logoUrl={partner.logoUrl} size={64} className="rounded-2xl ring-0" />
         </span>
         <div className="flex min-w-0 flex-col items-start gap-3">
-          <h1 className="font-display text-4xl leading-[1.02] font-normal tracking-[-0.015em] text-foreground sm:text-5xl">{partner.name}</h1>
+          <h1 className="font-display text-3xl leading-[1.05] font-semibold tracking-[-0.04em] text-foreground sm:text-4xl">{partner.name}</h1>
           <div className="flex flex-wrap items-center gap-2">
             <ListingPill label={label} />
             {partner.chainIds.length > 0 ? (

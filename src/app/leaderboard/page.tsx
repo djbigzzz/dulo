@@ -29,7 +29,7 @@ function YourSeasonPoints({ profile, balance, className }: { profile: UserProfil
     <section
       aria-labelledby="your-season-points"
       className={cn(
-        "flex min-w-0 flex-col gap-1 rounded-2xl border border-white/[0.07] bg-card bg-[linear-gradient(90deg,rgb(255_106_42/0.08),transparent_60%)] px-4 py-3 shadow-[inset_2px_0_0_var(--ember)] sm:px-5 sm:py-4",
+        "flex min-w-0 flex-col gap-1 rounded-2xl border border-white/[0.07] bg-card px-4 py-3 shadow-[inset_2px_0_0_var(--ember)] sm:px-5 sm:py-4",
         className,
       )}
     >
@@ -122,12 +122,12 @@ export default function LeaderboardPage() {
           {profile && profile.rank !== null && !onBoard ? (
             <div
               role="group"
-              className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-card bg-[linear-gradient(90deg,rgb(255_106_42/0.10),transparent_55%)] px-4 py-3 text-sm shadow-[inset_2px_0_0_var(--ember)] sm:px-5"
+              className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-card px-4 py-3 text-sm shadow-[inset_2px_0_0_var(--ember)] sm:px-5"
               aria-label={`Your rank: ${profile.rank}, ${formatPoints(profile.points)} Season points`}
             >
-              <span className="w-14 shrink-0 text-lg font-semibold tracking-tight text-ember tabular-nums">#{profile.rank}</span>
+              <span className="w-14 shrink-0 text-lg font-semibold tracking-tight text-ember-light tabular-nums">#{profile.rank}</span>
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="shrink-0 rounded-full border border-ember/30 bg-ember/10 px-2 py-0.5 text-xs font-medium text-ember">You</span>
+                <span className="shrink-0 rounded-full border border-ember/30 bg-ember/10 px-2 py-0.5 text-xs font-medium text-ember-light">You</span>
                 {profile.handle ? (
                   <span className="truncate font-medium">{profile.handle}</span>
                 ) : profile.wallets[0] ? (
@@ -140,7 +140,7 @@ export default function LeaderboardPage() {
           ) : profile && profile.rank === null ? (
             <p className="text-sm text-muted-foreground">
               You are not on the board yet.{" "}
-              <Link href="/quests" className="font-medium text-foreground underline decoration-white/25 underline-offset-4 transition-colors hover:decoration-ember hover:text-ember">
+              <Link href="/quests" className="font-medium text-foreground underline decoration-white/25 underline-offset-4 transition-colors hover:decoration-white/60">
                 Complete a quest
               </Link>{" "}
               to get on it.

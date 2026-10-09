@@ -46,7 +46,7 @@ export function PoolBar({ odds, highlight = null, labels = true, className }: Po
             "h-full rounded-full transition-[width,opacity] duration-300",
             empty
               ? "bg-white/[0.08]"
-              : "bg-[linear-gradient(90deg,#059669_0%,#34d399_100%)] shadow-[inset_0_1px_0_rgb(255_255_255/0.25)]",
+              : "bg-emerald-400",
             highlight === "no" && !empty && "opacity-40",
           )}
           style={{ width: `${empty ? 50 : yesPct}%` }}
@@ -56,7 +56,7 @@ export function PoolBar({ odds, highlight = null, labels = true, className }: Po
             "h-full flex-1 rounded-full transition-opacity duration-300",
             empty
               ? "bg-white/[0.05]"
-              : "bg-[linear-gradient(90deg,#fb7185_0%,#e11d48_100%)] shadow-[inset_0_1px_0_rgb(255_255_255/0.25)]",
+              : "bg-rose-400",
             highlight === "yes" && !empty && "opacity-40",
           )}
         />

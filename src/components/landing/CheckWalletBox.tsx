@@ -16,10 +16,12 @@ const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_
 
 export interface CheckWalletBoxProps {
   className?: string;
-  /** Ember submit button. Off on the landing, where Connect is the one primary action. */
+  /** Primary (white) submit button. Off on the landing, where Connect is the one primary action. */
   primary?: boolean;
   /** Show the "Try a real holder" chips. Default true. */
   samples?: boolean;
+  /** Field above the button at every width: for narrow columns (the /check/[address] sidebar). */
+  stacked?: boolean;
 }
 
 /**
@@ -27,7 +29,7 @@ export interface CheckWalletBoxProps {
  * already verifies. Three curated xStocks holders and one pre-IPO holder are one tap away for
  * visitors with no wallet.
  */
-export function CheckWalletBox({ className, primary = false, samples = true }: CheckWalletBoxProps) {
+export function CheckWalletBox({ className, primary = false, samples = true, stacked = false }: CheckWalletBoxProps) {
   const router = useRouter();
   const inputId = React.useId();
   const errorId = React.useId();
@@ -48,8 +50,11 @@ export function CheckWalletBox({ className, primary = false, samples = true }: C
 
   return (
     <div className={cn("flex flex-col gap-4 rounded-2xl border border-white/[0.07] bg-card p-4 sm:p-6", className)}>
-      {/* Stacked below sm, so the field grows only in the sm row: flex-1 in a column would override its h-11 (44px). */}
-      <form className="flex flex-col gap-2 sm:flex-row" onSubmit={submit} noValidate>
+      {/*
+        Stacked below sm (always when `stacked`), so the field grows only in the sm row: flex-1 in a
+        column would override its h-11 (44px).
+      */}
+      <form className={cn("flex flex-col gap-2", !stacked && "sm:flex-row")} onSubmit={submit} noValidate>
         <label htmlFor={inputId} className="sr-only">
           Solana wallet address
         </label>
@@ -67,7 +72,7 @@ export function CheckWalletBox({ className, primary = false, samples = true }: C
           spellCheck={false}
           aria-invalid={error !== null}
           aria-describedby={error ? errorId : undefined}
-          className={cn(WELL, "h-11 min-w-0 px-3.5 font-mono text-sm sm:flex-1 md:text-sm dark:bg-black/25")}
+          className={cn(WELL, "h-11 min-w-0 px-3.5 font-mono text-sm md:text-sm dark:bg-black/25", !stacked && "sm:flex-1")}
         />
         <Button type="submit" size="lg" variant={primary ? "default" : "outline"} className="h-11 shrink-0 rounded-xl px-5 font-semibold">
           Check wallet
@@ -89,7 +94,7 @@ export function CheckWalletBox({ className, primary = false, samples = true }: C
               <li key={w.address} className="min-w-0">
                 <Link
                   href={checkHref(w.address)}
-                  className="group inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border border-white/[0.08] bg-black/25 px-3 py-1.5 text-xs shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] transition-colors duration-300 outline-none hover:border-white/[0.14] hover:bg-white/[0.04] focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="group inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border border-white/[0.08] bg-black/25 px-3 py-1.5 text-xs shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] transition-colors duration-300 outline-none hover:border-white/[0.14] hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                 >
                   <span className="font-medium text-foreground">{w.label}</span>
                   {w.tag ? (

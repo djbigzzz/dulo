@@ -36,7 +36,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
  * "3d 13:10:52" set like a chronograph dial: tabular digits, muted unit and separators. The
- * separators carry their own colour so they stay muted inside gradient-text parents.
+ * separators carry their own neutral grey so they stay muted inside any coloured parent.
  */
 export function Chronograph({ ms, className }: { ms: number; className?: string }) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -44,14 +44,14 @@ export function Chronograph({ ms, className }: { ms: number; className?: string 
   const h = Math.floor((total % 86_400) / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  const sep = <span className="px-[0.06em] font-normal text-[#6b635a]">:</span>;
+  const sep = <span className="px-[0.06em] font-normal text-zinc-600">:</span>;
   const label = `${days > 0 ? `${days} days ` : ""}${h} hours ${m} minutes ${s} seconds`;
   return (
     <span className={cn("inline-flex items-baseline tabular-nums", className)} aria-label={label}>
       {days > 0 ? (
         <>
           <span>{days}</span>
-          <span className="mr-[0.3em] ml-[0.06em] text-[0.62em] font-medium text-[#8f877d]">d</span>
+          <span className="mr-[0.3em] ml-[0.06em] text-[0.62em] font-medium text-muted-foreground">d</span>
         </>
       ) : null}
       <span>{pad(h)}</span>

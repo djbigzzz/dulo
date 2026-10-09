@@ -29,30 +29,30 @@ export interface PodiumProps<T extends PodiumEntry> {
   "aria-label"?: string;
 }
 
-/** Gold / silver / bronze per docs/DESIGN.md. Shared with the tables and the League preview. */
+/** Rank 1 / 2 / 3 as three steps of grey (white, zinc-300, zinc-400). Shared with the tables and the League preview. */
 export const MEDAL: Record<1 | 2 | 3, { chip: string; avatar: string; edge: string; text: string; number: string; label: string }> = {
   1: {
-    chip: "border-gold/30 bg-gold/[0.10] text-gold",
-    avatar: "bg-gold/[0.10] text-gold ring-gold/60",
-    edge: "from-gold/0 via-[#f0d9a4] to-gold/0",
-    text: "text-gold",
-    number: "text-gradient-gold",
+    chip: "border-white/40 bg-white/[0.12] text-foreground",
+    avatar: "bg-white/[0.10] text-foreground ring-white/60",
+    edge: "bg-white/60",
+    text: "text-foreground",
+    number: "text-foreground",
     label: "1st",
   },
   2: {
     chip: "border-zinc-300/20 bg-zinc-300/10 text-zinc-300",
     avatar: "bg-zinc-300/10 text-zinc-300 ring-zinc-300/40",
-    edge: "from-zinc-300/0 via-zinc-300/60 to-zinc-300/0",
+    edge: "bg-zinc-300/30",
     text: "text-zinc-300",
     number: "text-zinc-300",
     label: "2nd",
   },
   3: {
-    chip: "border-[#d49a6a]/25 bg-[#d49a6a]/10 text-[#d49a6a]",
-    avatar: "bg-[#d49a6a]/10 text-[#d49a6a] ring-[#d49a6a]/45",
-    edge: "from-[#d49a6a]/0 via-[#d49a6a]/60 to-[#d49a6a]/0",
-    text: "text-[#d49a6a]",
-    number: "text-[#d49a6a]",
+    chip: "border-zinc-400/25 bg-zinc-400/10 text-zinc-400",
+    avatar: "bg-zinc-400/10 text-zinc-400 ring-zinc-400/45",
+    edge: "bg-zinc-400/20",
+    text: "text-zinc-400",
+    number: "text-zinc-400",
     label: "3rd",
   },
 };
@@ -64,7 +64,7 @@ export function MedalChip({ rank, className }: { rank: number; className?: strin
     <span
       className={cn(
         "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
-        medal ? cn("border shadow-[inset_0_1px_0_rgb(255_245_230/0.10)]", medal.chip) : "text-muted-foreground",
+        medal ? cn("border shadow-[inset_0_1px_0_rgb(255_255_255/0.10)]", medal.chip) : "text-muted-foreground",
         className,
       )}
     >
@@ -83,9 +83,9 @@ function defaultValue(row: PodiumEntry): ReactNode {
 }
 
 /**
- * Top three as an award ceremony: glass plinths of different heights, the centre slot tallest with
- * a soft gold glow behind it. Slot order and heights are visual (2nd, 1st, 3rd); the medal, crown,
- * chip and label follow each row's own rank, so two players tied for 1st both read "=1st" in gold
+ * Top three as an award ceremony: flat plinths of different heights, the centre slot tallest. Slot
+ * order and heights are visual (2nd, 1st, 3rd); the medal, crown, chip and label follow each row's
+ * own rank, so two players tied for 1st both read "=1st" in the rank-1 white
  * (15 Sep review M-P). Three columns fit a 375px phone.
  */
 export function Podium<T extends PodiumEntry>({
@@ -120,7 +120,7 @@ export function Podium<T extends PodiumEntry>({
             {pos === 1 ? (
               <span
                 className={cn(
-                  "pointer-events-none absolute left-1/2 -z-10 -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(216_180_106/0.26),rgb(216_180_106/0.08)_55%,transparent)]",
+                  "pointer-events-none absolute left-1/2 -z-10 -translate-x-1/2 rounded-full bg-transparent",
                   lg ? "-top-10 size-60 sm:size-72" : "-top-6 size-36",
                 )}
                 aria-hidden
@@ -130,7 +130,7 @@ export function Podium<T extends PodiumEntry>({
             <div className="flex w-full min-w-0 flex-col items-center gap-1.5">
               <span
                 className={cn(
-                  "relative flex items-center justify-center rounded-full font-semibold tracking-tight uppercase ring-2 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.6),inset_0_1px_0_rgb(255_245_230/0.12)]",
+                  "relative flex items-center justify-center rounded-full font-semibold tracking-tight uppercase ring-2 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.6),inset_0_1px_0_rgb(255_255_255/0.12)]",
                   lg ? (pos === 1 ? "size-16 text-lg sm:size-20 sm:text-xl" : "size-12 text-sm sm:size-14") : pos === 1 ? "size-11 text-sm" : "size-9 text-xs",
                   medal.avatar,
                   isMe && "ring-ember",
@@ -141,7 +141,7 @@ export function Podium<T extends PodiumEntry>({
                 {tier === 1 ? <Crown className={cn("absolute left-1/2 -translate-x-1/2 fill-gold/20 text-gold", lg ? "-top-5 size-5" : "-top-4 size-4")} /> : null}
               </span>
               <span
-                className={cn("mt-1 max-w-full truncate text-center font-medium", lg ? "text-sm sm:text-base" : "text-sm", isMe && "text-ember")}
+                className={cn("mt-1 max-w-full truncate text-center font-medium", lg ? "text-sm sm:text-base" : "text-sm", isMe && "text-ember-light")}
                 title={row.address ?? name}
               >
                 {name}
@@ -149,7 +149,7 @@ export function Podium<T extends PodiumEntry>({
               {isMe || renderTag ? (
                 <span className="flex h-5 items-center gap-1 text-xs text-muted-foreground">
                   {isMe ? (
-                    <span className="rounded-full border border-ember/30 bg-ember/10 px-2 text-xs font-medium text-ember">You</span>
+                    <span className="rounded-full border border-ember/30 bg-ember/10 px-2 text-xs font-medium text-ember-light">You</span>
                   ) : (
                     renderTag?.(row)
                   )}
@@ -170,16 +170,13 @@ export function Podium<T extends PodiumEntry>({
 
             <div
               className={cn(
-                "relative flex w-full flex-col items-center justify-start gap-2 overflow-hidden rounded-t-2xl border border-b-0 border-white/[0.07] bg-card [mask-image:linear-gradient(to_bottom,#000_calc(100%_-_1.5rem),transparent)]",
+                "relative flex w-full flex-col items-center justify-start gap-2 overflow-hidden rounded-t-2xl border border-white/[0.07] bg-card",
                 lg ? "pt-3 sm:pt-4" : "pt-1.5",
                 HEIGHT[size][pos],
-                pos === 1 && "border-gold/20",
+                pos === 1 && "border-white/20",
               )}
             >
-              <span className={cn("absolute inset-x-0 top-0 h-px bg-gradient-to-r", medal.edge)} aria-hidden />
-              {pos === 1 ? (
-                <span className="pointer-events-none absolute inset-x-0 top-0 h-2/3 bg-gradient-to-b from-gold/[0.10] to-transparent" aria-hidden />
-              ) : null}
+              <span className={cn("absolute inset-x-0 top-0 h-px", medal.edge)} aria-hidden />
               <span className={cn("relative leading-none font-semibold tracking-tight tabular-nums", lg ? "text-3xl sm:text-5xl" : "text-lg", medal.number)}>
                 {row.rank}
               </span>

@@ -46,8 +46,8 @@ function ConnectPanel({ address }: { address: string }) {
   // Hero panel: `ember-glow` stays outside cn() so tailwind-merge never drops bg-card (docs/DESIGN.md).
   return (
     <section aria-labelledby="check-connect" className={`border-gradient bg-card ember-glow ${cn("relative flex flex-col gap-4 overflow-hidden rounded-3xl p-5 sm:p-6")}`}>
-      <p className="text-xs font-medium tracking-[0.14em] text-gold uppercase">Is this your wallet?</p>
-      <h2 id="check-connect" className="font-display text-3xl leading-[1.05] font-normal text-balance">
+      <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">Is this your wallet?</p>
+      <h2 id="check-connect" className="font-display text-2xl leading-[1.1] font-semibold tracking-[-0.035em] text-balance">
         {CONNECT_CTA_TITLE}
       </h2>
       <p className="text-sm leading-relaxed text-muted-foreground">
@@ -59,7 +59,7 @@ function ConnectPanel({ address }: { address: string }) {
         <Copy data-icon="inline-start" aria-hidden />
         Copy this wallet&apos;s portfolio
       </Link>
-      <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
+      <div className="h-px bg-white/[0.08]" aria-hidden />
       <p className="text-xs leading-relaxed text-muted-foreground">Points only, no cash value. This check read the chain once: nothing stored, never scored.</p>
     </section>
   );
@@ -143,7 +143,7 @@ export default function CheckWalletPage() {
         eyebrow={data.label ? `Check a wallet · ${data.label}` : "Check a wallet"}
         title={
           <>
-            What this wallet <span className="text-gradient-ember pr-[0.08em] italic">already scores</span>
+            What this wallet <span className="text-muted-foreground">already scores</span>
           </>
         }
         description={
@@ -170,7 +170,8 @@ export default function CheckWalletPage() {
         {/* Sticky lives on a wrapper: .border-gradient sets position: relative on the card itself. */}
         <div className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-20">
           <ConnectPanel address={data.address} />
-          <CheckWalletBox />
+          {/* Stacked: the 380px column leaves the field too narrow for its placeholder in a row. */}
+          <CheckWalletBox stacked />
         </div>
       </div>
 

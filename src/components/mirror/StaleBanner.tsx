@@ -12,10 +12,10 @@ export function StaleBanner({ marketClosed = false, className }: StaleBannerProp
   return (
     <div
       role="status"
-      className={cn("flex items-start gap-3 rounded-2xl border border-amber-300/15 bg-[linear-gradient(90deg,rgb(252_211_77/0.06),transparent_70%)] px-4 py-3 text-sm", className)}
+      className={cn("flex items-start gap-3 rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] px-4 py-3 text-sm", className)}
     >
       <span
-        className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-amber-300/15 bg-amber-300/[0.06] text-amber-300 shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]"
+        className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-amber-300/15 bg-amber-300/[0.06] text-amber-300 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]"
         aria-hidden
       >
         <AlertTriangle className="size-4" />

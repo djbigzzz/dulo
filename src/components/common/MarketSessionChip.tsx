@@ -159,7 +159,7 @@ export function MarketSessionChip({ nowIso, className }: MarketSessionChipProps)
       <span
         className={cn(
           "size-1.5 shrink-0 rounded-full transition-colors duration-300 motion-reduce:transition-none",
-          session?.open ? "bg-foreground/80 shadow-[0_0_6px_rgb(244_241_234/0.45)]" : "bg-muted-foreground/40",
+          session?.open ? "bg-ember" : "bg-muted-foreground/40",
         )}
         aria-hidden
       />

@@ -17,14 +17,12 @@ export function SeasonChip({ className }: { className?: string }) {
     <Badge
       variant="outline"
       className={cn(
-        "h-6 gap-1.5 rounded-full border-gold/20 bg-gold/[0.06] px-2.5 text-xs font-medium tracking-wide text-muted-foreground",
+        "h-6 gap-1.5 rounded-full border-white/[0.1] bg-transparent px-2.5 text-xs font-medium text-muted-foreground",
         className,
       )}
     >
-      <span className="relative flex size-1.5" aria-hidden>
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-ember/60" />
-        <span className="relative inline-flex size-1.5 rounded-full bg-ember" />
-      </span>
+      {/* A still dot: the one pulsing live dot on a screen belongs to the page's own live content. */}
+      <span className="size-1.5 shrink-0 rounded-full bg-ember" aria-hidden />
       <span className="hidden sm:inline">{SEASON_NAME} ·&nbsp;</span>
       <span className="text-foreground">Season 0</span>
     </Badge>
@@ -73,13 +71,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     // footer link ever sits behind the bar.
     <div className="relative isolate flex min-h-dvh flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
       <div className="app-backdrop" aria-hidden />
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#0a0908]/70 backdrop-blur-xl backdrop-saturate-150">
-        {/* A hairline of ember light along the bottom edge of the header. */}
-        <div className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-ember/35 to-transparent" aria-hidden />
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#09090b]/80 backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
           <Link
             href="/"
-            className="flex shrink-0 items-center gap-2 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex shrink-0 items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             aria-label="Dulo home"
           >
             <Dulo size={26} />
@@ -98,7 +94,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <MarketSessionChip className="hidden shrink-0 min-[680px]:inline-flex md:hidden" />
           <NavLinks className="ml-1" />
           <div className="ml-auto flex shrink-0 items-center">
-            <ConnectButton />
+            {/* Outline: each page owns its one white primary action (DESIGN.md rule 1), its own Connect included. */}
+            <ConnectButton variant="outline" />
           </div>
         </div>
       </header>
@@ -106,7 +103,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-10 md:pb-12">{children}</main>
 
       {/* Visible on phones too (the links matter to judges); the shell's own bottom padding keeps it clear of the tab bar. */}
-      <footer className="border-t border-white/[0.06] bg-[#0a0908]/60">
+      <footer className="border-t border-white/[0.08] bg-[#09090b]">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 text-sm text-muted-foreground md:flex-row md:flex-wrap md:items-center md:justify-between">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">

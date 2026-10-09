@@ -69,8 +69,8 @@ export interface PlayCardProps<P extends PlayCardPlay = PlayCardPlay> {
 const PILL =
   "inline-flex h-7 w-fit items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium whitespace-nowrap";
 const PILL_GLASS =
-  "border-white/[0.08] bg-white/[0.03] text-muted-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.05)]";
-const PILL_EMBER = "border-ember/25 bg-ember/[0.08] text-[#ff9452]";
+  "border-white/[0.08] bg-white/[0.03] text-muted-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]";
+const PILL_EMBER = "border-ember/25 bg-ember/[0.08] text-ember-light";
 const PILL_EMERALD = "border-emerald-400/25 bg-emerald-400/10 text-emerald-400";
 
 /** Status chip copy + styling for the proof drawer. "Coming soon" wins over everything except a completed quest. */
@@ -159,7 +159,7 @@ export function BadgeMedallion({
 }
 
 /**
- * A round gold-rimmed frame with a soft gold glow, for Badge medallions. `size` is the
+ * A round frame with a thin neutral ring (Mono: no glow), for Badge medallions. `size` is the
  * outer diameter; the medallion sits inside with a small inset.
  */
 export function MedallionFrame({
@@ -178,8 +178,8 @@ export function MedallionFrame({
       className={cn(
         "relative inline-flex shrink-0 items-center justify-center rounded-full bg-gold/[0.06] ring-1 ring-gold/30",
         glow
-          ? "shadow-[inset_0_1px_0_rgb(255_245_230/0.1),0_0_28px_-6px_rgb(216_180_106/0.45)]"
-          : "shadow-[inset_0_1px_0_rgb(255_245_230/0.08)]",
+          ? "shadow-[inset_0_1px_0_rgb(255_255_255/0.1)]"
+          : "shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]",
         className,
       )}
       style={{ width: size, height: size }}
@@ -228,7 +228,7 @@ export function PlayCard<P extends PlayCardPlay>({
       data-play-key={play.key}
       data-status={play.comingSoon ? "coming_soon" : status}
       className={cn(
-        "group/play relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 sm:gap-4 sm:p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.04] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        "group/play relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 sm:gap-4 sm:p-5",
         play.comingSoon && !complete
           ? "border-dashed border-white/10"
           : complete
@@ -239,7 +239,7 @@ export function PlayCard<P extends PlayCardPlay>({
     >
       {complete ? (
         <span
-          className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent"
+          className="pointer-events-none absolute inset-x-8 top-0 h-px bg-emerald-400/50"
           aria-hidden
         />
       ) : null}
@@ -257,7 +257,7 @@ export function PlayCard<P extends PlayCardPlay>({
           </MedallionFrame>
         ) : (
           <span
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl border sm:size-14 sm:rounded-2xl border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl border sm:size-14 sm:rounded-2xl border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]"
             aria-hidden
           >
             <CategoryIcon className="size-5" />
@@ -320,7 +320,7 @@ export function PlayCard<P extends PlayCardPlay>({
             className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]"
           >
             <div
-              className="h-full rounded-full bg-[linear-gradient(90deg,#ff9452,#ff6a2a_60%,#e2471a)] shadow-[0_0_12px_rgb(255_106_42/0.55)] transition-[width] duration-500"
+              className="h-full rounded-full bg-ember transition-[width] duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -330,7 +330,7 @@ export function PlayCard<P extends PlayCardPlay>({
       {hasFooter ? (
         <div className="mt-auto flex flex-col gap-3 sm:gap-4">
           <div
-            className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"
+            className="h-px bg-white/[0.08]"
             aria-hidden
           />
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -363,7 +363,7 @@ export function PlayCard<P extends PlayCardPlay>({
                 {play.completions === 1 ? "player" : "players"}
               </span>
             ) : null}
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
               {showProof && onProof ? (
                 <Button
                   variant="outline"
@@ -472,7 +472,7 @@ export function PlayCardSkeleton({ className }: { className?: string }) {
         <Skeleton className="h-4 w-4/5 bg-white/[0.05]" />
       </div>
       <Skeleton className="h-4 w-3/5 bg-white/[0.05]" />
-      <div className="mt-auto h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <div className="mt-auto h-px bg-white/[0.08]" />
       <Skeleton className="h-7 w-28 rounded-full bg-white/[0.05]" />
     </div>
   );

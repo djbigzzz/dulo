@@ -20,12 +20,12 @@ const FRAME =
   "relative flex size-20 shrink-0 items-center justify-center rounded-full bg-gold/[0.06] p-1.5 ring-1 ring-gold/30 sm:size-28 sm:p-2";
 const PILL = "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-medium whitespace-nowrap";
 
-/** A soft radial gold glow behind the shelf. Place inside a `relative` parent. */
+/** The shelf's backing layer (flat in Mono: no glow). Place inside a `relative` parent. */
 export function ShelfGlow({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-0 bg-[radial-gradient(55%_65%_at_50%_42%,rgb(216_180_106/0.1)_0%,transparent_70%)]",
+        "pointer-events-none absolute inset-0 bg-transparent",
         className,
       )}
       aria-hidden
@@ -34,9 +34,9 @@ export function ShelfGlow({ className }: { className?: string }) {
 }
 
 /**
- * Badges as a trophy shelf: medallions in gold-rimmed frames on a subtle gold glow. Minted
- * badges link to their transaction on Solscan; queued ones read "Minting soon"; designs not
- * yet earned are greyed out.
+ * Badges as a trophy shelf: medallions in thin neutral rings on a flat panel (Mono: no glow).
+ * Minted badges link to their transaction on Solscan; queued ones read "Minting soon"; designs
+ * not yet earned are greyed out.
  */
 export function BadgeGrid({ badges, showLocked = true, className }: BadgeGridProps) {
   const earned = new Set(badges.map((b) => b.playKey));
@@ -61,15 +61,10 @@ function BadgeTile({ badge }: { badge: BadgeView }) {
   const info = badgeInfo(badge.playKey);
   const title = info?.title ?? badge.title ?? badge.playKey;
   const minted = Boolean(badge.mint && badge.txSig);
-  const color = info?.color ?? "#ff6b1a";
   return (
     <li className={ITEM}>
-      <span
-        className={FRAME}
-        style={{
-          boxShadow: `inset 0 1px 0 rgb(255 245 230 / 0.1), 0 0 36px -8px color-mix(in oklch, ${color} 55%, transparent), 0 0 24px -10px rgb(216 180 106 / 0.5)`,
-        }}
-      >
+      {/* Earned: the same ring as a locked tile, a touch brighter; the badge's own metal tone is in the art. */}
+      <span className={cn(FRAME, "ring-gold/45 shadow-[inset_0_1px_0_rgb(255_255_255/0.1)]")}>
         {info ? (
           // Plain <img>: the SVG is served by our own route and next/image would only re-encode it.
           <span className="block size-full overflow-hidden rounded-full">
@@ -120,7 +115,7 @@ export function LockedBadgeTile({ badgeKey }: { badgeKey: string }) {
   if (!info) return null;
   return (
     <li className={ITEM} aria-label={`${info.title}: not earned yet`}>
-      <span className={cn(FRAME, "shadow-[inset_0_1px_0_rgb(255_245_230/0.08),0_0_28px_-10px_rgb(216_180_106/0.35)]")}>
+      <span className={cn(FRAME, "shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]")}>
         <span className="block size-full overflow-hidden rounded-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={badgeImageUrl(badgeKey)} alt="" width={512} height={512} className="size-full scale-[1.2] opacity-40 grayscale" loading="lazy" />

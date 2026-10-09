@@ -117,7 +117,7 @@ export function PreIpoRow({ row, className }: { row: PreIpoBoardRow; className?:
         {/* The DEX quote, and Jupiter's 24h move on it right under (its own labelled block on the stacked card). */}
         <div className="flex min-w-0 flex-col gap-1">
           <span className={CELL_LABEL}>DEX price</span>
-          <PriceChip quote={row.view.quote} className="max-w-full" session={false} />
+          <PriceChip quote={row.view.quote} className="max-w-full self-start" session={false} />
           <span className="flex flex-wrap items-baseline gap-x-1.5 text-xs tabular-nums">
             <span className={CELL_LABEL}>24h move</span>
             <span className={cn("font-semibold", change === null ? "text-muted-foreground" : pnlClass(row.view.change24h))}>{change ?? "—"}</span>
@@ -166,7 +166,7 @@ function IssuerMarkChip({ mark, tickMs = 15_000 }: { mark: { price: number; publ
   return (
     <span
       data-slot="issuer-mark"
-      className="inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full border border-white/[0.08] bg-black/25 px-2.5 py-0.5 text-xs shadow-[inset_0_1px_0_rgb(255_245_230/0.04)]"
+      className="inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 self-start rounded-full border border-white/[0.08] bg-black/25 px-2.5 py-0.5 text-xs shadow-[inset_0_1px_0_rgb(255_255_255/0.04)]"
       title={has ? `Issuer mark ${formatUsd(mark.price)}, published by PreStocks, ${formatAge(age)}. ${ISSUER_MARK_EXPLANATION}` : "The issuer has not published a mark"}
     >
       <span className={cn("font-mono tabular-nums", !has && "text-muted-foreground")}>{has ? formatUsd(mark.price) : "No issuer mark"}</span>

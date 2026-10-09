@@ -57,7 +57,7 @@ export function PriceChip({ quote, symbol, tickMs = 15_000, className, session =
   return (
     <span
       className={cn(
-        "inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full border border-white/[0.08] bg-black/25 px-2.5 py-0.5 text-xs shadow-[inset_0_1px_0_rgb(255_245_230/0.04)]",
+        "inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full border border-white/[0.08] bg-black/25 px-2.5 py-0.5 text-xs shadow-[inset_0_1px_0_rgb(255_255_255/0.04)]",
         className,
       )}
       title={
