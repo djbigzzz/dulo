@@ -220,7 +220,7 @@ export function weekLabels(m: WeekTrackModel): { title: string; sub: string } {
   return { title: `Week of ${utcDayMonth(m.monday)}`, sub: `${m.weekend ? "Final" : "Season 0"}${week}` };
 }
 
-/** The track's accessible name: the week, its two markers in UTC and where "now" is. */
+/** The track's accessible name: the week and its two markers in UTC (the countdown beside it says how long is left). */
 export function weekTrackLabel(m: WeekTrackModel): string {
   const head = `Week of ${utcDayMonth(m.monday)}${m.weekend ? ", final" : ""}`;
   const parts: string[] = [];

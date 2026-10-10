@@ -636,7 +636,8 @@ export function LivePredictions() {
 
   return (
     <div className="contents">
-      <article
+      {/* A section, not an article: ARIA in HTML allows role=tabpanel on section and div only. */}
+      <section
         id={panelId}
         role={tabs ? "tabpanel" : undefined}
         aria-labelledby={tabs ? `${baseId}-tab-${index}` : market ? questionId : undefined}
@@ -645,7 +646,7 @@ export function LivePredictions() {
         className={STAGE}
       >
         {body}
-      </article>
+      </section>
       {calls.loading ? <TabsSkeleton /> : tabs ? <MarketTabs markets={shown} selected={index} onSelect={setPicked} baseId={baseId} panelId={panelId} /> : null}
     </div>
   );
@@ -656,7 +657,12 @@ export function LivePredictions() {
 /* ------------------------------------------------------------------------------------------ */
 
 const LANE_COLS = "xl:grid-cols-[16.75rem_minmax(0,1fr)_14.75rem] xl:gap-x-10";
-const LANE_TEXT = "absolute top-8 text-[0.8125rem] leading-none font-medium whitespace-nowrap text-foreground xl:top-[46px] xl:text-sm";
+/**
+ * A lane's words sit above the gold "now" line (z-10), with a halo in the grained ground's own tone
+ * (#101011), so the line passes behind them instead of striking through them.
+ */
+const LANE_TEXT =
+  "absolute top-8 z-10 text-[0.8125rem] leading-none font-medium whitespace-nowrap text-foreground [text-shadow:0_0_1px_rgb(16_16_17),0_0_3px_rgb(16_16_17),0_0_6px_rgb(16_16_17)] xl:top-[46px] xl:text-sm";
 const LANE_BAR = "absolute top-[54px] h-2 xl:top-[72px] xl:h-2.5";
 
 /** The days above the lanes (desktop), with the gold "now" tag. */
@@ -694,7 +700,10 @@ function DayAxis({ week }: { week: WeekTrackModel | null }) {
   );
 }
 
-/** Friday's finish: a checkered line at the close, and its stamp (filled once the week is final). */
+/**
+ * Friday's finish: a checkered line at the close, and its stamp (filled once the week is final). The
+ * stamp sits above the "now" line (z-10): over the weekend "now" lands right on it.
+ */
 function Finish({ x, weekend }: { x: number; weekend: boolean }) {
   return (
     <>
@@ -705,7 +714,7 @@ function Finish({ x, weekend }: { x: number; weekend: boolean }) {
       />
       <span
         className={cn(
-          "absolute top-[70px] -translate-x-1/2 px-1.5 pt-1 pb-[3px] font-sans text-[11px] leading-none font-extrabold tracking-[0.06em] uppercase italic font-stretch-[112%] xl:top-[69px] xl:translate-x-3",
+          "absolute top-[70px] z-10 -translate-x-1/2 px-1.5 pt-1 pb-[3px] font-sans text-[11px] leading-none font-extrabold tracking-[0.06em] uppercase italic font-stretch-[112%] xl:top-[69px] xl:translate-x-3",
           weekend ? "bg-paper text-ink" : "bg-ink text-foreground shadow-[inset_0_0_0_1px_var(--paper)] xl:bg-transparent",
         )}
         style={{ left: pct(x) }}
@@ -727,12 +736,20 @@ function RunBar({ end, nowX }: { end: number; nowX: number }) {
   );
 }
 
-function laneLabel(kind: GameTileKey, week: WeekTrackModel | null): string {
-  if (kind === "quests") return "On-chain quests: your wallet is checked all week, about every 5 minutes.";
+/**
+ * The lane's accessible name (the lane is role="img", so its drawn words are not read): everything
+ * the lane says, the next quest checked and the week's prediction count included.
+ */
+function laneLabel(kind: GameTileKey, week: WeekTrackModel | null, next: { title: string; points: number } | null = null, weekCount = 0): string {
+  if (kind === "quests") {
+    const base = "On-chain quests: your wallet is checked all week, about every 5 minutes.";
+    return next ? `${base} Next check: ${next.title}, +${formatPoints(next.points)} points.` : base;
+  }
   if (kind === "predictions") {
-    if (!week || week.lockAt === null) return "Predictions: Yes or No on Friday's close.";
+    const count = weekCount > 0 ? ` ${weekCount} ${week?.weekend ? "settled" : "this week"}.` : "";
+    if (!week || week.lockAt === null) return `Predictions: Yes or No on Friday's close.${count}`;
     const locked = week.weekend || week.nowMs >= week.lockAt;
-    return `Predictions ${locked ? "locked" : "lock"} ${spokenUtcDayTime(week.lockAt)} and settle after Friday's close.`;
+    return `Predictions ${locked ? "locked" : "lock"} ${spokenUtcDayTime(week.lockAt)} and settle after Friday's close.${count}`;
   }
   if (!week || week.closeAt === null) return "The weekly competition, with virtual cash.";
   return `The virtual-cash competition ${week.weekend ? "closed" : "closes"} ${spokenUtcDayTime(week.closeAt)}.`;
@@ -834,7 +851,7 @@ function LaneTrack({
   }
 
   return (
-    <div className="relative min-h-[92px] xl:min-h-[132px]" role="img" aria-label={laneLabel(kind, week)}>
+    <div className="relative min-h-[92px] xl:min-h-[132px]" role="img" aria-label={laneLabel(kind, week, next, weekCount)}>
       {/* The days: a rule at each midnight, the weekend hatched. */}
       {TRACK_DAYS.map((d) => (
         <span key={d.long} className="absolute inset-y-0 w-px bg-rule" style={{ left: pct(d.x) }} />

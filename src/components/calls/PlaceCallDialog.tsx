@@ -232,7 +232,7 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
             }}
             aria-invalid={error ? true : undefined}
             aria-describedby={`${hintId} ${backId}`}
-            className="h-12 border-rule-2 bg-ink pr-12 pl-3.5 text-xl font-semibold tabular-nums font-stretch-[85%] [appearance:textfield] focus-visible:ring-offset-popover md:text-xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="h-12 border-input bg-ink pr-12 pl-3.5 text-xl font-semibold tabular-nums font-stretch-[85%] [appearance:textfield] focus-visible:ring-offset-popover md:text-xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
           <span className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-sm text-muted-foreground" aria-hidden>
             pts

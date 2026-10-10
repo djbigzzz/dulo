@@ -125,10 +125,16 @@ export interface MarketSessionChipProps {
    * stable placeholder until it mounts, so server and first client render always agree.
    */
   nowIso?: string;
+  /**
+   * The short form below md ("Closed · 2d 12h"), for the header's tight row only. Every page mount
+   * keeps the full sentence ("US market closed · opens in 2d 12h") at every width: on a phone a bare
+   * "Closed" under the prediction cards would read as if the prediction were closed.
+   */
+  compact?: boolean;
   className?: string;
 }
 
-export function MarketSessionChip({ nowIso, className }: MarketSessionChipProps) {
+export function MarketSessionChip({ nowIso, compact = false, className }: MarketSessionChipProps) {
   const [nowMs, setNowMs] = React.useState<number | null>(() => {
     if (!nowIso) return null;
     const t = Date.parse(nowIso);
@@ -169,14 +175,15 @@ export function MarketSessionChip({ nowIso, className }: MarketSessionChipProps)
       ) : (
         <span>
           {/*
-            The long sentence needs about 276px and the short form 147px, so the sentence only
-            appears from md, where every surface that mounts this chip has the room for it.
+            The long sentence needs about 240px and the short form 147px. Every page mount has the
+            room for the sentence (measured 10 Oct: 288px at 320); the header's compact chip keeps
+            the short form below md.
           */}
-          <span className="hidden md:inline">US&nbsp;market&nbsp;</span>
+          <span className={compact ? "hidden md:inline" : undefined}>US&nbsp;market&nbsp;</span>
           {/* One text run, so a screen reader never hears both the short and the long form. */}
-          <span className="font-semibold text-foreground capitalize md:normal-case">{session.open ? "open" : "closed"}</span>
+          <span className={cn("font-semibold text-foreground", compact && "capitalize md:normal-case")}>{session.open ? "open" : "closed"}</span>
           <span>&nbsp;·&nbsp;</span>
-          <span className="hidden md:inline">{sessionVerb(session)}&nbsp;</span>
+          <span className={compact ? "hidden md:inline" : undefined}>{sessionVerb(session)}&nbsp;</span>
           <span className="font-semibold text-foreground">{formatSessionCountdown(session.msUntil)}</span>
         </span>
       )}

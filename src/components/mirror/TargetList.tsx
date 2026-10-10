@@ -19,25 +19,38 @@ export interface TargetListProps {
 
 /** Rank · player · the headline number · Copy, one row on 1px rules (the standings' row). */
 export const COPY_ROW = "grid min-h-14 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 border-t border-rule py-2 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto_auto] sm:gap-x-5";
+/**
+ * The model portfolios' row, with no rank column: that list puts a portfolio with one stock over 40%
+ * last, so its competition ranks run out of order (1, 4, 6, 2...) and a leading rank numeral would
+ * read as a broken sort. The real rank moves into the meta line ("#4 this week · Paper equity").
+ */
+export const COPY_ROW_UNRANKED = "grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 border-t border-rule py-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-x-5";
 
 /**
- * One row per wallet to copy: the rank as a scoreboard numeral, the name (a house bot dimmed, its
- * mark and the words "house bot" beside it), the headline number in the condensed cut, and a quiet
- * Copy button to /copy/[wallet].
+ * One row per wallet to copy: the rank as a scoreboard numeral (Season leaders, which run in rank
+ * order; a model portfolio carries its competition rank in the meta line instead), the name (a house
+ * bot dimmed, its mark and the words "house bot" beside it), the headline number in the condensed
+ * cut, and a quiet Copy button to /copy/[wallet].
  */
 export function TargetList({ rows, metric, className }: TargetListProps) {
+  const ranked = metric === "points";
   return (
     <ul className={cn("border-b border-rule", className)}>
       {rows.map((row) => {
         const name = row.handle ?? row.address;
         const value = metric === "points" ? formatPoints(row.points ?? 0) : row.equityUsd !== null ? formatUsd(row.equityUsd) : "No equity yet";
-        const caption = metric === "points" ? "Season points" : isConcentrated(row.topWeight) ? "Paper equity · one stock over 40%" : "Paper equity";
+        const caption =
+          metric === "points"
+            ? "Season points"
+            : `#${row.rank} this week · ${isConcentrated(row.topWeight) ? "Paper equity · one stock over 40%" : "Paper equity"}`;
         return (
-          <li key={`${row.address}-${row.rank}`} data-bot={row.isBot ? "" : undefined} className={COPY_ROW}>
-            <span className={cn("figure text-[1.375rem] leading-none", row.rank === 1 && !row.isBot ? "text-foreground" : "text-muted-foreground")}>
-              <span className="sr-only">Rank </span>
-              {row.rank}
-            </span>
+          <li key={`${row.address}-${row.rank}`} data-bot={row.isBot ? "" : undefined} className={ranked ? COPY_ROW : COPY_ROW_UNRANKED}>
+            {ranked ? (
+              <span className={cn("figure text-[1.375rem] leading-none", row.rank === 1 && !row.isBot ? "text-foreground" : "text-muted-foreground")}>
+                <span className="sr-only">Rank </span>
+                {row.rank}
+              </span>
+            ) : null}
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="flex min-w-0 items-center gap-2">
                 <span className={cn("truncate text-[0.96875rem]", row.isBot ? "text-muted-foreground" : "font-semibold text-foreground")} title={row.address}>

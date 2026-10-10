@@ -201,7 +201,9 @@ export function WeekTrack({ focus: focusProp, className }: WeekTrackProps) {
   }
 
   return (
-    <div data-slot="week-track" className={cn("border-b border-rule bg-ink-2", className)}>
+    // A named region: it sits between <header> and <main>, so landmark navigation would skip it (and
+    // its lock and close countdowns, on most pages shown nowhere else) without one.
+    <div data-slot="week-track" role="region" aria-label="This week" className={cn("border-b border-rule bg-ink-2", className)}>
       <div className="page-wrap grid h-[50px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-[18px] lg:h-[60px] lg:grid-cols-[136px_minmax(0,1fr)_200px] lg:gap-x-8 xl:grid-cols-[136px_minmax(0,1fr)_262px]">
         <div className="hidden min-w-0 flex-col gap-[5px] lg:flex">
           {labels ? (

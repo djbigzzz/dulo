@@ -77,9 +77,10 @@ function LockClock({ market, nowMs }: { market: CallMarketView; nowMs: number })
   const days = ms >= 48 * 3_600_000;
   return (
     <div className="flex items-end justify-between gap-4 @3xl/seg:flex-col @3xl/seg:items-start @3xl/seg:justify-start @3xl/seg:gap-0">
-      <div className="@3xl/seg:contents">
+      {/* min-w-0, and the stamp wraps in a segment under 20rem (a 320px phone): the figure keeps its line. */}
+      <div className="min-w-0 @3xl/seg:contents">
         <p className="text-[0.84375rem] leading-none font-medium text-muted-foreground @3xl/seg:text-sm">Locks in</p>
-        <p className="mono-meta mt-2 @3xl/seg:order-last @3xl/seg:mt-3.5">
+        <p className="mono-meta mt-2 @max-[20rem]/seg:whitespace-normal @3xl/seg:order-last @3xl/seg:mt-3.5">
           <time dateTime={market.locksAt}>{utcStamp(market.locksAt)}</time>
         </p>
       </div>
@@ -87,8 +88,10 @@ function LockClock({ market, nowMs }: { market: CallMarketView; nowMs: number })
         role="timer"
         aria-label={`Locks in ${spokenTrackClock(ms, !reduced)}`}
         className={cn(
-          "figure leading-[0.8] whitespace-nowrap @3xl/seg:mt-3",
-          days ? "text-[2rem] @md/seg:text-[2.5rem] @3xl/seg:text-[3.5rem] @5xl/seg:text-[4rem]" : "text-[2.75rem] @3xl/seg:text-[4.5rem] @5xl/seg:text-[5rem]",
+          "figure shrink-0 leading-[0.8] whitespace-nowrap @3xl/seg:mt-3",
+          days
+            ? "text-[1.75rem] @min-[20rem]/seg:text-[2rem] @md/seg:text-[2.5rem] @3xl/seg:text-[3.5rem] @5xl/seg:text-[4rem]"
+            : "text-[2.75rem] @3xl/seg:text-[4.5rem] @5xl/seg:text-[5rem]",
         )}
       >
         {formatTrackClock(ms, !reduced)}

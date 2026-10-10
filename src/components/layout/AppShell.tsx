@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 No `nowIso`: this shell is statically rendered, so a build-time instant would be a wrong
                 first frame. The chip renders its placeholder until it mounts instead.
               */}
-              <MarketSessionChip className="hidden shrink-0 min-[680px]:inline-flex md:hidden" />
+              <MarketSessionChip className="hidden shrink-0 min-[680px]:inline-flex md:hidden" compact />
               {/* Outline: each page owns its one gold primary action (DESIGN.md rule 1), its own Connect included. */}
               <ConnectButton variant="outline" />
             </div>

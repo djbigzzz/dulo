@@ -171,7 +171,8 @@
   --accent-foreground: #f3f0e8;
   --destructive: #ff5d6c;
   --border: rgb(243 240 232 / 0.085);
-  --input: rgb(243 240 232 / 0.17);
+  /* Text-field edges: cream at 42% (3.7:1 on ink), so a field's edge meets WCAG 1.4.11's 3:1. */
+  --input: rgb(243 240 232 / 0.42);
   --ring: var(--focus);
   --chart-1: #f3f0e8;
   --chart-2: #a3a199;
@@ -208,6 +209,15 @@
   html {
     @apply font-sans;
     -webkit-text-size-adjust: 100%;
+    /* The opaque sticky header (h-14, lg:h-16): a control scrolled into view on focus, or an anchor,
+       lands below it, never under it (WCAG 2.4.11). Section scroll margins add to this. */
+    scroll-padding-top: 4.5rem;
+  }
+  /* Under lg the opaque tab bar covers the bottom 4rem plus the iOS home indicator. */
+  @media (max-width: 1023.98px) {
+    html {
+      scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    }
   }
   .dark body {
     font-variant-numeric: tabular-nums lining-nums;
@@ -418,4 +428,12 @@
 }
 .dark .wallet-adapter-modal-middle .wallet-adapter-button:not([disabled]):hover {
   background: #e6e2d8;
+}
+/* Keyboard focus in the modal: the solid focus hue, as everywhere else (the library draws white).
+ * Specificity (0,4,0) and (0,3,0) beat the library's (0,3,0) and (0,2,0) whatever the order. */
+.dark .wallet-adapter-modal .wallet-adapter-button:focus-visible,
+.dark .wallet-adapter-modal-button-close:focus-visible,
+.dark .wallet-adapter-modal .wallet-adapter-modal-list-more:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }

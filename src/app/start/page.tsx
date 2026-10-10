@@ -13,6 +13,9 @@ import { useApiQuery } from "@/components/common/useApiQuery";
 import { useCallsQuery, useLeagueQuery } from "@/components/layout/WeekData";
 import { useSession } from "@/hooks/useSession";
 import { useSignInIntent } from "@/hooks/useSignInIntent";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useServerClock } from "@/hooks/useServerClock";
+import { isPreWeek } from "@/components/league/format";
 import { MarketCard, MarketCardSkeleton } from "@/components/calls/MarketCard";
 import { PlaceCallDialog } from "@/components/calls/PlaceCallDialog";
 import { CALLS_LOCK_COPY, liveStatus } from "@/components/calls/calls-format";
@@ -88,11 +91,16 @@ export default function StartPage() {
     ["start:plays", sessionKey],
     { refetchOnFocus: false },
   );
-  const compLine = competitionLineParts(lq.data?.league ?? null);
+  const compLine = competitionLineParts(lq.data?.league ?? null, lq.data?.now);
+  // The weekend: the open competition week and the open predictions are next week's.
+  const preWeek = lq.data?.league ? isPreWeek(lq.data.league, lq.data.now) : false;
   const { refetch } = q;
   const refetchLeague = lq.refetch;
   const refetchPlays = plays.refetch;
-  const nowMs = Date.now();
+  // The step 1 lock clock shows seconds: one ticking clock on the server's time, as /predictions
+  // and the week track keep (once a minute, without seconds, under reduced motion).
+  const reduced = useReducedMotion();
+  const nowMs = useServerClock(q.data?.now ?? lq.data?.now, reduced ? 60_000 : 1_000);
 
   const markets = React.useMemo(() => q.data?.markets ?? [], [q.data?.markets]);
   const featured: CallMarketView | null = markets.find((m) => liveStatus(m, nowMs) === "open") ?? null;
@@ -360,7 +368,7 @@ export default function StartPage() {
             <>
               {shareLink}
               <Link href={TOUR_HREFS.predictions} className={TOUR_LINK}>
-                {TOUR_COPY.predictMore}
+                {preWeek ? TOUR_COPY.predictMoreNextWeek : TOUR_COPY.predictMore}
                 <LinkArrow />
               </Link>
             </>
@@ -506,7 +514,12 @@ export default function StartPage() {
 
       {finished ? (
         <div className="mt-8 lg:mt-10">
-          <TourFinish rankShareUrl={rankShareUrl} />
+          {/* Step 1 open and done above already links to the predictions: the card does not repeat it. */}
+          <TourFinish
+            rankShareUrl={rankShareUrl}
+            preWeek={preWeek}
+            showPredictions={!(openKey === "predict" && tour.steps.some((s) => s.key === "predict" && shownStepState(s.state, finished) === "done"))}
+          />
         </div>
       ) : null}
 

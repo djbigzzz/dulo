@@ -143,7 +143,7 @@ export default function LeaderboardPage() {
         extrasLastOnMobile
         eyebrow="Stocks Season 0"
         title="Leaderboard"
-        description="Season points from quests, competition finishes and settled predictions."
+        description="Season points from settled predictions, weekly competition (virtual cash) finishes and quests."
         actions={board.data ? <SeasonLine season={board.data.season} /> : board.loading ? <Skeleton className="h-10 w-44" aria-hidden /> : null}
         stats={headerStats}
       />

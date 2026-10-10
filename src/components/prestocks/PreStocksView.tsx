@@ -274,7 +274,6 @@ export function PreStocksView({ className }: PreStocksViewProps) {
                     }
                   />
                 )}
-                <p className="text-[0.8125rem] text-pretty text-muted-foreground">{PRE_IPO_TRADE_NOTE}</p>
               </div>
             </div>
           )}

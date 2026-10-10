@@ -262,7 +262,9 @@ describe("the board", () => {
     expect(h).toContain('data-slot="pre-ipo-board-header"');
     expect(h.match(new RegExp(`class="${ROW_GRID.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g"))).toHaveLength(8);
     expect(ROW_GRID).toContain("grid-cols-[minmax(0,1fr)_auto]");
-    expect(ROW_GRID).toMatch(/md:grid-cols-\[minmax\(0,[\d.]+fr\)_minmax\(0,[\d.]+fr\)_minmax\(0,[\d.]+fr\)_auto\]/);
+    // The action track is a fixed width: header and rows are separate grids, so an `auto` track would
+    // size to the header's empty cell and the header's columns would sit off the rows'.
+    expect(ROW_GRID).toMatch(/md:grid-cols-\[minmax\(0,[\d.]+fr\)_minmax\(0,[\d.]+fr\)_minmax\(0,[\d.]+fr\)_[\d.]+rem\]/);
     // Broadcast (9 Oct): rows on 1px rules, never a box or a card per row (no cards in cards).
     for (const cls of ["border-t", "border-rule"]) expect(ROW).toContain(cls);
     for (const cls of ["rounded", "bg-card", "max-md:border"]) expect(ROW).not.toContain(cls);

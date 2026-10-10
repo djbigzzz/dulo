@@ -12,6 +12,11 @@ export interface TradeClosedProps {
   serverNow: string;
   lastSettled: LeagueSettledView | null;
   chainId?: string;
+  /**
+   * The words "house bot" beside each bot's mark (touch screens never show its title). Default true;
+   * /competition passes false, because its standings' legend already says which players are bots.
+   */
+  botWords?: boolean;
   className?: string;
 }
 
@@ -20,7 +25,7 @@ export interface TradeClosedProps {
  * (C6), so this only shows while a week settles: next week's competition takes trades from its close.
  * Broadcast: a serif line, the countdown in the narrow scoreboard cut, the podium as rows on rules.
  */
-export function TradeClosed({ league, serverNow, lastSettled, chainId, className }: TradeClosedProps) {
+export function TradeClosed({ league, serverNow, lastSettled, chainId, botWords = true, className }: TradeClosedProps) {
   const reopens = nextOpenIso(league);
   const remaining = useCountdown(reopens, serverNow);
   const podium = lastSettled?.top.slice(0, 3) ?? [];
@@ -68,7 +73,7 @@ export function TradeClosed({ league, serverNow, lastSettled, chainId, className
                     ) : (
                       <span className="text-muted-foreground">Anonymous</span>
                     )}
-                    {row.isBot ? <BotMarker words={false} /> : null}
+                    {row.isBot ? <BotMarker words={botWords} /> : null}
                   </span>
                   <ReturnPill pct={row.pnlPct} />
                 </li>

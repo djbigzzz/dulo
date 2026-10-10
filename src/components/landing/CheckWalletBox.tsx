@@ -71,7 +71,8 @@ export function CheckWalletBox({ className, primary = false, samples = true, sta
           aria-invalid={error !== null}
           aria-describedby={error ? errorId : undefined}
           className={cn(
-            "h-11 min-w-0 rounded-sm border-rule-2 bg-ink-2 px-3.5 font-mono text-sm placeholder:font-sans md:text-sm dark:bg-ink-2",
+            // 16px under md: iOS zooms the page on focus into a smaller field. border-input: a 3:1 edge.
+            "h-11 min-w-0 rounded-sm border-input bg-ink-2 px-3.5 font-mono text-base placeholder:font-sans md:text-sm dark:bg-ink-2",
             !stacked && "sm:h-12 sm:flex-1",
           )}
         />

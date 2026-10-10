@@ -15,7 +15,8 @@ The reference mockups (landing and competition, 1440 and 390, the weekend and pr
 | Raised | `bg-popover` / `bg-ink-3` | `#1a1a1d` | Dialogs, sheets, menus, toasts, quiet buttons, skeletons |
 | Well | `bg-ink-4` | `#232327` | Track base, logo wells, disabled fills |
 | Rule | `border-rule` | cream at 8.5% | Every row, every panel edge, 1px, solid |
-| Strong rule | `border-rule-2` | cream at 17% | Under a page title, quiet button edges, inputs |
+| Strong rule | `border-rule-2` | cream at 17% | Under a page title, quiet button edges |
+| Field edge | `border-input` / `ring-input` | cream at 42% (3.7:1 on ink) | Text fields and the quantity well: their edge is the only thing that shows the field, so it meets WCAG 1.4.11's 3:1 |
 | Text | `text-foreground` / `text-paper` | `#f3f0e8` cream | Body, titles, numbers |
 | Muted | `text-muted-foreground` / `text-mute` | `#a3a199` (7.6:1 on ink) | Every must-read small line: trust lines, labels, hints, sources |
 | Dim | `text-dim` | `#87857e` (5.3:1 on ink, 5.1:1 on cards) | Secondary only: column heads, future days, inactive tabs, bot names. Never a trust line |
@@ -49,7 +50,7 @@ Loaded in `src/app/layout.tsx` with `next/font/google`; the CSS variables go on 
 
 - `--radius` is 2px: controls are square or very lightly rounded (`rounded-lg` = 2px, cards `rounded-md`/`rounded-2xl` = 1.6–3.6px). Logos and live dots are the only circles.
 - Panels: `bg-card` with a 1px `rule` (Card does `ring-1 ring-rule`). **No cards in cards**: inside a panel, separate with rules, not another box.
-- Rows: 42px, a 1px `rule` on top, no zebra, no boxes. Dimmed rows (house bots) use `text-muted-foreground` / `opacity-70`, never a hue.
+- Rows: 42px, a 1px `rule` on top, no zebra, no boxes. Dimmed rows (house bots) use `text-muted-foreground` (a bot past the points line: its name in `text-dim`), never a hue and never opacity on text (faded text fails AA).
 - **No four-box stat strips.** StatStrip is an inline row of label / value pairs on rules.
 - Open seats and invitations ("Your slot", SignInBanner): a dashed outline `border border-dashed border-[rgb(243_240_232/0.38)]`.
 - Page container: `page-wrap` (1312px of content between gutters of 16 / 24 / 40 / 64px). The shell's header, week track, main and footer all use it.

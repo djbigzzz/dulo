@@ -88,9 +88,13 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(input).toContain("h-11");
     expect(input).toContain("sm:flex-1");
     expect(input).not.toMatch(/[" ]flex-1\b/);
-    // The landing sets the box straight on the page (no panel); the field keeps its own strong rule (17%), so it stays visible.
+    // The landing sets the box straight on the page (no panel); the field keeps its own edge, the input
+    // token (42%, 3.7:1 on ink: WCAG 1.4.11), so it stays visible.
     expect(repoFile("src/app/page.tsx")).toMatch(/<CheckWalletBox bare \/>/);
-    expect(input).toContain("border-rule-2");
+    expect(input).toContain("border-input");
+    expect(input).not.toContain("border-rule-2");
+    // 16px under md: iOS zooms the page on focus into a field under 16px.
+    expect(input).toMatch(/\btext-base\b[^"]*\bmd:text-sm\b/);
   });
 
   it("keeps the hero's Sign in as tall as the Connect it replaces: the pair fills the caller's size, never its padding", () => {
@@ -258,10 +262,12 @@ describe("mobile layout at 375 px — the /competition Trade button", () => {
     // Broadcast (9 Oct): the paper-trade panel sits under the standings on a phone (the 390 mockup),
     // so the floating button scrolls to it and moves focus there instead of opening a sheet.
     const page = repoFile("src/app/competition/page.tsx");
-    expect(page).toMatch(/import \{ useInView \} from "@\/hooks\/useInView"/);
+    expect(page).toMatch(/import \{ useInView, useScrolledPast \} from "@\/hooks\/useInView"/);
     expect(page).toContain("const boardInView = useInView(boardRef, loaded);");
     expect(page).toContain("const panelInView = useInView(panelRef, loaded);");
-    expect(page).toContain("const hideFab = boardInView || panelInView;");
+    // Once the panel is above the viewport the button's down arrow would be false: it hides there too.
+    expect(page).toContain("const panelPassed = useScrolledPast(panelRef, loaded);");
+    expect(page).toContain("const hideFab = boardInView || panelInView || panelPassed;");
     // The open seat (and its Connect) lives inside the observed standings section.
     expect(page).toMatch(/<section ref=\{boardRef\}[^>]*aria-labelledby="league-board"/);
     expect(page.indexOf("<section ref={boardRef}")).toBeLessThan(page.indexOf("seat={seat}"));

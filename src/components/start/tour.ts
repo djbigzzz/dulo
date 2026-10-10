@@ -80,6 +80,8 @@ export const TOUR_COPY = Object.freeze({
   predictLoadError: "Couldn't load this week's predictions",
   predictShare: "Post your pick on X",
   predictMore: "See this week's other predictions",
+  /** The weekend: the open markets are next week's (they settle the Friday after). */
+  predictMoreNextWeek: "See next week's other predictions",
 
   competeTitle: "Make 3 paper trades with virtual cash",
   competeTeaser: "$10,000 of virtual cash in this week's competition. Not real money.",
@@ -111,6 +113,7 @@ export const TOUR_COPY = Object.freeze({
   finishCopy: "Copy a wallet's portfolio",
   finishCopyBody: "A tool, not a game: see how any Solana wallet's xStocks are split.",
   finishPredictions: "See this week's other predictions",
+  finishPredictionsNextWeek: "See next week's other predictions",
   finishCompetition: "Open the weekly competition (virtual cash)",
   finishRankShare: "Post your rank on X",
 });

@@ -154,7 +154,8 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
           <ul className={SEGMENT_GRID}>
             {group.plays.map((play) => (
               <li key={play.key} className="min-w-0">
-                <PlayCard play={play} signedIn={signedIn} onProof={onProof} />
+                {/* The section heading names the kind, so the card's corner does not repeat it. */}
+                <PlayCard play={play} signedIn={signedIn} onProof={onProof} showKind={false} />
               </li>
             ))}
           </ul>

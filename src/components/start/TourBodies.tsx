@@ -194,12 +194,22 @@ export function BoardStepBody({ line, onFinish }: BoardStepBodyProps) {
  * view's one gold action) beside the sign-off, then the games again along the card's foot. A single
  * ruled panel with nothing boxed inside it; the copy tool comes first in reading order.
  */
-export function TourFinish({ rankShareUrl }: { rankShareUrl: string | null }) {
+export function TourFinish({
+  rankShareUrl,
+  preWeek = false,
+  showPredictions = true,
+}: {
+  rankShareUrl: string | null;
+  /** The weekend: the open predictions are next week's. */
+  preWeek?: boolean;
+  /** False while step 1 is open above and already links to the predictions. */
+  showPredictions?: boolean;
+}) {
   return (
     <section
       data-slot="tour-finish"
       aria-labelledby="tour-finish-title"
-      className="grid scroll-mt-20 grid-cols-1 gap-x-14 gap-y-7 rounded-md bg-card px-5 py-7 ring-1 ring-rule sm:px-8 sm:py-9 lg:grid-cols-[minmax(0,1fr)_minmax(0,31rem)] lg:px-10 lg:pt-11 lg:pb-9 xl:gap-x-20"
+      className="grid scroll-mt-2 grid-cols-1 gap-x-14 gap-y-7 rounded-md bg-card px-5 py-7 ring-1 ring-rule sm:px-8 sm:py-9 lg:grid-cols-[minmax(0,1fr)_minmax(0,31rem)] lg:px-10 lg:pt-11 lg:pb-9 xl:gap-x-20"
     >
       <div className="flex flex-col gap-3">
         {/* tabIndex -1: the page moves focus here when the finish card opens on its own. */}
@@ -217,10 +227,12 @@ export function TourFinish({ rankShareUrl }: { rankShareUrl: string | null }) {
       </div>
       {/* The games again, along the foot of the card on a rule. */}
       <div className="flex flex-col items-start gap-5 border-t border-rule pt-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-4 lg:col-span-2 lg:pt-7">
-        <Link href={TOUR_HREFS.predictions} className={TOUR_LINK}>
-          {TOUR_COPY.finishPredictions}
-          <LinkArrow />
-        </Link>
+        {showPredictions ? (
+          <Link href={TOUR_HREFS.predictions} className={TOUR_LINK}>
+            {preWeek ? TOUR_COPY.finishPredictionsNextWeek : TOUR_COPY.finishPredictions}
+            <LinkArrow />
+          </Link>
+        ) : null}
         <Link href={TOUR_HREFS.competition} className={TOUR_LINK}>
           {TOUR_COPY.finishCompetition}
           <LinkArrow />

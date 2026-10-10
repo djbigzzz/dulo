@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "@/hooks/useSession";
-import { useInView } from "@/hooks/useInView";
+import { useInView, useScrolledPast } from "@/hooks/useInView";
 import { ChevronDownIcon, Sprout } from "lucide-react";
 import { cn } from "cn";
 import { api, type LeagueLeaderboardRow, type LeagueResponse, type PlaysResponse } from "@/lib/api-client";
@@ -140,13 +140,15 @@ export default function LeaguePage() {
 
   // Phones and tablets: a floating Trade button jumps to the trade panel under the board. It steps
   // out of the way while the standings are on screen (it would cover their Return column and the open
-  // seat's Connect) and while the panel itself is.
+  // seat's Connect), while the panel itself is, and once the panel is above the viewport (its arrow
+  // points down, so it shows only between the board and the panel).
   const boardRef = React.useRef<HTMLElement | null>(null);
   const panelRef = React.useRef<HTMLElement | null>(null);
   const loaded = Boolean(data && league);
   const boardInView = useInView(boardRef, loaded);
   const panelInView = useInView(panelRef, loaded);
-  const hideFab = boardInView || panelInView;
+  const panelPassed = useScrolledPast(panelRef, loaded);
+  const hideFab = boardInView || panelInView || panelPassed;
   const jumpToPanel = React.useCallback(() => {
     const el = panelRef.current;
     if (!el) return;
@@ -156,7 +158,7 @@ export default function LeaguePage() {
 
   const seat: OpenSeat | null =
     seatMode === "connect"
-      ? { signedIn: false, action: <ConnectButton size="lg" className="h-10 shrink-0" /> }
+      ? { signedIn: false, action: <ConnectButton size="lg" fullLabel className="h-10 shrink-0" /> }
       : seatMode === "first-trade"
         ? {
             signedIn: true,
@@ -170,7 +172,7 @@ export default function LeaguePage() {
 
   const tradePanel =
     data && league && closed ? (
-      <TradeClosed league={league} serverNow={data.now} lastSettled={data.lastSettled} chainId={CHAIN_ID} />
+      <TradeClosed league={league} serverNow={data.now} lastSettled={data.lastSettled} chainId={CHAIN_ID} botWords={false} />
     ) : (
       <TradeForm
         league={league}
@@ -287,7 +289,7 @@ export default function LeaguePage() {
               tabIndex={-1}
               aria-labelledby="league-trade-title"
               data-slot="league-trade-panel"
-              className="flex scroll-mt-[4.5rem] flex-col bg-card p-[22px] ring-1 ring-rule outline-none max-md:-mx-[var(--gutter)] max-md:border-y max-md:border-rule-2 max-md:px-[var(--gutter)] max-md:py-5 max-md:ring-0"
+              className="flex flex-col bg-card p-[22px] ring-1 ring-rule outline-none max-md:-mx-[var(--gutter)] max-md:border-y max-md:border-rule-2 max-md:px-[var(--gutter)] max-md:py-5 max-md:ring-0"
             >
               <div className="flex items-baseline justify-between gap-3">
                 <h2 id="league-trade-title" className="font-display text-[2rem] leading-none font-normal tracking-[-0.01em] lg:text-[2.125rem]">

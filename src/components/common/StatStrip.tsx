@@ -57,8 +57,8 @@ export function StatStrip({ stats, className }: { stats: Stat[]; className?: str
           >
             {s.value}
           </dd>
-          {/* Phones: the half-width pair is too narrow for one line, so the hint wraps to two. From sm: one line. */}
-          {s.hint ? <dd className="line-clamp-2 text-[0.78125rem] leading-snug break-words whitespace-normal text-muted-foreground sm:line-clamp-1">{s.hint}</dd> : null}
+          {/* At most two lines at every width, so a hint is never cut to an ellipsis in a narrow cell. */}
+          {s.hint ? <dd className="line-clamp-2 text-[0.78125rem] leading-snug break-words whitespace-normal text-muted-foreground">{s.hint}</dd> : null}
         </div>
       ))}
     </dl>

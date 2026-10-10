@@ -205,9 +205,10 @@ export function LeagueLeaderboard({
   );
 }
 
-function PlayerName({ row, chainId }: { row: LeagueLeaderboardRow; chainId?: string }) {
+function PlayerName({ row, chainId, dim = false }: { row: LeagueLeaderboardRow; chainId?: string; dim?: boolean }) {
   const lit = !row.isBot;
-  const cls = cn("truncate", lit ? "font-semibold text-foreground" : "text-muted-foreground");
+  // `dim`: a house bot below the points line, one step quieter (text-dim, 5.3:1), never by opacity.
+  const cls = cn("truncate", lit ? "font-semibold text-foreground" : dim ? "text-dim" : "text-muted-foreground");
   if (row.handle) return <span className={cls}>{row.handle}</span>;
   if (row.address) {
     const href = chainId ? explorerUrl(chainId, row.address) : null;
@@ -259,7 +260,6 @@ function BoardRow({ row, chainId, showDelta, scale, beyond }: { row: LeagueLeade
         BOARD_COLS,
         "relative h-[2.625rem] border-t border-rule",
         lit && "bg-white/[0.045] before:absolute before:-top-px before:bottom-0 before:left-0 before:w-0.5 before:bg-foreground",
-        beyond && row.isBot && "opacity-70",
       )}
     >
       <span
@@ -276,7 +276,8 @@ function BoardRow({ row, chainId, showDelta, scale, beyond }: { row: LeagueLeade
         {showDelta ? <RankDelta delta={row.delta} /> : null}
       </span>
       <span role="cell" className="flex min-w-0 items-center gap-2 text-[0.9375rem] leading-none md:gap-[9px] md:text-[0.96875rem]">
-        <PlayerName row={row} chainId={chainId} />
+        {/* No opacity on the row: faded text fails AA. A bot past the points line steps its name down to text-dim. */}
+        <PlayerName row={row} chainId={chainId} dim={beyond && row.isBot} />
         {row.isBot ? <BotMarker words={false} /> : null}
         {row.isMe ? (
           <Badge className="h-[1.375rem] px-1.5 text-xs font-semibold">You</Badge>

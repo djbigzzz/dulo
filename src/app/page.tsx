@@ -47,10 +47,13 @@ function WelcomeOffer({ line }: { line: string }) {
   );
 }
 
-/** A signed-in player's next step: the tour picks up from their own data. */
-function ContinueTour({ className }: { className?: string }) {
+/**
+ * A signed-in player's next step: the tour picks up from their own data. Gold in the hero (the page's
+ * one primary action); the closing band passes variant="secondary", the cream solid.
+ */
+function ContinueTour({ className, variant = "default" }: { className?: string; variant?: "default" | "secondary" }) {
   return (
-    <Link href="/start" className={cn(buttonVariants({ size: "xl" }), HERO_PRIMARY, className)}>
+    <Link href="/start" className={cn(buttonVariants({ variant, size: "xl" }), HERO_PRIMARY, className)}>
       Continue the tour
     </Link>
   );
@@ -142,7 +145,7 @@ export default function Home() {
         id="check"
         tabIndex={-1}
         aria-labelledby="check-title"
-        className="mt-14 grid scroll-mt-28 gap-5 border-t border-rule-2 pt-7 outline-none lg:mt-24 lg:grid-cols-[minmax(17rem,1fr)_minmax(0,1.65fr)] lg:items-start lg:gap-14 lg:pt-12"
+        className="mt-14 grid scroll-mt-10 gap-5 border-t border-rule-2 pt-7 outline-none lg:mt-24 lg:grid-cols-[minmax(17rem,1fr)_minmax(0,1.65fr)] lg:items-start lg:gap-14 lg:pt-12"
       >
         <div className="min-w-0">
           <h2 id="check-title" className="font-display text-4xl leading-none font-normal tracking-[-0.01em] lg:text-[2.875rem]">
@@ -170,7 +173,11 @@ export default function Home() {
               All three games score on one Season leaderboard. House bots never rank here.
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-x-7 gap-y-4">
-              <SessionSwitch signedIn={<ContinueTour className="h-10 w-auto px-4 text-[0.9375rem] [--cut:8px] lg:h-10" />} signedOut={<ConnectButton size="lg" fullLabel />} />
+              {/* Cream, not gold: the hero's button is the page's one gold primary (docs/DESIGN.md rule 1). */}
+              <SessionSwitch
+                signedIn={<ContinueTour variant="secondary" className="h-10 w-auto px-4 text-[0.9375rem] lg:h-10" />}
+                signedOut={<ConnectButton size="lg" fullLabel variant="secondary" />}
+              />
               <SessionSwitch
                 signedIn={
                   <Link href="/predictions" className={RULED_LINK}>

@@ -47,7 +47,7 @@ describe("points UI — the policy numbers the copy quotes", () => {
     expect(MIN_TRADES_FOR_WEEKLY_POINTS).toBe(3);
     expect(STARTER_HINT).toBe(`Includes ${STARTER_POINTS.toLocaleString("en-US")} starter points`);
     expect(starterPointsHint(STARTER_POINTS)).toBe(STARTER_HINT);
-    expect(SEASON_POINTS_HINT).toBe("Starter grant not ranked; settled predictions are");
+    expect(SEASON_POINTS_HINT).toBe("Starter points don't rank; settled predictions do.");
     expect(PREDICTION_LOSS_COPY).toBe("If it doesn't settle your way, the points you put in count against your Season points.");
   });
 
@@ -256,7 +256,8 @@ describe("points UI — /leaderboard", () => {
   });
 
   it("describes where Season points come from, and that the starter grant itself doesn't count", () => {
-    expect(src).toContain('description="Season points from quests, competition finishes and settled predictions."');
+    // Predictions lead, and the competition carries "virtual cash" beside it.
+    expect(src).toContain('description="Season points from settled predictions, weekly competition (virtual cash) finishes and quests."');
   });
 });
 

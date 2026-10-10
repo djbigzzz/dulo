@@ -71,7 +71,7 @@ const ICON_WELL = "flex size-10 shrink-0 items-center justify-center rounded-ful
 
 /** What a profile keeps, said once each on the rules: the signed-out page's three lanes. */
 const PERKS = [
-  { title: "Season points", text: "Every quest, competition finish and settled prediction adds to your Season points." },
+  { title: "Season points", text: "Every settled prediction, weekly competition (virtual cash) finish and quest adds to your Season points." },
   { title: "Your rank", text: "See where you stand on the Season leaderboard. House bots never rank there." },
   { title: "Quests completed", text: "Each one with the proof behind it, read from your own wallets." },
 ];

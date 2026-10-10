@@ -13,7 +13,7 @@
  */
 import type { CallMarketView, LeagueResponse, PlayView, PlaysResponse } from "@/lib/api-client";
 import { formatPoints } from "@/components/common/format";
-import { NEXT_WEEK_MARKETS_COPY, liveStatus, splitPct } from "@/components/calls/calls-format";
+import { NEXT_WEEK_MARKETS_COPY, liveStatus } from "@/components/calls/calls-format";
 import { isPreIpoQuest } from "@/components/common/issuer";
 import { formatSignedPct, formatUsdWhole } from "@/components/league/format";
 import { utcDayMonth } from "@/components/layout/week-track";
@@ -254,52 +254,11 @@ export function pickHeroMarkets<T extends Pick<CallMarketView, "status" | "locks
 }
 
 /**
- * Where the price sits on the hero's track, as a percent of its width. The line (the strike) is
- * always the middle; the scale is wide enough that the price lands between 20% and 80% (nearer the
- * middle when it is close: the scale is at least 0.4% of the strike either side). Null without a
- * usable price.
+ * The hero's price track reads the same helpers as /predictions' segments (calls-format), so the
+ * strike's wording, the gap and the crowd line never drift apart between the landing and the board.
+ * gaugePosition is calls-format's trackPosition under the name the hero has always used.
  */
-export function gaugePosition(price: number | null | undefined, strike: number): { p: number; gap: number } | null {
-  if (price === null || price === undefined || !Number.isFinite(price) || !Number.isFinite(strike) || strike <= 0) return null;
-  const gap = price - strike;
-  const half = Math.max(Math.abs(gap) / 0.6, strike * 0.004);
-  const p = 50 + (gap / half) * 50;
-  return { p: Math.min(97, Math.max(3, p)), gap };
-}
-
-const CENTS = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/** "$0.24 below" | "$5.48 above" | "At the line": where the price stands against the line, to the cent. */
-export function gapLabel(gap: number): string {
-  if (!Number.isFinite(gap) || Math.abs(gap) < 0.005) return "At the line";
-  return `${CENTS.format(Math.abs(gap))} ${gap > 0 ? "above" : "below"}`;
-}
-
-/** What the strike is: the price when the prediction opened (lib/games/calls STRIKE_LABEL), never an official print. */
-export const STRIKE_NOTE = "price when it opened";
-
-/**
- * The side with most points in, for the hero's "57% say No". Null for an empty pool or an even
- * split, which the hero says in words instead.
- */
-export function crowdLead(odds: Pick<CallMarketView["odds"], "total" | "yesProb">): { side: "yes" | "no"; pct: string } | null {
-  if (!(odds.total > 0)) return null;
-  const yes = Math.round(odds.yesProb * 100);
-  if (yes === 50) return null;
-  const split = splitPct(odds);
-  return yes > 50 ? { side: "yes", pct: split.yes } : { side: "no", pct: split.no };
-}
-
-const pad2 = (n: number) => String(n).padStart(2, "0");
-const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-/** "Thu 8 Oct · 20:00 UTC" ("" for a bad date). */
-export function utcStamp(iso: string): string {
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return "";
-  const d = new Date(t);
-  return `${WEEKDAY[d.getUTCDay()]} ${utcDayMonth(t)} · ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())} UTC`;
-}
+export { trackPosition as gaugePosition, gapLabel, STRIKE_NOTE, crowdLead, utcStamp } from "@/components/calls/calls-format";
 
 /**
  * The Predictions lane's figure. During the week: predictionsTileFigure (every point in this week's

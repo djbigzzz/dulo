@@ -561,6 +561,12 @@ describe("GameTiles and the hero cards — first frame, before any read", () => 
     // Gold only on the "now" tag above the lanes and the "now" line through them.
     expect(src.match(/\bbg-signal\b/g)).toHaveLength(2);
     expect(src).not.toMatch(/buttonVariants\(\{\s*(variant: "default"|size)/);
+    // The page itself: one gold way in per sign-in state (the hero's), the closing band's in cream.
+    const page = repoFile("src/app/page.tsx");
+    const connects = page.match(/<ConnectButton\b[^>]*\/>/g) ?? [];
+    expect(connects.filter((c) => !/variant="(?:secondary|outline)"/.test(c))).toHaveLength(1);
+    const tours = page.match(/<ContinueTour\b[^>]*\/>/g) ?? [];
+    expect(tours.filter((t) => !/variant="secondary"/.test(t))).toHaveLength(1);
     // Every xStock logo goes through the shared well, which draws it in greyscale.
     expect(src).toContain('import { XStockLogo } from "@/components/common/XStockLogo"');
     expect(src).not.toMatch(/<img\b/);

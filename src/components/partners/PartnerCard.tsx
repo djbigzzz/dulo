@@ -135,7 +135,7 @@ export function ListProjectSection({
     "Your quests sit on the board with your logo and a page of their own.",
   ];
   return (
-    <section id="list" aria-labelledby="list-title" className={cn("flex scroll-mt-24 flex-col gap-4", className)}>
+    <section id="list" aria-labelledby="list-title" className={cn("flex scroll-mt-6 flex-col gap-4", className)}>
       <div className="flex flex-col gap-2 pb-1">
         <p className="text-[0.9375rem] font-medium text-muted-foreground">For projects</p>
         <h2 id="list-title" className="font-display text-[2rem] leading-none font-normal tracking-[-0.012em] sm:text-[2.5rem]">

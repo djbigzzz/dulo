@@ -12,6 +12,7 @@ import type { Adapter, WalletError } from "@solana/wallet-adapter-base";
 import { toast } from "sonner";
 import { RPC_URL } from "@/lib/config";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { WalletModalFocus } from "@/components/wallet/WalletModalFocus";
 
 // The wallet modal's base stylesheet; dark-theme overrides live in src/app/globals.css.
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -53,6 +54,8 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
     <ConnectionProvider endpoint={RPC_URL} config={{ commitment: "confirmed" }}>
       <SolanaWalletProvider wallets={wallets} autoConnect onError={onError} localStorageKey="dulo:wallet">
         <WalletModalProvider>
+          {/* Moves focus into the modal on open and back to its opener on close (the library does neither). */}
+          <WalletModalFocus />
           {/* The one session for the app: header, banners and pages all read this. */}
           <SessionProvider>{children}</SessionProvider>
         </WalletModalProvider>

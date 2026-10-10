@@ -89,9 +89,20 @@ function parseQty(s: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** A pre-IPO token's short name for its tile ("SpaceX" from "SpaceX PreStocks"); the symbol when unknown. */
+/**
+ * A pre-IPO token's short name for its tile ("SpaceX" from "SpaceX PreStocks"). A token the client
+ * list does not know yet (the issuer listed OURA after the static list) reads as a title-cased
+ * symbol ("Oura"), so it sits among names and not as a ticker in capitals.
+ */
 function preIpoShortName(symbol: string): string {
-  return preIpoToken(symbol)?.name.replace(/\s*PreStocks$/, "") ?? symbol;
+  const known = preIpoToken(symbol)?.name.replace(/\s*PreStocks$/, "");
+  if (known) return known;
+  return symbol ? symbol.charAt(0).toUpperCase() + symbol.slice(1).toLowerCase() : symbol;
+}
+
+/** Pre-IPO tiles in rows of 4, or of 3 when that fills every row and 4 would not (9 tokens: 3 x 3, no orphan). */
+function preIpoGridCols(count: number): string {
+  return count % 3 === 0 && count % 4 !== 0 ? "grid-cols-3" : "grid-cols-4";
 }
 
 /** Keyboard focus on a tile: the solid focus hue outside the tile (the cream ring marks the pick). */
@@ -262,7 +273,7 @@ export function TradeForm({
         {list.length === 0 ? (
           <p className="py-3 text-sm text-muted-foreground">No symbols available</p>
         ) : activeGroup?.source === "prestocks" ? (
-          <div className="grid grid-cols-4 gap-1">
+          <div className={cn("grid gap-1", preIpoGridCols(activeGroup.symbols.length))}>
             {activeGroup.symbols.map((s) => (
               <SymbolTile key={s.assetId} s={s} name={pickerName} checked={s.symbol === symbol} onPick={pick} preIpo />
             ))}
@@ -302,7 +313,8 @@ export function TradeForm({
       <div
         className={cn(
           "mt-2.5 flex h-14 items-center justify-between gap-3 bg-background pr-2.5 pl-3.5 ring-1 ring-inset transition-shadow focus-within:ring-2 focus-within:ring-[var(--focus)] motion-reduce:transition-none",
-          invalid ? "ring-no" : "ring-rule-2",
+          // The field's edge: the input token (3.7:1 on ink), not the decorative strong rule.
+          invalid ? "ring-no" : "ring-input",
         )}
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -382,7 +394,7 @@ export function TradeForm({
       >
         {!signedIn ? (
           // The cream solid when the standings' Your slot row carries the screen's gold.
-          <ConnectButton size="lg" variant={connectVariant} className="h-12 w-full text-base" />
+          <ConnectButton size="lg" variant={connectVariant} fullLabel className="h-12 w-full text-base" />
         ) : !open ? (
           <Button type="button" variant="outline" size="lg" disabled className="h-12 w-full">
             <Lock data-icon="inline-start" aria-hidden />

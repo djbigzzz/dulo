@@ -3,6 +3,7 @@
 import type { CallSide } from "@/lib/api-client";
 import { formatUsd } from "@/components/common/format";
 import { formatCountdown } from "@/components/calls/calls-format";
+import { isPreWeek } from "@/components/league/format";
 
 /** The public landing for shared links. */
 export const START_PATH = "/start";
@@ -35,17 +36,28 @@ export function rankShareOnXUrl(rank: number, pnlPct: number, url: string): stri
   return `https://x.com/intent/post?text=${encodeURIComponent(rankShareText(rank, pnlPct, url))}`;
 }
 
-type LeagueCountdowns = { open: boolean; closesIn: number | null; opensIn: number | null };
+type LeagueCountdowns = { open: boolean; closesIn: number | null; opensIn: number | null; weekStart?: string };
 
 /**
  * competitionLine in three runs around the countdown, so /start can keep "3h 03m" on one line
- * inside its pill; `live` is true while this week's competition is open.
+ * inside its pill; `live` is true while a competition week takes trades. From Friday's close to
+ * Monday the API's League is already next week's (it opens at once and counts weekend trades), so
+ * with the server's `now` the line names next week, as /competition's "Next week's standings" does.
  */
 export function competitionLineParts(
   league: LeagueCountdowns | null,
+  nowIso?: string | null,
 ): { before: string; countdown: string; after: string; live: boolean } | null {
   if (!league) return null;
   if (league.open && league.closesIn !== null) {
+    if (league.weekStart && isPreWeek({ weekStart: league.weekStart }, nowIso)) {
+      return {
+        before: "Next week's competition (virtual cash) is open: ",
+        countdown: formatCountdown(league.closesIn),
+        after: " left. Weekend trades count.",
+        live: true,
+      };
+    }
     return { before: "This week's competition (virtual cash) is live: ", countdown: formatCountdown(league.closesIn), after: " left.", live: true };
   }
   if (league.opensIn !== null) {
@@ -61,9 +73,9 @@ export function competitionLineParts(
 
 /**
  * The /start line about the weekly competition (virtual cash), from /api/v1/league's countdowns:
- * open -> how long is left; weekend -> when the next week opens; otherwise null.
+ * open -> how long is left (next week's, on the weekend); not open yet -> when it opens; otherwise null.
  */
-export function competitionLine(league: LeagueCountdowns | null): string | null {
-  const parts = competitionLineParts(league);
+export function competitionLine(league: LeagueCountdowns | null, nowIso?: string | null): string | null {
+  const parts = competitionLineParts(league, nowIso);
   return parts ? `${parts.before}${parts.countdown}${parts.after}` : null;
 }

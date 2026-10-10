@@ -59,7 +59,7 @@ export function MirrorAnyWallet({ className }: { className?: string }) {
           spellCheck={false}
           aria-invalid={error !== null}
           aria-describedby={error ? errorId : undefined}
-          className="h-12 min-w-0 px-3.5 text-[0.9375rem] sm:max-w-xl sm:flex-1 md:text-[0.9375rem]"
+          className="h-12 min-w-0 px-3.5 text-base sm:max-w-xl sm:flex-1 md:text-[0.9375rem]"
         />
         <Button type="submit" size="xl" className="h-12 shrink-0 px-6 text-base">
           Copy

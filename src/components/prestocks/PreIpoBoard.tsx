@@ -27,10 +27,13 @@ export interface PreIpoBoardProps {
  * token · DEX price (with the 24h move under it) · issuer mark · action. Under md a row stacks:
  * the token and its Jupiter link on one line, then each price on its own labelled line; from md the
  * labels move to the header row. Measured 22 Sep at 1280: a price chip ("$1,051.83 · Jupiter · 32s
- * ago") needs about 250px to stay on one line, which these shares give it from lg.
+ * ago") needs about 250px to stay on one line, which these shares give it from lg. The action track
+ * is a fixed 8.75rem (the ~133px "Open in Jupiter" button, right-aligned in it): the header and each
+ * row are separate grids, so an `auto` track would size to the header's empty cell and shift the
+ * header's columns off the rows'.
  */
 export const ROW_GRID =
-  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1.3fr)_auto] md:gap-x-4";
+  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1.3fr)_8.75rem] md:gap-x-4";
 /**
  * The list: Broadcast rows on rules, never a box or a card per row (the board is the page's hero,
  * like the competition's standings). The rows sit in a `display: contents` list under the header,
@@ -145,7 +148,7 @@ export function PreIpoRow({ row, className }: { row: PreIpoBoardRow; className?:
               <ArrowUpRight data-icon="inline-end" aria-hidden />
             </a>
           ) : (
-            <span className="text-[0.8125rem] text-muted-foreground">No mint on record for a Jupiter link.</span>
+            <span className="text-right text-[0.8125rem] text-muted-foreground">No mint on record for a Jupiter link.</span>
           )}
         </div>
       </div>

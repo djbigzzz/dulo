@@ -52,6 +52,11 @@ export interface PlayCardProps<P extends PlayCardPlay = PlayCardPlay> {
   showStatus?: boolean;
   /** Opens the proof drawer. The Proof button shows only when there is proof. */
   onProof?: (play: P) => void;
+  /**
+   * The corner's "In Dulo" / "From your wallet" when the quest mints no Badge. Default true; the
+   * /quests board passes false, because its section headings already name the kind.
+   */
+  showKind?: boolean;
   className?: string;
 }
 
@@ -206,7 +211,7 @@ function ProgressSegments({ current, target, label }: { current: number; target:
  * board, and a single one (the /prestocks list) still reads as a ruled tile. A complete quest
  * carries a cream rule along its top edge, as a lit row does on the standings.
  */
-export function PlayCard<P extends PlayCardPlay>({ play, signedIn = false, showStatus = true, onProof, className }: PlayCardProps<P>) {
+export function PlayCard<P extends PlayCardPlay>({ play, signedIn = false, showStatus = true, onProof, showKind = true, className }: PlayCardProps<P>) {
   const status = play.status ?? "locked";
   const complete = status === "complete";
   const soon = play.comingSoon && !complete;
@@ -224,7 +229,8 @@ export function PlayCard<P extends PlayCardPlay>({ play, signedIn = false, showS
   const isGame = questKind(play) === "in-platform";
   const showProof = signedIn && Boolean(onProof) && hasProof;
   const showWhere = where !== null;
-  const hasFooter = soon || showStatus || play.completions > 0 || showProof || showWhere;
+  // The count only prints from 5 (below), so a lower count never draws an empty ruled foot.
+  const hasFooter = soon || showStatus || play.completions >= 5 || showProof || showWhere;
 
   return (
     <article
@@ -237,8 +243,9 @@ export function PlayCard<P extends PlayCardPlay>({ play, signedIn = false, showS
         className,
       )}
     >
-      {/* The points as a scoreboard numeral; the Badge the quest mints, beside it. */}
-      <div className="flex items-start justify-between gap-4">
+      {/* The points as a scoreboard numeral; the Badge the quest mints, beside it. One fixed height
+          (the 40px medallion's), so every title in a row of cards starts at the same line. */}
+      <div className="flex h-10 items-center justify-between gap-4">
         <p className={cn("flex items-baseline gap-1.5 leading-none", soon && "opacity-70")}>
           <span className="figure text-[2.25rem] leading-[0.8] text-foreground sm:text-[2.5rem]">+{formatPoints(play.points)}</span>
           <span className="text-[0.8125rem] font-medium text-muted-foreground">points</span>
@@ -247,9 +254,9 @@ export function PlayCard<P extends PlayCardPlay>({ play, signedIn = false, showS
           <MedallionFrame size={40} glow={!soon}>
             <BadgeMedallion badgeKey={play.badgeKey} dimmed={soon} size={34} crop />
           </MedallionFrame>
-        ) : (
-          <span className="pt-0.5 text-[0.8125rem] text-dim">{isGame ? "In Dulo" : "From your wallet"}</span>
-        )}
+        ) : showKind ? (
+          <span className="text-[0.8125rem] text-dim">{isGame ? "In Dulo" : "From your wallet"}</span>
+        ) : null}
       </div>
 
       <div className="flex min-w-0 flex-col gap-1.5">
@@ -258,7 +265,8 @@ export function PlayCard<P extends PlayCardPlay>({ play, signedIn = false, showS
           {/* Only a pre-IPO quest names its issuer: every other quest is an xStocks quest, the Season 0 default. */}
           {preIpo ? <IssuerPill source={assetSource} /> : null}
         </div>
-        <p className="line-clamp-2 text-[0.9375rem] leading-relaxed text-muted-foreground">{play.desc}</p>
+        {/* Never clamped: some descriptions carry the quest's terms ("Points only, never real money"). */}
+        <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">{play.desc}</p>
       </div>
 
       {/* The rule in one sentence; on phones the action below says the same thing, so it is hidden there. */}
@@ -277,8 +285,10 @@ export function PlayCard<P extends PlayCardPlay>({ play, signedIn = false, showS
         </div>
       ) : null}
 
+      {/* From sm the foot keeps one height (rule + 14px + the 32px Proof button), whatever it holds, so the
+          rules of a row of cards line up. */}
       {hasFooter ? (
-        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-rule pt-3.5">
+        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-rule pt-3.5 sm:min-h-[calc(2.875rem+1px)]">
           {soon ? (
             <span className={cn(STATUS, STATUS_QUIET)}>
               <Clock className="size-3.5" aria-hidden />

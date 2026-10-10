@@ -54,7 +54,7 @@ function ConnectPanel({ address }: { address: string }) {
         Sign one message with it (no transaction). Dulo then snapshots it every few minutes, so the on-chain quests it meets earn points and the streaks
         start counting.
       </p>
-      <ConnectButton size="lg" className="h-12 w-full text-base" />
+      <ConnectButton size="lg" fullLabel className="h-12 w-full text-base" />
       <Link href={`/copy/${encodeURIComponent(address)}`} className={buttonVariants({ variant: "outline", size: "lg", className: "h-12 w-full text-base" })}>
         <Copy data-icon="inline-start" aria-hidden />
         Copy this wallet&apos;s portfolio

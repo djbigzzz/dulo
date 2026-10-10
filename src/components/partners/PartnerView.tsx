@@ -163,7 +163,10 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
             {
               label: "Points on offer",
               value: formatPoints(livePoints),
-              hint: detail.totals.completions > 0 ? `${formatPoints(detail.totals.completions)} completions so far` : undefined,
+              hint:
+                detail.totals.completions > 0
+                  ? `${formatPoints(detail.totals.completions)} ${detail.totals.completions === 1 ? "completion" : "completions"} so far`
+                  : undefined,
             },
           ]}
         />

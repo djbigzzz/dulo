@@ -126,7 +126,7 @@ export function TourStep({ index, stepKey, title, state, open, summary, onToggle
       data-step={stepKey}
       data-state={state}
       aria-current={live ? "step" : undefined}
-      className="scroll-mt-20 border-t border-rule first:border-t-0"
+      className="scroll-mt-2 border-t border-rule first:border-t-0"
     >
       {/*
         The lit row: the live segment's band and its cream edge (an inset shadow, so the focus ring

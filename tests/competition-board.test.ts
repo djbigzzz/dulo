@@ -118,13 +118,16 @@ describe("the standings board", () => {
     const h = board();
     expect(h.match(/data-bot=""/g)).toHaveLength(11);
     expect(h.match(/aria-label="House bot, never earns points"/g)).toHaveLength(11);
-    // Bots below the points line are dimmed further; real players never are.
-    expect(h).toMatch(/data-user-id="u11" data-bot=""[^>]*class="[^"]*opacity-70/);
+    // Bots below the points line are dimmed one step further (the name in text-dim), never by opacity
+    // (faded text fails AA contrast); real players never are.
+    expect(h).not.toContain("opacity-70");
+    const u11 = h.slice(h.indexOf('data-user-id="u11"'));
+    expect(u11.slice(0, u11.indexOf('role="row"', 10))).toMatch(/class="truncate text-dim"/);
     const real = h.slice(h.indexOf('data-user-id="real"'), h.indexOf('data-user-id="u9"'));
     expect(real).toContain("G6Mi…gXjM");
     expect(real).toContain("Player");
     expect(real).toContain("before:bg-foreground");
-    expect(real).not.toContain("opacity-70");
+    expect(real).not.toContain("text-dim\"");
     // The address opens the explorer in a new tab.
     expect(real).toMatch(/<a href="[^"]+G6Miqs4m2maHwj91YBCboEwY5NoasLVwL3woVXh2gXjM[^"]*" target="_blank" rel="noopener noreferrer"/);
     const mine = board({ rows: BOARD.map((r) => (r.userId === "real" ? { ...r, isMe: true } : r)), seat: null });

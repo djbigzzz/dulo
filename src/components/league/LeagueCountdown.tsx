@@ -91,17 +91,29 @@ export function LeagueClock({ league, serverNow, className }: { league: LeagueVi
   const remaining = useCountdown(target, serverNow, reduced ? 60_000 : 1000);
   if (!target || remaining === null) return null;
   const words = leagueClockLabel(league, serverNow);
+  const text = formatTrackClock(remaining, !reduced);
+  // The multi-day form ("4d 19:19:56", Monday to Wednesday and the weekend) is three characters
+  // longer: it steps down on a phone and never wraps; the label gives way first (its UTC stamp
+  // wraps under 360), so the figure stays inside the gutter at 320.
+  const days = text.length > 8;
   return (
     <div
       data-slot="league-clock"
       className={cn("flex w-full items-center justify-between gap-x-[18px] sm:w-auto sm:items-end sm:justify-end sm:text-right", className)}
     >
-      <p className="flex flex-col gap-1 text-[0.8125rem] leading-[1.35] font-medium text-muted-foreground sm:gap-0.5 sm:text-sm">
+      <p className="flex min-w-0 flex-col gap-1 text-[0.8125rem] leading-[1.35] font-medium text-muted-foreground sm:gap-0.5 sm:text-sm">
         <span>{words}</span>
-        <span className="mono-meta">{formatUtcDayDotTime(target)}</span>
+        <span className="mono-meta max-[359px]:whitespace-normal">{formatUtcDayDotTime(target)}</span>
       </p>
-      <p className="figure text-[2.5rem] leading-[0.8] font-normal text-foreground lg:text-[4.125rem]">
-        <span aria-hidden>{formatTrackClock(remaining, !reduced)}</span>
+      <p
+        className={cn(
+          "figure shrink-0 font-normal whitespace-nowrap text-foreground",
+          days ? "text-[1.75rem] min-[360px]:text-[2rem] min-[390px]:text-[2.5rem] lg:text-[3.5rem]" : "text-[2.25rem] min-[360px]:text-[2.5rem] lg:text-[4.125rem]",
+          // After the sizes: cn (tailwind-merge) drops a line-height that comes before a font size.
+          "leading-[0.8]",
+        )}
+      >
+        <span aria-hidden>{text}</span>
         <span className="sr-only">{`${words} ${spokenTrackClock(remaining, !reduced)}`}</span>
       </p>
     </div>

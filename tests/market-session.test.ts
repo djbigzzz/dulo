@@ -170,13 +170,21 @@ describe("MarketSessionChip — first frame", () => {
     expect(html).toContain(SESSION_PLACEHOLDER);
   });
 
-  it("keeps the long form for md and up and a short one below it", () => {
-    const html = renderToStaticMarkup(createElement(MarketSessionChip, { nowIso: "2026-03-10T23:08:00.000Z" }));
-    // 276px of sentence only where there is room for it; 147px of "Closed · 14h 22m" below that.
-    expect(html).toContain('class="hidden md:inline"');
-    expect(html).not.toContain('class="hidden sm:inline"');
-    expect(html).toContain("14h 22m");
-    expect(html).toContain("opens in");
+  it("keeps the full sentence at every width, and the short form below md only when compact (the header)", () => {
+    const nowIso = "2026-03-10T23:08:00.000Z";
+    // A page mount: "US market closed · opens in 14h 22m" on a phone too, never a bare "Closed".
+    const full = renderToStaticMarkup(createElement(MarketSessionChip, { nowIso }));
+    expect(full).not.toMatch(/class="hidden /);
+    expect(full).not.toContain("capitalize");
+    expect(full).toContain("US\u00a0market\u00a0");
+    expect(full).toContain("14h 22m");
+    expect(full).toContain("opens in");
+    // The header's compact chip: the sentence from md, 147px of "Closed · 14h 22m" below that.
+    const compact = renderToStaticMarkup(createElement(MarketSessionChip, { nowIso, compact: true }));
+    expect(compact).toContain('class="hidden md:inline"');
+    expect(compact).not.toContain('class="hidden sm:inline"');
+    expect(compact).toContain("14h 22m");
+    expect(compact).toContain("opens in");
   });
 });
 

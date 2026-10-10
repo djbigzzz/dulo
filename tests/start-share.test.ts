@@ -50,4 +50,14 @@ describe("rank share and the competition line", () => {
     expect(competitionLineParts({ open: false, closesIn: null, opensIn: 26 * 3600_000 })).toMatchObject({ countdown: "1d 2h", live: false });
     expect(competitionLineParts(null)).toBeNull();
   });
+
+  it("names next week's competition on the weekend, when the API's open League starts after now", () => {
+    // Sat 10 Oct: the League of 12 Oct already takes trades and closes Fri 16 Oct.
+    const nextWeek = { open: true, closesIn: 6 * 86400_000 + 18 * 3600_000, opensIn: null, weekStart: "2026-10-12T00:00:00.000Z" };
+    expect(competitionLine(nextWeek, "2026-10-10T01:00:00.000Z")).toBe("Next week's competition (virtual cash) is open: 6d 18h left. Weekend trades count.");
+    // Once the week has started (or without the server's clock) it is this week's.
+    expect(competitionLine(nextWeek, "2026-10-12T09:00:00.000Z")).toBe("This week's competition (virtual cash) is live: 6d 18h left.");
+    expect(competitionLine(nextWeek)).toBe("This week's competition (virtual cash) is live: 6d 18h left.");
+    expect(competitionLineParts(nextWeek, "2026-10-10T01:00:00.000Z")).toMatchObject({ countdown: "6d 18h", live: true });
+  });
 });

@@ -38,7 +38,7 @@ const PAIR_MIN: Record<NonNullable<ConnectButtonProps["size"]>, { h: string; w: 
 };
 
 const menuItemClass =
-  "flex h-10 cursor-default items-center gap-2 rounded-sm px-3 text-sm outline-none select-none data-highlighted:bg-ink-4 data-highlighted:text-foreground focus-visible:ring-1 focus-visible:ring-[var(--focus)] focus-visible:ring-inset data-disabled:opacity-50 sm:h-8 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground";
+  "flex h-10 cursor-default items-center gap-2 rounded-sm px-3 text-sm outline-none select-none data-highlighted:bg-ink-4 data-highlighted:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-inset data-disabled:opacity-50 sm:h-8 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground";
 
 /**
  * Wallet entry point for the header.
