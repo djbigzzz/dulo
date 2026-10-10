@@ -9,6 +9,7 @@ import { ageSeconds, formatAge, formatUsd } from "@/components/common/format";
 import { isPreIpoSource, unitWordFor } from "@/components/common/issuer";
 import { IssuerPill } from "@/components/common/IssuerPill";
 import { formatMultiplier, formatQty, holdingActionLine, issuerMarkLine, multiplierArithmetic } from "@/app/check/_components/check-format";
+import { SECTION_TITLE } from "@/components/common/SectionHeading";
 
 const MULTIPLIER_TITLE = "Token-2022 multiplier applied to the raw balance (splits and dividends)";
 
@@ -26,39 +27,39 @@ export function HoldingRow({ holding: h, now }: { holding: PreviewHoldingView; n
   const actionLine = holdingActionLine(h);
   const markLine = issuerMarkLine(h, now);
   return (
-    <li data-slot="holding-row" data-source={h.source} className="flex flex-col gap-2 px-4 py-3 sm:px-5">
+    <li data-slot="holding-row" data-source={h.source} className="flex flex-col gap-2 border-t border-rule py-3.5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="font-mono text-sm font-semibold">{h.symbol}</span>
+          <span className="text-[0.96875rem] font-semibold">{h.symbol}</span>
           <IssuerPill source={h.source} />
-          <span className="text-sm text-muted-foreground tabular-nums">
+          <span className="text-[0.9375rem] text-muted-foreground tabular-nums">
             {formatQty(h.qty)} {unitWordFor(h.source, h.qty)}
           </span>
           {mult ? (
-            <span className="text-xs text-muted-foreground" title={MULTIPLIER_TITLE}>
+            <span className="text-[0.8125rem] text-muted-foreground" title={MULTIPLIER_TITLE}>
               {mult} multiplier
             </span>
           ) : null}
         </div>
-        <span className="shrink-0 text-base font-semibold tracking-tight tabular-nums">{formatUsd(h.usd)}</span>
+        <span className="shrink-0 text-[1.125rem] font-semibold tabular-nums font-stretch-semi-condensed">{formatUsd(h.usd)}</span>
       </div>
       {arithmetic ? (
-        <p data-slot="multiplier-arithmetic" className="text-xs text-muted-foreground tabular-nums" title={MULTIPLIER_TITLE}>
+        <p data-slot="multiplier-arithmetic" className="text-[0.8125rem] text-muted-foreground tabular-nums" title={MULTIPLIER_TITLE}>
           Balance on chain {arithmetic} {unitWordFor(h.source, h.qty)} after the Token-2022 multiplier.
         </p>
       ) : null}
       {actionLine ? (
         <div data-slot="corporate-action" className="flex flex-col gap-0.5">
-          <p className="text-xs text-muted-foreground tabular-nums">{actionLine}</p>
+          <p className="text-[0.8125rem] text-muted-foreground tabular-nums">{actionLine}</p>
           {/* Visible, not a tooltip: a phone has no hover and a paragraph has no focus. The same sentence the Partner page prints. */}
-          <p data-slot="corporate-action-explanation" className="text-xs leading-relaxed text-pretty text-muted-foreground">
+          <p data-slot="corporate-action-explanation" className="text-[0.8125rem] leading-relaxed text-pretty text-muted-foreground">
             {CORPORATE_ACTION_EXPLANATION}
           </p>
         </div>
       ) : null}
       <PriceChip quote={h.quote} className="self-start" />
       {markLine ? (
-        <p data-slot="issuer-mark" className="text-xs leading-relaxed text-pretty text-muted-foreground">
+        <p data-slot="issuer-mark" className="text-[0.8125rem] leading-relaxed text-pretty text-muted-foreground">
           {markLine}
         </p>
       ) : null}
@@ -73,12 +74,12 @@ export function HoldingRow({ holding: h, now }: { holding: PreviewHoldingView; n
 export function HoldingsList({ data, now }: { data: PreviewResponse; now?: number }) {
   return (
     <section className="flex min-w-0 flex-col gap-3" aria-labelledby="check-holdings">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 id="check-holdings" className="text-lg font-semibold tracking-tight">
+      <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1 pb-1">
+        <h2 id="check-holdings" className={SECTION_TITLE}>
           Holdings
         </h2>
-        {/* Client clock: a CDN-cached answer can be a few minutes old, and the label must say so. */}
-        <span className="text-sm text-muted-foreground">Read {formatAge(ageSeconds(data.readAt, now))} from Solana</span>
+        {/* Client clock: a CDN-cached answer can be a few minutes old, and the label must say so. Mono: it is a source and an age. */}
+        <span className="mono-meta">Solana · read {formatAge(ageSeconds(data.readAt, now))}</span>
       </div>
       {data.holdings.length === 0 ? (
         <EmptyState
@@ -87,7 +88,7 @@ export function HoldingsList({ data, now }: { data: PreviewResponse; now?: numbe
           description="On-chain quests need an xStock worth $5 or more, or any pre-IPO token. Try one of the real holders instead."
         />
       ) : (
-        <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
+        <ul className="border-b border-rule">
           {data.holdings.map((h) => (
             <HoldingRow key={h.assetId} holding={h} now={now} />
           ))}

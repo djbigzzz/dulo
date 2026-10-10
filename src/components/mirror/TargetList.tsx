@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Copy } from "lucide-react";
 import { cn } from "cn";
 import type { MirrorIndexRow } from "@/lib/api-client";
 import { isConcentrated } from "@/lib/mirror/allocation";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AddressChip } from "@/components/common/AddressChip";
-import { formatPoints, formatUsd } from "@/components/common/format";
-import { BotMarker, RankBadge } from "@/components/league/LeagueLeaderboard";
+import { formatPoints, formatUsd, truncateAddress } from "@/components/common/format";
+import { BotMarker } from "@/components/league/LeagueLeaderboard";
 
 export interface TargetListProps {
   rows: MirrorIndexRow[];
@@ -19,43 +17,48 @@ export interface TargetListProps {
   className?: string;
 }
 
-const ITEM = "flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-card px-3.5 py-3 sm:gap-4 sm:px-5";
+/** Rank · player · the headline number · Copy, one row on 1px rules (the standings' row). */
+export const COPY_ROW = "grid min-h-14 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 border-t border-rule py-2 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto_auto] sm:gap-x-5";
 
-/** One glass row per leader: medal / rank, name, headline number and an outline Copy button to /copy/[wallet]. */
-export function TargetList({ rows, metric, chainId, className }: TargetListProps) {
+/**
+ * One row per wallet to copy: the rank as a scoreboard numeral, the name (a house bot dimmed, its
+ * mark and the words "house bot" beside it), the headline number in the condensed cut, and a quiet
+ * Copy button to /copy/[wallet].
+ */
+export function TargetList({ rows, metric, className }: TargetListProps) {
   return (
-    <ul className={cn("flex flex-col gap-2", className)}>
+    <ul className={cn("border-b border-rule", className)}>
       {rows.map((row) => {
         const name = row.handle ?? row.address;
-        const value = metric === "points" ? `${formatPoints(row.points ?? 0)} pts` : row.equityUsd !== null ? formatUsd(row.equityUsd) : "—";
+        const value = metric === "points" ? formatPoints(row.points ?? 0) : row.equityUsd !== null ? formatUsd(row.equityUsd) : "No equity yet";
+        const caption = metric === "points" ? "Season points" : isConcentrated(row.topWeight) ? "Paper equity · one stock over 40%" : "Paper equity";
         return (
-          <li
-            key={`${row.address}-${row.rank}`}
-            className={cn(
-              ITEM,
-              "transition-colors duration-200 hover:border-white/[0.14] hover:bg-white/[0.03] motion-reduce:transition-none",
-              row.rank === 1 && "bg-white/[0.03]",
-            )}
-          >
-            <RankBadge rank={row.rank} className="size-8" />
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="flex min-w-0 items-center gap-1.5">
-                {row.handle ? <span className="truncate text-sm font-medium sm:text-base">{row.handle}</span> : <AddressChip address={row.address} chainId={chainId} copy={false} />}
+          <li key={`${row.address}-${row.rank}`} data-bot={row.isBot ? "" : undefined} className={COPY_ROW}>
+            <span className={cn("figure text-[1.375rem] leading-none", row.rank === 1 && !row.isBot ? "text-foreground" : "text-muted-foreground")}>
+              <span className="sr-only">Rank </span>
+              {row.rank}
+            </span>
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className={cn("truncate text-[0.96875rem]", row.isBot ? "text-muted-foreground" : "font-semibold text-foreground")} title={row.address}>
+                  {row.handle ?? truncateAddress(row.address)}
+                </span>
                 {row.isBot ? <BotMarker /> : null}
               </span>
-              <span className="truncate text-xs text-muted-foreground">
+              <span className="truncate text-[0.8125rem] text-muted-foreground">
                 {/* Phones: the headline number moves under the name so long handles keep their room. */}
-                <span className="font-semibold text-foreground/90 tabular-nums sm:hidden">{value} </span>
-                {metric === "points" ? "Season points" : isConcentrated(row.topWeight) ? "Paper equity · one stock over 40%" : "Paper equity"}
+                <span className="font-semibold text-foreground tabular-nums sm:hidden">{value} </span>
+                {caption}
               </span>
-            </div>
-            <span className="hidden shrink-0 text-right text-base font-semibold tracking-tight tabular-nums sm:block">{value}</span>
+            </span>
+            <span className={cn("hidden text-right text-[1.0625rem] font-semibold tabular-nums font-stretch-[85%] sm:block", row.isBot ? "text-foreground/80" : "text-foreground")}>
+              {value}
+            </span>
             <Link
               href={`/copy/${encodeURIComponent(row.address)}`}
-              className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-9 shrink-0 rounded-xl px-3 font-medium sm:ml-2 sm:h-10 sm:px-4")}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-9 px-3.5 sm:h-8")}
               aria-label={`Copy the portfolio of ${name}`}
             >
-              <Copy data-icon="inline-start" aria-hidden />
               Copy
             </Link>
           </li>
@@ -67,16 +70,16 @@ export function TargetList({ rows, metric, chainId, className }: TargetListProps
 
 export function TargetListSkeleton({ rows = 5, className }: { rows?: number; className?: string }) {
   return (
-    <ul className={cn("flex flex-col gap-2", className)} aria-hidden>
+    <ul className={cn("border-b border-rule", className)} aria-hidden>
       {Array.from({ length: rows }).map((_, i) => (
-        <li key={i} className={ITEM}>
-          <Skeleton className="size-8 rounded-full" />
-          <div className="flex flex-1 flex-col gap-1.5">
+        <li key={i} className={COPY_ROW}>
+          <Skeleton className="h-5 w-4" />
+          <div className="flex flex-col gap-1.5">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-3 w-20" />
           </div>
-          <Skeleton className="h-5 w-20" />
-          <Skeleton className="h-10 w-24 rounded-xl" />
+          <Skeleton className="hidden h-5 w-20 sm:block" />
+          <Skeleton className="h-8 w-16" />
         </li>
       ))}
     </ul>

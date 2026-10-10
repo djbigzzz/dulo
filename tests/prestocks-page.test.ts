@@ -256,23 +256,29 @@ describe("the board", () => {
     expect(h.indexOf(PRE_IPO_TOKEN_2022_NOTE)).toBeLessThan(h.indexOf("Open in Jupiter"));
   });
 
-  it("lays the rows out on one grid: glass rows with a column header from md, a card each under md, no horizontal scroll", () => {
+  it("lays the rows out on one grid: rows on rules with a column header from md, stacked lines under md, no horizontal scroll", () => {
     const h = html(createElement(PreIpoBoard, { symbols: EIGHT, actions: [] }));
     // One header row (from md) and eight rows share ROW_GRID, so the columns line up down the board.
     expect(h).toContain('data-slot="pre-ipo-board-header"');
     expect(h.match(new RegExp(`class="${ROW_GRID.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g"))).toHaveLength(8);
-    expect(ROW_GRID).toContain("grid-cols-2");
+    expect(ROW_GRID).toContain("grid-cols-[minmax(0,1fr)_auto]");
     expect(ROW_GRID).toMatch(/md:grid-cols-\[minmax\(0,[\d.]+fr\)_minmax\(0,[\d.]+fr\)_minmax\(0,[\d.]+fr\)_auto\]/);
-    // Under md every row is its own glass card; from md the list is one glass panel of hairline rows.
-    for (const cls of ["max-md:rounded-2xl", "max-md:border", "max-md:bg-card", "md:border-t", "md:border-white/[0.05]"]) expect(ROW).toContain(cls);
-    for (const cls of ["md:rounded-2xl", "md:border", "md:bg-card", "md:overflow-hidden"]) expect(LIST).toContain(cls);
+    // Broadcast (9 Oct): rows on 1px rules, never a box or a card per row (no cards in cards).
+    for (const cls of ["border-t", "border-rule"]) expect(ROW).toContain(cls);
+    for (const cls of ["rounded", "bg-card", "max-md:border"]) expect(ROW).not.toContain(cls);
+    for (const cls of ["border-b", "border-rule"]) expect(LIST).toContain(cls);
+    for (const cls of ["rounded", "bg-card"]) expect(LIST).not.toContain(cls);
     expect(LIST).not.toContain("overflow-x");
     expect(h).not.toMatch(/overflow-x-auto|min-w-\[/);
-    // Every cell shrinks (min-w-0), so a 390px phone never scrolls sideways; the cell labels read on the card and hide from md.
+    // Every cell shrinks (min-w-0), so a 390px phone never scrolls sideways; the cell labels read on the stacked row and hide from md.
     expect(h.match(/md:sr-only/g)).toHaveLength(8 * 3);
-    // Every Jupiter link is outline: the page's one ember action is the trade form's submit.
+    // Every Jupiter link is outline: the page's one gold action is the trade form's submit.
     expect(h.match(/Open in Jupiter/g)).toHaveLength(8);
-    expect(h).not.toContain("bg-[linear-gradient(180deg,#ff8a4c");
+    expect(h).not.toMatch(/(?<![:\w-])bg-primary\b/);
+    // Logos are greyscale, so green and red keep their only meanings (PartnerLogo is mocked here, so by
+    // source: the board draws every token through PartnerLogo, whose well puts every logo in greyscale).
+    expect(repoFile("src/components/prestocks/PreIpoBoard.tsx")).toMatch(/<PartnerLogo name=\{row\.name\}/);
+    expect(repoFile("src/components/common/PartnerLogo.tsx")).toMatch(/<img[\s\S]{0,400}className="logo-greyscale /);
   });
 
   it("prints the two prices as two labelled numbers and never a gap, a percentage between them or a security word", () => {
@@ -324,24 +330,35 @@ describe("the trade form lists both issuers on /competition and pre-IPO tokens o
     expect(groupSymbols([])).toEqual([]);
   });
 
-  it("renders two optgroups on the competition form, no pre-IPO line while an xStock is selected", () => {
+  it("renders one tab per issuer on the competition form, xStocks first and picked, no pre-IPO line while an xStock is selected", () => {
     const h = html(createElement(TradeForm, { league: WEEK, signedIn: true, serverNow: NOW }));
-    expect(h).toContain('<optgroup label="xStocks">');
-    expect(h).toContain('<optgroup label="Pre-IPO tokens">');
-    expect(h).toContain(">Symbol</label>");
-    expect(h).toContain('<option value="TSLAx"');
-    expect(h).toContain('<option value="SPACEX"');
+    // Broadcast (9 Oct): the select became the slip's issuer tabs over a picker of native radios.
+    expect(h).toContain('role="group" aria-label="Issuer"');
+    expect(h).toMatch(/aria-pressed="true"[^>]*>xStocks<\/button>/);
+    expect(h).toMatch(/aria-pressed="false"[^>]*>Pre-IPO<\/button>/);
+    expect(h.indexOf(">xStocks</button>")).toBeLessThan(h.indexOf(">Pre-IPO</button>"));
+    expect(h).toContain(">Symbol</legend>");
+    const tsla = h.match(/<input type="radio"[^>]*value="TSLAx"[^>]*>/)?.[0] ?? "";
+    expect(tsla).toContain('checked=""');
+    expect(h.match(/<input type="radio"[^>]*checked=""/g)).toHaveLength(1);
+    expect(h).toContain('value="NVDAx"');
+    // The pre-IPO tokens wait behind their tab, so a pre-IPO token is never mistaken for an xStock.
+    expect(h).not.toContain('value="SPACEX"');
     // TSLAx is first, so it is selected: the pre-IPO line stays off.
     expect(h).toContain("Paper buy TSLAx");
     expect(h).not.toContain(PRE_IPO_COMPLIANCE_LINE);
+    // The selected quote carries its source and age beside the big number.
+    expect(text(h)).toMatch(/\$360\.83 Jupiter · [^·]{1,16} ago/);
   });
 
-  it("fenced to prestocks it lists the eight only, labels the select Pre-IPO token and prints the pre-IPO line unless the page carries it", () => {
+  it("fenced to prestocks it lists the eight only, labels the picker Pre-IPO token and prints the pre-IPO line unless the page carries it", () => {
     const h = html(createElement(TradeForm, { league: WEEK, signedIn: true, serverNow: NOW, sources: ["prestocks"], symbolLabel: "Pre-IPO token" }));
-    expect(h).not.toContain("<optgroup");
+    expect(h).not.toContain('aria-label="Issuer"');
     expect(h).not.toContain("TSLAx");
-    expect(h.match(/<option value="/g)).toHaveLength(8);
-    expect(h).toContain(">Pre-IPO token</label>");
+    expect(h.match(/<input type="radio"/g)).toHaveLength(8);
+    expect(h).toContain(">Pre-IPO token</legend>");
+    // Pre-IPO tiles carry the company's short name, never "stock" or "shares".
+    expect(h).toContain(">SpaceX</span>");
     expect(h).toContain("Paper buy ANDURIL");
     expect(h).toContain(PRE_IPO_COMPLIANCE_LINE);
     expect(text(h)).not.toMatch(SECURITY_WORDS);
@@ -379,8 +396,8 @@ describe("the trade form lists both issuers on /competition and pre-IPO tokens o
   it("with an older payload that carries no source tag, every symbol is an xStock", () => {
     mocks.queries.set("symbols", { data: symbolsResponse([{ ...TSLAX, source: undefined }]), error: null, loading: false });
     const h = html(createElement(TradeForm, { league: WEEK, signedIn: true, serverNow: NOW }));
-    expect(h).not.toContain("<optgroup");
-    expect(h).toContain(">xStock</label>");
+    expect(h).not.toContain('aria-label="Issuer"');
+    expect(h).toContain(">xStock</legend>");
     const fenced = html(createElement(TradeForm, { league: WEEK, signedIn: true, serverNow: NOW, sources: ["prestocks"] }));
     expect(fenced).toContain("No symbols available");
   });
@@ -443,11 +460,17 @@ describe("/prestocks page", () => {
     // Inside the trade section the form card leads on a phone and sits in the right column from lg.
     const form = h.match(/<section class="([^"]+)" aria-labelledby="pre-ipo-trade-form"/);
     expect(form).not.toBeNull();
-    expect(form![1].split(" ")).toEqual(expect.arrayContaining(["order-first", "lg:order-none", "lg:col-start-2", "border-gradient", "bg-card"]));
-    // Section eyebrows, in the muted grey (Mono keeps the one accent for live data).
-    for (const eyebrow of ["The board", "Weekly competition (virtual cash)", "Quests"]) {
-      expect(h).toContain(`<p class="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">${eyebrow}</p>`);
+    // The competition's paper-trade slip: an ink-2 panel on a 1px rule (Broadcast, 9 Oct), never a card in a card.
+    expect(form![1].split(" ")).toEqual(expect.arrayContaining(["order-first", "lg:order-none", "lg:col-start-2", "bg-card", "ring-1", "ring-rule"]));
+    // The board reads as the hero (a plain caption, like the competition's standings); the other
+    // sections lead with a muted plain-text eyebrow over a serif name. No tiny tracked capitals.
+    expect(h).toMatch(/<h2 id="pre-ipo-board" class="[^"]*font-semibold[^"]*">The board<\/h2>/);
+    for (const eyebrow of ["Weekly competition (virtual cash)", "Quests"]) {
+      expect(h).toContain(`<p class="text-sm font-medium text-muted-foreground">${eyebrow}</p>`);
     }
+    expect(h).toMatch(/<h2 id="pre-ipo-trade" class="font-display [^"]*">Trade with virtual cash<\/h2>/);
+    // Shared cards below (quests, corporate actions) are restyled by their own builders.
+    expect(h.slice(0, h.indexOf('aria-labelledby="pre-ipo-quests"'))).not.toContain("tracking-[0.14em]");
   });
 
   it("renders the four sections in order: board, trade, quests, corporate actions", () => {
@@ -585,9 +608,10 @@ describe("nav and landing", () => {
     const hero = landing.slice(landing.indexOf('aria-labelledby="hero-title"'), landing.indexOf("<GameTiles"));
     expect(hero.match(/href="\/prestocks"/g)).toHaveLength(1);
     expect(hero).toContain("Pre-IPO tokens trade 24/7");
-    // Same text size as the trust line.
+    // Same text size as the trust line (13px in Broadcast, 9 Oct 2026).
     const hook = hero.slice(hero.indexOf('href="/prestocks"'), hero.indexOf("Pre-IPO tokens trade 24/7"));
-    expect(hook).toContain("text-xs text-muted-foreground");
+    expect(hook).toContain("text-[0.8125rem] text-muted-foreground");
+    expect(hero).toMatch(/<p className="text-\[0\.8125rem\][^"]*">\{COMPLIANCE_LINE\}<\/p>/);
     // Headline, verbs, welcome line and the three tiles are byte-identical.
     expect(landing).toContain("The entertainment layer for{");
     expect(landing).toContain("Predict. Compete. Complete on-chain quests.");

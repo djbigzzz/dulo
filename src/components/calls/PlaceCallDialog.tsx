@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Coins, Gamepad2, Loader2Icon, Target, Zap } from "lucide-react";
+import { ArrowRight, Check, Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { api, errorMessage, type CallMarketView, type CallPositionView, type CallSide, type PlaceCallResponse } from "@/lib/api-client";
@@ -14,34 +14,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { PointsChip } from "@/components/common/PointsChip";
+import { PriceChip } from "@/components/common/PriceChip";
 import { formatPoints, formatUsd } from "@/components/common/format";
 import { PoolBar } from "@/components/calls/PoolBar";
+import { XStockLogo } from "@/components/common/XStockLogo";
 import {
   EARN_FIRST_POINTS_COPY,
   QUICK_STAKES,
   STAKE_LEAVES_SCORE_COPY,
+  backPerPoint,
   completedPlayToast,
   defaultPredictionPoints,
-  formatMultiplier,
-  marketQuestion,
+  formatSettleDay,
+  gapLabel,
   needsPointsForCall,
   newlyCompletedOf,
   sideForKey,
   sideLabel,
   stakeError,
+  trackPosition,
+  utcStamp,
 } from "@/components/calls/calls-format";
 
 export interface PlaceCallDialogProps {
   market: CallMarketView | null;
-  /** The viewer's existing stakes on this market. */
+  /** The viewer's existing points on this market. */
   positions: CallPositionView[];
   spendablePoints: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Called with the server response after a successful placement. */
   onPlaced: (result: PlaceCallResponse) => void;
-  /** Side preselected when the dialog opens (the card button that was pressed). */
+  /** Side preselected when the dialog opens (the segment button that was pressed). */
   initialSide?: CallSide;
 }
 
@@ -58,19 +62,22 @@ function useIsMobile(): boolean {
   return mobile;
 }
 
-const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]";
-const LIFTED = "shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_1px_2px_rgb(0_0_0/0.35)]";
-const ICON_TILE =
-  "flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]";
+/** Each side in its own colour, on a rule; the chosen one filled with its tint. */
+const SIDE: Record<CallSide, { on: string; word: string; hint: string }> = {
+  yes: { on: "border-yes bg-[rgb(58_208_138/0.13)]", word: "text-yes", hint: "closes above" },
+  no: { on: "border-no bg-[rgb(255_93_108/0.13)]", word: "text-no", hint: "closes below" },
+};
+
 const ROW_LINK =
-  "group/row flex min-h-14 items-center gap-3 px-4 py-3 text-sm outline-none transition-colors duration-200 hover:bg-white/[0.03] focus-visible:bg-white/[0.05]";
+  "group/row flex min-h-14 items-center gap-3 border-b border-rule text-[0.9375rem] outline-none transition-colors duration-200 hover:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-popover motion-reduce:transition-none";
 
 /**
- * Prediction form: Yes/No radio group (roving tabindex, arrow keys), points with quick chips, a live
- * points-back preview against the current pools, the points balance and the loss line. It opens on
- * 100 points (10 when the balance is 10 to 99), never the whole balance. Below the 10-point minimum it
- * shows the way to more points instead (First Paper Trades in the competition, or a quest). A Dialog
- * on desktop, a bottom Sheet on phones. A placement re-reads the session so the header balance moves.
+ * Prediction form: Yes/No radio group (roving tabindex, arrow keys), points with quick chips, and
+ * the points back for those points at the current split, shown before confirming, with the
+ * points balance and the loss line. It opens on 100 points (10 when the balance is 10 to 99), never
+ * the whole balance. Below the 10-point minimum it shows the way to more points instead (First
+ * Paper Trades in the competition, or a quest). A Dialog on desktop, a bottom Sheet on phones. A
+ * placement re-reads the session so the header balance moves.
  */
 export function PlaceCallDialog({ market, positions, spendablePoints, open, onOpenChange, onPlaced, initialSide }: PlaceCallDialogProps) {
   const isMobile = useIsMobile();
@@ -80,11 +87,12 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
   const [submitting, setSubmitting] = React.useState(false);
   const pointsId = React.useId();
   const hintId = React.useId();
+  const backId = React.useId();
   const radios = React.useRef<Record<CallSide, HTMLButtonElement | null>>({ yes: null, no: null });
 
   // Reset the form only when a market is opened (or the preselected side changes). Positions and
   // the balance are read through a ref: the page polls and ticks every second, and re-running
-  // the reset on every new array would wipe the stake while the user is typing.
+  // the reset on every new array would wipe the amount while the user is typing.
   const latest = React.useRef({ positions, spendablePoints });
   React.useEffect(() => {
     latest.current = { positions, spendablePoints };
@@ -142,44 +150,38 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
   const close = React.useCallback(() => onOpenChange(false), [onOpenChange]);
 
   const earnFirst = (
-    <div className="flex flex-col gap-4">
-      <div className={cn(WELL, "flex items-start gap-3 p-4")}>
-        <span className={ICON_TILE} aria-hidden>
-          <Coins className="size-4" />
-        </span>
-        <div className="flex min-w-0 flex-col gap-1">
-          <p className="text-sm font-semibold tracking-tight">A prediction needs at least {MIN_CALL_POINTS} points.</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            You have <span className="font-medium tabular-nums text-foreground">{formatPoints(spendablePoints)}</span> points. Points only,
-            no cash value.
-          </p>
-        </div>
+    <div className="flex flex-col gap-5">
+      <div className="border-t border-rule pt-5">
+        <p className="font-display text-[1.625rem] leading-[1.05]">A prediction needs at least {MIN_CALL_POINTS} points.</p>
+        <p className="mt-2 text-[0.9375rem] leading-relaxed text-muted-foreground">
+          You have <span className="font-semibold tabular-nums text-foreground">{formatPoints(spendablePoints)}</span> points. Points only,
+          no cash value.
+        </p>
       </div>
-      <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.02]">
+      <ul className="border-t border-rule">
         <li>
-          <Link href="/competition" onClick={close} className={ROW_LINK}>
-            <Gamepad2 className="size-4 shrink-0 text-gold" aria-hidden />
-            <span className="min-w-0 flex-1 font-medium">{EARN_FIRST_POINTS_COPY}</span>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover/row:translate-x-0.5" aria-hidden />
+          <Link href="/competition" onClick={close} className={cn(ROW_LINK, "font-semibold text-foreground")}>
+            <span className="min-w-0 flex-1">{EARN_FIRST_POINTS_COPY}</span>
+            <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover/row:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
           </Link>
         </li>
         <li>
-          <Link href="/quests" onClick={close} className={ROW_LINK}>
-            <Zap className="size-4 shrink-0 text-gold" aria-hidden />
+          <Link href="/quests" onClick={close} className={cn(ROW_LINK, "text-muted-foreground")}>
             <span className="min-w-0 flex-1">Or complete a quest with points and virtual cash</span>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover/row:translate-x-0.5" aria-hidden />
+            <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover/row:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
           </Link>
         </li>
       </ul>
-      <p className="text-xs leading-relaxed text-muted-foreground">{STAKE_LEAVES_SCORE_COPY}</p>
+      <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">{STAKE_LEAVES_SCORE_COPY}</p>
     </div>
   );
 
   const form = market ? (
-    <div className="flex flex-col gap-5">
-      <div className={cn(WELL, "grid grid-cols-2 gap-1 p-1")} role="radiogroup" aria-label="Side">
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Side">
         {(["yes", "no"] as const).map((s) => {
           const active = side === s;
+          const mult = s === "yes" ? market.odds.yesMultiplier : market.odds.noMultiplier;
           return (
             <button
               key={s}
@@ -193,24 +195,24 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
               onClick={() => setSide(s)}
               onKeyDown={(e) => onRadioKeyDown(s, e)}
               className={cn(
-                "flex h-14 flex-col items-center justify-center gap-0.5 rounded-lg border text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-popover",
-                active
-                  ? cn(LIFTED, s === "yes" ? "border-emerald-400/40 bg-emerald-400/[0.12] text-emerald-300" : "border-rose-400/40 bg-rose-400/[0.12] text-rose-300")
-                  : "border-transparent text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+                "flex min-h-[4.75rem] flex-col items-start justify-center gap-1 border px-4 py-3 text-left transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-popover motion-reduce:transition-none",
+                active ? SIDE[s].on : "border-rule-2 bg-ink-2 hover:border-[rgb(243_240_232/0.3)] hover:bg-ink-4",
               )}
             >
-              <span>{sideLabel(s)}</span>
-              <span className="text-xs font-normal tabular-nums text-muted-foreground">
-                {formatMultiplier(s === "yes" ? market.odds.yesMultiplier : market.odds.noMultiplier)} now
+              <span className={cn("flex items-center gap-1.5 text-lg leading-none font-semibold", active ? SIDE[s].word : "text-foreground")}>
+                {active ? <Check className="size-4" aria-hidden /> : null}
+                {sideLabel(s)}
+                <span className="text-[0.8125rem] font-normal text-muted-foreground">{SIDE[s].hint}</span>
               </span>
+              <span className="text-[0.8125rem] leading-snug text-muted-foreground tabular-nums">{backPerPoint(mult)}</span>
             </button>
           );
         })}
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <label htmlFor={pointsId} className="flex items-center justify-between gap-2 text-xs">
-          <span className="font-medium tracking-[0.14em] text-muted-foreground uppercase">Points to put in</span>
+        <label htmlFor={pointsId} className="flex items-baseline justify-between gap-2 text-[0.875rem]">
+          <span className="font-semibold text-foreground">Points to put in</span>
           <span className="text-muted-foreground">
             Balance <span className="font-semibold tabular-nums text-foreground">{formatPoints(spendablePoints)}</span> pts
           </span>
@@ -229,8 +231,8 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
               if (e.key === "Enter" && canSubmit) void submit();
             }}
             aria-invalid={error ? true : undefined}
-            aria-describedby={hintId}
-            className="h-12 rounded-xl border-white/[0.06] bg-black/25 pr-12 pl-3.5 text-lg font-semibold tracking-tight tabular-nums shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] [appearance:textfield] md:text-lg dark:bg-black/25 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            aria-describedby={`${hintId} ${backId}`}
+            className="h-12 border-rule-2 bg-ink pr-12 pl-3.5 text-xl font-semibold tabular-nums font-stretch-[85%] [appearance:textfield] focus-visible:ring-offset-popover md:text-xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
           <span className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-sm text-muted-foreground" aria-hidden>
             pts
@@ -246,7 +248,7 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
                 size="sm"
                 variant="outline"
                 aria-pressed={active}
-                className={cn("h-8 min-w-14 rounded-full px-3.5 text-xs tabular-nums", active && "border-white/25 bg-white/[0.09]")}
+                className={cn("min-w-14 tabular-nums focus-visible:ring-offset-popover", active && "border-paper bg-ink-4")}
                 disabled={q > spendablePoints}
                 onClick={() => setRaw(String(q))}
               >
@@ -258,93 +260,115 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
             type="button"
             size="sm"
             variant="outline"
-            className="h-8 min-w-14 rounded-full px-3.5 text-xs"
+            className="min-w-14 focus-visible:ring-offset-popover"
             disabled={spendablePoints < MIN_CALL_POINTS}
             onClick={() => setRaw(String(Math.min(spendablePoints, MAX_CALL_POINTS)))}
           >
             Max
           </Button>
         </div>
-        <p id={hintId} className={cn("text-xs", error ? "text-destructive" : "text-muted-foreground")}>
+        <p id={hintId} className={cn("text-[0.8125rem]", error ? "text-destructive" : "text-muted-foreground")}>
           {error ?? `${MIN_CALL_POINTS}–${formatPoints(MAX_CALL_POINTS)} pts, whole numbers. Locked in until settlement.`}
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-black/20 p-4 text-sm shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]">
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">If {sideLabel(side)} is right, points back</span>
-            <span className="text-muted-foreground">
+      {/* The points back, before confirming: the loudest number in the form. */}
+      <div className="flex flex-col gap-4 border-t border-rule pt-5">
+        <div id={backId} className="flex items-end justify-between gap-4" aria-live="polite">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <span className="text-[0.9375rem] font-semibold text-foreground">If {sideLabel(side)} is right</span>
+            <span className="text-[0.875rem] text-muted-foreground">
               Net{" "}
-              <span className="font-medium tabular-nums text-foreground">
+              <span className="font-semibold tabular-nums text-foreground">
                 {preview === null || points === null ? "—" : `+${formatPoints(preview - points)} pts`}
               </span>
             </span>
           </div>
-          <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-            <span className={cn("text-3xl leading-none font-semibold tracking-tight tabular-nums", preview === null ? "text-muted-foreground" : "text-gradient-ember")}>
+          <span className="flex items-baseline gap-2 whitespace-nowrap">
+            <span className={cn("figure text-[3.5rem] leading-[0.8]", preview === null ? "text-muted-foreground" : "text-foreground")}>
               {preview === null ? "—" : formatPoints(preview)}
             </span>
-            {preview === null ? null : <span className="text-sm text-muted-foreground">pts</span>}
+            <span className="text-[0.875rem] text-muted-foreground">points back</span>
           </span>
         </div>
-        <div className="h-px bg-white/[0.08]" aria-hidden />
-        <PoolBar odds={previewOdds} highlight={side} />
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Pools move until the lock, so your points back are set at settlement. {STAKE_LEAVES_SCORE_COPY}
-        </p>
-        <p className="text-xs leading-relaxed text-muted-foreground">{PREDICTION_LOSS_COPY}</p>
-        {otherHeld ? (
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            You already have {formatPoints(otherHeld.points)} pts on {sideLabel(otherHeld.side)}; both of your positions stay in.
-          </p>
-        ) : null}
+        <div className="flex flex-col gap-2">
+          <p className="text-[0.8125rem] text-muted-foreground">The split with your points in</p>
+          <PoolBar odds={previewOdds} highlight={side} />
+        </div>
+        <div className="flex flex-col gap-1.5 text-[0.8125rem] leading-relaxed text-muted-foreground">
+          <p>Points only, no cash value. Pools move until the lock, so your points back are set at settlement. {STAKE_LEAVES_SCORE_COPY}</p>
+          <p>{PREDICTION_LOSS_COPY}</p>
+          {otherHeld ? (
+            <p>
+              You already have {formatPoints(otherHeld.points)} pts on {sideLabel(otherHeld.side)}; both of your positions stay in.
+            </p>
+          ) : null}
+        </div>
       </div>
     </div>
   ) : null;
 
   const body = market ? (short ? earnFirst : form) : null;
 
-  const title = market ? marketQuestion(market) : "Make a prediction";
-  const description = market ? (
+  // The question in the serif; the line and the day never split across a break.
+  const title = market ? (
     <>
-      Strike <span className="font-medium text-gold tabular-nums">{formatUsd(market.strike)}</span> · {formatPoints(market.odds.total)} pts in the pool. Points only, no cash value.
+      Will {market.ticker} close above{" "}
+      <span className="whitespace-nowrap">
+        {formatUsd(market.strike)} on {formatSettleDay(market.settleAt)}?
+      </span>
     </>
+  ) : (
+    "Make a prediction"
+  );
+  const pos = market ? trackPosition(market.quote?.price ?? null, market.strike) : null;
+  // The trust lines: the live price with its source and age and where it stands against the line,
+  // then the lock time. The pool is in the split below, so it is said once.
+  const description = market ? (
+    <span className="flex flex-col gap-1">
+      <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+        {market.quote ? <PriceChip quote={market.quote} symbol={market.symbol} /> : <span>No live price right now</span>}
+        {pos ? (
+          <span className="text-[0.84375rem] font-semibold whitespace-nowrap text-foreground">
+            {gapLabel(pos.gap)}
+            {Math.abs(pos.gap) >= 0.005 ? " the line" : ""}
+          </span>
+        ) : null}
+      </span>
+      <span className="mono-meta">
+        <time dateTime={market.locksAt}>Locks {utcStamp(market.locksAt)}</time>
+      </span>
+    </span>
+  ) : null;
+  const kicker = market ? (
+    <p className="flex items-center gap-2.5 text-[0.875rem] font-medium text-muted-foreground">
+      <XStockLogo symbol={market.symbol} ticker={market.ticker} size={22} className="size-[22px]" />
+      <b className="font-semibold text-foreground">{market.symbol}</b>
+      <span aria-hidden className="h-3.5 w-px bg-rule-2" />
+      Make a prediction
+    </p>
   ) : null;
   const submitButton = short ? null : (
-    <Button size="lg" onClick={() => void submit()} disabled={!canSubmit} className="h-11 w-full rounded-xl px-4 sm:w-auto">
-      {submitting ? <Loader2Icon className="animate-spin" data-icon="inline-start" aria-hidden /> : <Target data-icon="inline-start" aria-hidden />}
+    <Button size="lg" onClick={() => void submit()} disabled={!canSubmit} className="h-12 w-full px-5 text-base">
+      {submitting ? <Loader2Icon className="animate-spin motion-reduce:animate-none" data-icon="inline-start" aria-hidden /> : null}
       {points ? `Predict ${sideLabel(side)} for ${formatPoints(points)} pts` : `Predict ${sideLabel(side)}`}
     </Button>
   );
 
-  // The popups are `position: fixed` and `.border-gradient` sets `position: relative`, so the
-  // gradient hairline lives on an inner panel while the popup itself stays transparent.
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="max-h-[92dvh] gap-0 overflow-y-auto border-0 bg-transparent shadow-none">
-          <div className="border-gradient flex flex-col rounded-t-3xl bg-popover shadow-[0_-24px_64px_rgb(0_0_0/0.55)]">
-            <SheetHeader className="gap-1.5 p-5 pr-14">
-              <SheetTitle className="text-lg leading-snug font-semibold tracking-tight">{title}</SheetTitle>
-              <SheetDescription>{description}</SheetDescription>
-              {market ? (
-                <div className="mt-1">
-                  <PointsChip points={spendablePoints} />
-                </div>
-              ) : null}
-            </SheetHeader>
-            <div className={cn("px-5", submitButton ? "pb-2" : "pb-[max(1.25rem,env(safe-area-inset-bottom))]")}>{body}</div>
-            {/*
-              Pinned to the bottom of the scrolling sheet, so the one action is on screen on a 667px phone
-              too. mx-px keeps the panel's 1px side hairline visible past the footer's solid fill.
-            */}
-            {submitButton ? (
-              <SheetFooter className="sticky bottom-0 z-10 mx-px border-t border-white/[0.08] bg-popover p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-                {submitButton}
-              </SheetFooter>
-            ) : null}
-          </div>
+        <SheetContent side="bottom" className="max-h-[92dvh] gap-0 overflow-y-auto">
+          <SheetHeader className="gap-2.5 px-4 pt-5 pb-5 pr-14">
+            {kicker}
+            <SheetTitle className="text-[1.875rem] leading-[0.98] tracking-[-0.012em]">{title}</SheetTitle>
+            <SheetDescription>{description}</SheetDescription>
+          </SheetHeader>
+          <div className={cn("px-4", submitButton ? "pb-5" : "pb-[max(1.25rem,env(safe-area-inset-bottom))]")}>{body}</div>
+          {/* Pinned to the bottom of the scrolling sheet, so the one action is on screen on a 667px phone too. */}
+          {submitButton ? (
+            <SheetFooter className="sticky bottom-0 z-10 border-t border-rule bg-popover p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{submitButton}</SheetFooter>
+          ) : null}
         </SheetContent>
       </Sheet>
     );
@@ -352,17 +376,14 @@ export function PlaceCallDialog({ market, positions, spendablePoints, open, onOp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 bg-transparent p-0 ring-0 sm:max-w-md">
-        <div className="border-gradient grid gap-5 rounded-2xl bg-popover p-6 shadow-[0_32px_80px_-12px_rgb(0_0_0/0.7)]">
-          <DialogHeader className="gap-2 pr-8">
-            <DialogTitle className="text-lg leading-snug font-semibold tracking-tight">{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
-          </DialogHeader>
-          {body}
-          {submitButton ? (
-            <DialogFooter className="-mx-6 -mb-6 rounded-b-2xl border-white/[0.06] bg-white/[0.02] px-6 py-4">{submitButton}</DialogFooter>
-          ) : null}
-        </div>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto p-0 sm:max-w-[31rem]">
+        <DialogHeader className="gap-3 px-6 pt-6 pr-14 pb-5">
+          {kicker}
+          <DialogTitle className="text-[2.125rem] leading-[0.98] tracking-[-0.012em]">{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className="px-6 pb-6">{body}</div>
+        {submitButton ? <DialogFooter className="sticky bottom-0 mx-0 mb-0 px-6 py-4">{submitButton}</DialogFooter> : null}
       </DialogContent>
     </Dialog>
   );

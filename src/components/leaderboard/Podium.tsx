@@ -1,11 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Crown } from "lucide-react";
 import { cn } from "cn";
 import { Skeleton } from "@/components/ui/skeleton";
-import { displayName, formatPoints, initials } from "@/components/common/format";
-import { podiumSlots } from "@/components/leaderboard/podium-slots";
+import { Badge } from "@/components/ui/badge";
+import { displayName, formatPoints } from "@/components/common/format";
+import { podiumSlots, type PodiumTier } from "@/components/leaderboard/podium-slots";
 
 /** The minimum a podium spot needs; Season rows and League rows both fit. */
 export interface PodiumEntry {
@@ -13,6 +13,12 @@ export interface PodiumEntry {
   userId: string;
   handle: string | null;
   address: string | null;
+}
+
+/** The words in an empty seat (fewer than three players): an open seat, never a fake player. */
+export interface OpenSeatCopy {
+  title: string;
+  hint: string;
 }
 
 export interface PodiumProps<T extends PodiumEntry> {
@@ -24,168 +30,128 @@ export interface PodiumProps<T extends PodiumEntry> {
   renderValue?: (row: T) => ReactNode;
   /** Small muted tag after the name (e.g. "bot"). */
   renderTag?: (row: T) => ReactNode;
+  /** An action in a filled seat (e.g. "Copy portfolio"). */
+  renderAction?: (row: T) => ReactNode;
+  /** Empty seats read "Your slot · Open" by default; null leaves them out. */
+  openSeat?: OpenSeatCopy | null;
   size?: "lg" | "sm";
   className?: string;
   "aria-label"?: string;
 }
 
-/** Rank 1 / 2 / 3 as three steps of grey (white, zinc-300, zinc-400). Shared with the tables and the League preview. */
-export const MEDAL: Record<1 | 2 | 3, { chip: string; avatar: string; edge: string; text: string; number: string; label: string }> = {
-  1: {
-    chip: "border-white/40 bg-white/[0.12] text-foreground",
-    avatar: "bg-white/[0.10] text-foreground ring-white/60",
-    edge: "bg-white/60",
-    text: "text-foreground",
-    number: "text-foreground",
-    label: "1st",
-  },
-  2: {
-    chip: "border-zinc-300/20 bg-zinc-300/10 text-zinc-300",
-    avatar: "bg-zinc-300/10 text-zinc-300 ring-zinc-300/40",
-    edge: "bg-zinc-300/30",
-    text: "text-zinc-300",
-    number: "text-zinc-300",
-    label: "2nd",
-  },
-  3: {
-    chip: "border-zinc-400/25 bg-zinc-400/10 text-zinc-400",
-    avatar: "bg-zinc-400/10 text-zinc-400 ring-zinc-400/45",
-    edge: "bg-zinc-400/20",
-    text: "text-zinc-400",
-    number: "text-zinc-400",
-    label: "3rd",
-  },
+/**
+ * Rank tones for 1st, 2nd and 3rd. Broadcast has no metals: the numeral is cream for the top of the
+ * board and muted below it, as on the weekly standings. Shared with the tables and the competition preview.
+ */
+export const MEDAL: Record<PodiumTier, { number: string; seat: string; label: string }> = {
+  1: { number: "text-foreground", seat: "border-rule-2", label: "1st" },
+  2: { number: "text-muted-foreground", seat: "border-rule", label: "2nd" },
+  3: { number: "text-muted-foreground", seat: "border-rule", label: "3rd" },
 };
 
-/** A round rank chip: medal-toned for 1-3, a quiet number otherwise. */
+/** A rank as a scoreboard numeral (Archivo's narrow cut): cream for 1st, muted below it. */
 export function MedalChip({ rank, className }: { rank: number; className?: string }) {
-  const medal = rank >= 1 && rank <= 3 ? MEDAL[rank as 1 | 2 | 3] : null;
+  const tone = rank === 1 ? "text-foreground" : "text-muted-foreground";
   return (
-    <span
-      className={cn(
-        "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
-        medal ? cn("border shadow-[inset_0_1px_0_rgb(255_255_255/0.10)]", medal.chip) : "text-muted-foreground",
-        className,
-      )}
-    >
+    <span className={cn("inline-flex min-w-7 shrink-0 items-center text-xl leading-none tabular-nums font-stretch-[74%]", tone, className)}>
+      <span className="sr-only">Rank </span>
       {rank}
     </span>
   );
 }
 
-const HEIGHT = {
-  lg: { 1: "h-32 sm:h-48", 2: "h-24 sm:h-36", 3: "h-20 sm:h-28" },
-  sm: { 1: "h-16", 2: "h-12", 3: "h-9" },
-} as const;
-
 function defaultValue(row: PodiumEntry): ReactNode {
-  return "points" in row && typeof row.points === "number" ? `${formatPoints(row.points)} pts` : null;
+  return "points" in row && typeof row.points === "number" ? (
+    <>
+      <span className="figure text-[1.75rem] leading-none text-foreground">{formatPoints(row.points)}</span>
+      <span className="text-[0.84375rem] text-muted-foreground">Season points</span>
+    </>
+  ) : null;
 }
 
+/** Visual seat order: 1st, 2nd, 3rd, left to right, the way the board reads (the mockup's Season seats). */
+const SEAT_ORDER: Record<PodiumTier, number> = { 1: 0, 2: 1, 3: 2 };
+
 /**
- * Top three as an award ceremony: flat plinths of different heights, the centre slot tallest. Slot
- * order and heights are visual (2nd, 1st, 3rd); the medal, crown, chip and label follow each row's
- * own rank, so two players tied for 1st both read "=1st" in the rank-1 white
- * (15 Sep review M-P). Three columns fit a 375px phone.
+ * The top three as the Broadcast Season seats: three seats in a row, a scoreboard numeral in each,
+ * the filled ones on the panel surface with the name and the points, the empty ones a dashed open
+ * seat ("Your slot · Open"), so one or two players never borrow a podium they do not fill. The
+ * numeral's tone, the "=1st" tie mark and the spoken label follow each row's own rank (podiumSlots
+ * and MEDAL[tier]), never the seat it sits in: two players tied for 1st both read "Tied 1st".
  */
 export function Podium<T extends PodiumEntry>({
   rows,
   meUserId,
   renderValue = defaultValue,
   renderTag,
+  renderAction,
+  openSeat = { title: "Your slot", hint: "Open" },
   size = "lg",
   className,
   "aria-label": ariaLabel = "Top three",
 }: PodiumProps<T>) {
-  if (rows.length === 0) return null;
-  const slots = podiumSlots(rows);
+  const slots = [...podiumSlots(rows)].sort((a, b) => SEAT_ORDER[a.slot] - SEAT_ORDER[b.slot]);
+  if (rows.length === 0 && !openSeat) return null;
   const lg = size === "lg";
 
   return (
-    <ol className={cn("relative isolate grid grid-cols-3 items-end gap-2 sm:gap-4", lg && "mx-auto w-full max-w-3xl", className)} aria-label={ariaLabel}>
-      {slots.map(({ slot: pos, row, tier, label, spokenLabel }) => {
+    <ol className={cn("grid gap-3", lg ? "sm:grid-cols-3 sm:gap-4" : "grid-cols-3 gap-2", className)} aria-label={ariaLabel}>
+      {slots.map(({ slot, row, tier, tied, label, spokenLabel }) => {
+        const numeral = cn("figure shrink-0 leading-[0.8]", lg ? "text-[3.75rem] sm:text-[4.5rem]" : "text-[2.25rem]");
+        if (!row) {
+          if (!openSeat) return <li key={`empty-${slot}`} aria-hidden className="min-w-0" />;
+          return (
+            <li
+              key={`empty-${slot}`}
+              data-slot="open-seat"
+              className={cn(
+                "flex min-w-0 items-center border border-dashed border-[rgb(243_240_232/0.3)]",
+                lg ? "min-h-[5.5rem] gap-4 px-4 py-4 sm:min-h-28 sm:px-5" : "min-h-16 gap-2.5 px-2.5 py-2",
+              )}
+              aria-label={`${label}: open`}
+            >
+              <span className={cn(numeral, "text-dim")} aria-hidden>
+                {slot}
+              </span>
+              <span className="flex min-w-0 flex-col gap-1">
+                <span className={cn("truncate font-semibold text-foreground", lg ? "text-[1.0625rem]" : "text-sm")}>{openSeat.title}</span>
+                <span className={cn("truncate text-muted-foreground", lg ? "text-[0.9375rem]" : "text-xs")}>{openSeat.hint}</span>
+              </span>
+            </li>
+          );
+        }
         const medal = MEDAL[tier];
-        // Missing spots (fewer than three players) stay empty.
-        if (!row) return <li key={`empty-${pos}`} aria-hidden className="min-w-0" />;
         const name = displayName(row.handle, row.address);
         const isMe = Boolean(meUserId && row.userId === meUserId);
         const value = renderValue(row);
+        const action = renderAction?.(row);
         return (
           <li
             key={row.userId}
             value={row.rank}
-            className="relative flex min-w-0 flex-col items-center gap-3"
-            aria-label={`${spokenLabel}: ${name}${isMe ? " (you)" : ""}${typeof value === "string" || typeof value === "number" ? `, ${value}` : ""}`}
+            data-user-id={row.userId}
+            className={cn(
+              "relative flex min-w-0 items-center border bg-card",
+              lg ? "min-h-[5.5rem] gap-4 px-4 py-4 sm:min-h-28 sm:px-5" : "min-h-16 gap-2.5 px-2.5 py-2",
+              medal.seat,
+              isMe && "before:absolute before:inset-y-0 before:-left-px before:w-0.5 before:bg-foreground",
+            )}
+            aria-label={`${spokenLabel}: ${name}${isMe ? " (you)" : ""}`}
           >
-            {pos === 1 ? (
-              <span
-                className={cn(
-                  "pointer-events-none absolute left-1/2 -z-10 -translate-x-1/2 rounded-full bg-transparent",
-                  lg ? "-top-10 size-60 sm:size-72" : "-top-6 size-36",
-                )}
-                aria-hidden
-              />
-            ) : null}
-
-            <div className="flex w-full min-w-0 flex-col items-center gap-1.5">
-              <span
-                className={cn(
-                  "relative flex items-center justify-center rounded-full font-semibold tracking-tight uppercase ring-2 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.6),inset_0_1px_0_rgb(255_255_255/0.12)]",
-                  lg ? (pos === 1 ? "size-16 text-lg sm:size-20 sm:text-xl" : "size-12 text-sm sm:size-14") : pos === 1 ? "size-11 text-sm" : "size-9 text-xs",
-                  medal.avatar,
-                  isMe && "ring-ember",
-                )}
-                aria-hidden
-              >
-                {initials(name)}
-                {tier === 1 ? <Crown className={cn("absolute left-1/2 -translate-x-1/2 fill-gold/20 text-gold", lg ? "-top-5 size-5" : "-top-4 size-4")} /> : null}
-              </span>
-              <span
-                className={cn("mt-1 max-w-full truncate text-center font-medium", lg ? "text-sm sm:text-base" : "text-sm", isMe && "text-ember-light")}
-                title={row.address ?? name}
-              >
-                {name}
-              </span>
-              {isMe || renderTag ? (
-                <span className="flex h-5 items-center gap-1 text-xs text-muted-foreground">
-                  {isMe ? (
-                    <span className="rounded-full border border-ember/30 bg-ember/10 px-2 text-xs font-medium text-ember-light">You</span>
-                  ) : (
-                    renderTag?.(row)
-                  )}
+            <span className={cn(numeral, medal.number)} aria-hidden>
+              {row.rank}
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className={cn("truncate font-semibold text-foreground", lg ? "text-[1.0625rem]" : "text-sm")} title={row.address ?? name}>
+                  {name}
                 </span>
-              ) : null}
-              {value !== null ? (
-                <span
-                  className={cn(
-                    "font-semibold tracking-tight tabular-nums",
-                    lg ? (pos === 1 ? "text-lg sm:text-2xl" : "text-base sm:text-xl") : "text-sm",
-                    tier === 1 ? "text-gradient-gold" : "text-foreground",
-                  )}
-                >
-                  {value}
-                </span>
-              ) : null}
-            </div>
-
-            <div
-              className={cn(
-                "relative flex w-full flex-col items-center justify-start gap-2 overflow-hidden rounded-t-2xl border border-white/[0.07] bg-card",
-                lg ? "pt-3 sm:pt-4" : "pt-1.5",
-                HEIGHT[size][pos],
-                pos === 1 && "border-white/20",
-              )}
-            >
-              <span className={cn("absolute inset-x-0 top-0 h-px", medal.edge)} aria-hidden />
-              <span className={cn("relative leading-none font-semibold tracking-tight tabular-nums", lg ? "text-3xl sm:text-5xl" : "text-lg", medal.number)}>
-                {row.rank}
+                {isMe ? <Badge className="h-5 px-1.5 text-xs font-semibold">You</Badge> : renderTag?.(row)}
+                {tied ? <span className="shrink-0 text-xs text-muted-foreground">{label}</span> : null}
               </span>
-              {lg ? (
-                <span className={cn("relative hidden rounded-full border px-2 py-0.5 text-xs font-medium tracking-[0.14em] uppercase sm:inline-flex", medal.chip)}>
-                  {label}
-                </span>
-              ) : null}
-            </div>
+              {value !== null ? <span className={cn("flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5", !lg && "text-xs")}>{value}</span> : null}
+              {action ? <span className="mt-0.5">{action}</span> : null}
+            </span>
           </li>
         );
       })}
@@ -195,13 +161,14 @@ export function Podium<T extends PodiumEntry>({
 
 export function PodiumSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("mx-auto grid w-full max-w-3xl grid-cols-3 items-end gap-2 sm:gap-4", className)} aria-hidden>
-      {([2, 1, 3] as const).map((pos) => (
-        <div key={pos} className="flex flex-col items-center gap-3">
-          <Skeleton className={cn("rounded-full", pos === 1 ? "size-16 sm:size-20" : "size-12 sm:size-14")} />
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-5 w-14" />
-          <Skeleton className={cn("w-full rounded-t-2xl rounded-b-none", HEIGHT.lg[pos])} />
+    <div className={cn("grid gap-3 sm:grid-cols-3 sm:gap-4", className)} aria-hidden>
+      {[1, 2, 3].map((n) => (
+        <div key={n} className="flex min-h-[5.5rem] items-center gap-4 border border-rule px-4 py-4 sm:min-h-28 sm:px-5">
+          <Skeleton className="h-14 w-9" />
+          <div className="flex flex-1 flex-col gap-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-6 w-20" />
+          </div>
         </div>
       ))}
     </div>

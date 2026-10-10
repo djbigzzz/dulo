@@ -19,6 +19,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 import {
   DAY_MS,
   WEEKDAYS_SHARE,
+  dayLabelPlace,
   formatTrackClock,
   mondayUtc,
   readoutFocusFor,
@@ -69,6 +70,25 @@ describe("week track geometry", () => {
     expect(trackX(mon - DAY_MS, mon)).toBe(0);
     expect(trackX(mon + 9 * DAY_MS, mon)).toBe(1);
     expect(trackX(Number.NaN, mon)).toBe(0);
+  });
+
+  it("moves a day label aside whenever the now marker would cover it", () => {
+    const mon = Date.parse("2026-10-05T00:00:00Z");
+    const x = (iso: string) => trackX(Date.parse(iso), mon);
+    // Saturday 00:38 UTC (the weekend state on production): "Sat–Sun" rides after the marker,
+    // and late on Sunday it rides before it. Neither sits under the diamond.
+    expect(dayLabelPlace(5, x("2026-10-10T00:38:00Z"))).toBe("after-now");
+    expect(dayLabelPlace(5, x("2026-10-11T22:00:00Z"))).toBe("before-now");
+    // Tuesday 02:00 UTC: the Tue label steps after the marker; by Tuesday afternoon it is back at its tick.
+    expect(dayLabelPlace(1, x("2026-10-06T02:00:00Z"))).toBe("after-now");
+    expect(dayLabelPlace(1, x("2026-10-06T15:00:00Z"))).toBe("tick");
+    // Labels the marker has not reached, or with no clock yet, stay at their ticks.
+    expect(dayLabelPlace(3, x("2026-10-06T02:00:00Z"))).toBe("tick");
+    expect(dayLabelPlace(5, x("2026-10-08T13:58:15Z"))).toBe("tick");
+    expect(dayLabelPlace(0, null)).toBe("tick");
+    expect(dayLabelPlace(0, Number.NaN)).toBe("tick");
+    const src = read("src/components/layout/WeekTrack.tsx");
+    expect(src).toContain("dayLabelPlace(i, at(now))");
   });
 });
 
@@ -183,7 +203,9 @@ describe("WeekTrack first frame", () => {
 
   it("guards every transition and the pulse for reduced motion, and ticks once a minute there", () => {
     const src = read("src/components/layout/WeekTrack.tsx");
-    expect(src).toContain('matchMedia("(prefers-reduced-motion: reduce)")');
+    // The shared hook (one copy for every clock) reads the media query.
+    expect(src).toContain('import { useReducedMotion } from "@/hooks/useReducedMotion"');
+    expect(read("src/hooks/useReducedMotion.ts")).toContain('matchMedia("(prefers-reduced-motion: reduce)")');
     expect(src).toContain("reduced ? 60_000 : 1_000");
     // Every class string that animates also stands it down under reduced motion.
     const animated = (src.match(/className="[^"]*\btransition-[^"]*"/g) ?? []);

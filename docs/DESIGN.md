@@ -84,6 +84,7 @@ Sizes: `xs` 24px, `sm` 32px, `default` 36px, `lg` 40px, `xl` 54px (the hero's Co
 - **Phone** (under lg): 50px, no left block, no pin labels, single-letter days, "Lock in" / "Close in".
 - **Loading / error**: the first frame draws the ticks and day labels in the final 50 / 60px box with placeholder bars where the text goes, so nothing moves when the data lands; a failed read leaves the ticks and says "This week's times unavailable".
 - **Reduced motion**: no marker transitions, no pulse, and the clock drops its seconds and ticks once a minute (`30h 01m`).
+- Day labels step aside for the now marker (`dayLabelPlace`): a weekday label rides just after it for the first 40% of its day, and "Sat–Sun" rides beside it all weekend (after it in the tail's first half, before it in the second), so the diamond never covers a label.
 - Accessible name: "Week of 5 Oct: predictions lock Thursday 20:00 UTC; the virtual-cash competition closes Friday 20:00 UTC."
 
 **Data.** `WeekDataProvider` (in AppShell) owns the page's one read of `GET /api/v1/league` and one of `GET /api/v1/calls` (session-keyed, held for the session check, refetched on focus, retried twice on a 5xx). Pages read them with `useLeagueQuery(key)` / `useCallsQuery(key)` (`src/components/layout/WeekData.tsx`), never with their own `leagueApi.overview()` / `api.calls()`, so each endpoint is still one request per page. Outside the provider (a standalone render in a test) the hooks read on their own under `key`.
@@ -95,7 +96,11 @@ Sizes: `xs` 24px, `sm` 32px, `default` 36px, `lg` 40px, `xl` 54px (the hero's Co
 - `PriceChip` — `quote`, `symbol?`, `session?`, `tickMs?`: the mono trust line "TSLAx $372.08 · Jupiter · 18s ago", ruled "stale" / "closed" tags. Every price on screen goes through it.
 - `MarketSessionChip` — the status line "● US market open · closes in 6h 01m" (green dot open, dim closed).
 - `SignInBanner` — `title`, `hint?`, `connectVariant`: the dashed "Your slot" row with Connect.
-- `ConnectButton` — `variant` (`default` gold / `outline`), `size`: Connect wallet, Sign in, the account menu.
+- `ConnectButton` — `variant` (`default` gold / `secondary` cream, where another control carries the screen's gold / `outline`), `size` (up to `xl`, the hero's 54px), `fullLabel` (keep "Connect wallet" on a phone, where the header says "Connect"): Connect wallet, Sign in, the account menu.
+- `SectionHeading` / `SECTION_TITLE` — the serif section name (28px, 32px from sm) with an optional `hint`, `action` and `note`. Page titles and a game's hero sizes keep their own classes.
+- `XStockLogo` — `symbol`, `ticker?`: the round greyscale xStock logo well, sized by `className`. `PartnerLogo` draws partner and pre-IPO logos in the same well.
+- `IssuerPill` ("xStocks" / "PreStocks"), `AddressChip`, `PointsChip`, `SeasonBadge` — square ruled tags (a 1px rule, 2px radius, muted Archivo), never pills, never gold.
+- `useReducedMotion` (`src/hooks/useReducedMotion.ts`) — the one reduced-motion hook every clock and marker reads.
 - `EmptyState` / `ErrorState` — a ruled panel, a round ink-3 icon well, a serif title.
 - `Card`, `Badge` (`default` = cream stamp, `outline` = 1px cream rule, as the mockup's "Player" tag), `Table` (42px rows on rules, plain dim column heads), `Dialog` / `Sheet` (ink-3 on a strong rule, serif titles), `Input` (an ink well on a strong rule, 40px), `Tabs`, `Skeleton` (ink-3, still under reduced motion), `Progress` (a cream fill on ink-4), toasts (sonner: ink-3, strong rule, green / red icons only for success / error).
 - `Tamga` / `Dulo` — the cream tamga (`tone="gradient"` strokes `#f3f0e8` inline); the wordmark sets "Dulo" in the serif. Never gold.

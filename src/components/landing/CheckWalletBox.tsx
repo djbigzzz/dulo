@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,25 +10,24 @@ import { truncateAddress } from "@/components/common/format";
 import { parseWalletInput } from "@/components/mirror/mirror-format";
 import { CHECK_INVALID_MESSAGE, SAMPLE_WALLETS, checkHref } from "@/components/landing/check-wallet";
 
-/** Inset well (DESIGN.md). */
-const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]";
-
 export interface CheckWalletBoxProps {
   className?: string;
-  /** Primary (white) submit button. Off on the landing, where Connect is the one primary action. */
+  /** Primary (gold) submit button. Off on the landing, where Connect is the one primary action. */
   primary?: boolean;
-  /** Show the "Try a real holder" chips. Default true. */
+  /** Show the "Try a real holder" rows. Default true. */
   samples?: boolean;
   /** Field above the button at every width: for narrow columns (the /check/[address] sidebar). */
   stacked?: boolean;
+  /** No panel of its own: the landing sets it straight on the page, between rules. */
+  bare?: boolean;
 }
 
 /**
- * Paste any Solana address and open /check/[address]: its xStocks read live and the Plays it
- * already verifies. Three curated xStocks holders and one pre-IPO holder are one tap away for
- * visitors with no wallet.
+ * Paste any Solana address and open /check/[address]: its xStocks read live and the quests it
+ * already verifies. Three curated xStocks holders and one more public holder are one tap away for
+ * visitors with no wallet. Broadcast: an ink well on a strong rule, ruled sample rows, no pills.
  */
-export function CheckWalletBox({ className, primary = false, samples = true, stacked = false }: CheckWalletBoxProps) {
+export function CheckWalletBox({ className, primary = false, samples = true, stacked = false, bare = false }: CheckWalletBoxProps) {
   const router = useRouter();
   const inputId = React.useId();
   const errorId = React.useId();
@@ -49,7 +47,7 @@ export function CheckWalletBox({ className, primary = false, samples = true, sta
   };
 
   return (
-    <div className={cn("flex flex-col gap-4 rounded-2xl border border-white/[0.07] bg-card p-4 sm:p-6", className)}>
+    <div className={cn("flex flex-col gap-4", bare ? "min-w-0" : "rounded-md bg-card p-4 ring-1 ring-rule sm:p-6", className)}>
       {/*
         Stacked below sm (always when `stacked`), so the field grows only in the sm row: flex-1 in a
         column would override its h-11 (44px).
@@ -72,21 +70,31 @@ export function CheckWalletBox({ className, primary = false, samples = true, sta
           spellCheck={false}
           aria-invalid={error !== null}
           aria-describedby={error ? errorId : undefined}
-          className={cn(WELL, "h-11 min-w-0 px-3.5 font-mono text-sm md:text-sm dark:bg-black/25", !stacked && "sm:flex-1")}
+          className={cn(
+            "h-11 min-w-0 rounded-sm border-rule-2 bg-ink-2 px-3.5 font-mono text-sm placeholder:font-sans md:text-sm dark:bg-ink-2",
+            !stacked && "sm:h-12 sm:flex-1",
+          )}
         />
-        <Button type="submit" size="lg" variant={primary ? "default" : "outline"} className="h-11 shrink-0 rounded-xl px-5 font-semibold">
+        <Button
+          type="submit"
+          size="lg"
+          variant={primary ? "default" : "outline"}
+          className={cn("h-11 shrink-0 px-5 text-[0.9375rem] font-semibold", !stacked && "sm:h-12")}
+        >
           Check wallet
-          <ArrowRight data-icon="inline-end" aria-hidden />
+          <span aria-hidden className="ml-1 font-medium">
+            →
+          </span>
         </Button>
       </form>
       {error ? (
-        <p id={errorId} role="alert" className="-mt-2 text-xs text-rose-400">
+        <p id={errorId} role="alert" className="-mt-2 text-[0.8125rem] text-no">
           {error}
         </p>
       ) : null}
       {samples && SAMPLE_WALLETS.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <p id={samplesId} className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+        <div className="flex flex-col gap-2.5">
+          <p id={samplesId} className="text-sm font-medium text-muted-foreground">
             Try a real holder
           </p>
           <ul className="flex flex-wrap gap-2" aria-labelledby={samplesId}>
@@ -94,21 +102,29 @@ export function CheckWalletBox({ className, primary = false, samples = true, sta
               <li key={w.address} className="min-w-0">
                 <Link
                   href={checkHref(w.address)}
-                  className="group inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border border-white/[0.08] bg-black/25 px-3 py-1.5 text-xs shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] transition-colors duration-300 outline-none hover:border-white/[0.14] hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                  className="group inline-flex min-h-10 max-w-full items-center gap-2.5 rounded-sm bg-ink-2 px-3 py-1.5 text-[0.8125rem] shadow-[inset_0_0_0_1px_var(--rule)] transition-[box-shadow,background-color] duration-200 outline-none hover:bg-ink-3 hover:shadow-[inset_0_0_0_1px_var(--rule-2)] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
                 >
-                  <span className="font-medium text-foreground">{w.label}</span>
+                  <span className="font-semibold text-foreground">{w.label}</span>
                   {w.tag ? (
-                    <span data-slot="wallet-tag" className="inline-flex h-5 shrink-0 items-center rounded-full border border-gold/20 bg-gold/[0.06] px-1.5 text-xs font-medium text-gold">
+                    <span
+                      data-slot="wallet-tag"
+                      className="inline-flex h-5 shrink-0 items-center rounded-sm border border-rule-2 px-1.5 text-[0.6875rem] leading-none font-semibold text-foreground"
+                    >
                       {w.tag}
                     </span>
                   ) : null}
-                  <span className="truncate font-mono text-muted-foreground">{truncateAddress(w.address)}</span>
-                  <ArrowRight className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transition-none" aria-hidden />
+                  <span className="truncate text-muted-foreground tabular-nums">{truncateAddress(w.address)}</span>
+                  <span
+                    aria-hidden
+                    className="shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transition-none"
+                  >
+                    →
+                  </span>
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="text-xs leading-relaxed text-muted-foreground/80">Public wallets, not Dulo players. Never scored.</p>
+          <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">Public wallets, not Dulo players. Never scored.</p>
         </div>
       ) : null}
     </div>

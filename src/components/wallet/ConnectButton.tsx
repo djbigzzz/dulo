@@ -34,6 +34,7 @@ const PAIR_MIN: Record<NonNullable<ConnectButtonProps["size"]>, { h: string; w: 
   sm: { h: "min-h-8", w: "min-w-8" },
   default: { h: "min-h-9", w: "min-w-9" },
   lg: { h: "min-h-10", w: "min-w-10" },
+  xl: { h: "min-h-[3.375rem]", w: "min-w-[3.375rem]" },
 };
 
 const menuItemClass =
@@ -53,16 +54,23 @@ const menuItemClass =
  */
 export interface ConnectButtonProps {
   className?: string;
-  size?: "sm" | "default" | "lg";
+  /** The Button sizes; "xl" is the hero size (the landing's 54px Connect wallet). */
+  size?: "sm" | "default" | "lg" | "xl";
   /**
    * "default" is the gold primary button. Pass "outline" where another control is the view's one primary
-   * action: the header (every page owns its own primary), and the /prestocks and /competition sign-in
-   * banners, which sit beside the trade form's own Connect.
+   * action: the header (every page owns its own primary). "secondary" is the cream solid, a strong
+   * action that is not the primary: the paper-trade slip's Connect while the standings' Your slot row
+   * carries the screen's gold.
    */
-  variant?: "default" | "outline";
+  variant?: "default" | "outline" | "secondary";
+  /**
+   * "Connect wallet" at every width. By default a phone reads "Connect" (the header's tight row);
+   * a hero or a closing band that has the room passes this to keep the full words.
+   */
+  fullLabel?: boolean;
 }
 
-export function ConnectButton({ className, size = "lg", variant = "default" }: ConnectButtonProps) {
+export function ConnectButton({ className, size = "lg", variant = "default", fullLabel = false }: ConnectButtonProps) {
   const { connected, connecting, publicKey, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
   const { session, user, loading, signingIn, walletMismatch, signIn, signOut } = useSession();
@@ -99,9 +107,9 @@ export function ConnectButton({ className, size = "lg", variant = "default" }: C
   if (!mounted || (!connected && !connecting)) {
     return (
       <Button size={size} variant={variant} className={cn("font-semibold", className)} onClick={openModal} disabled={!mounted}>
-        {/* One text run (no icon in Broadcast): "Connect" on a phone, "Connect wallet" from sm. */}
+        {/* One text run (no icon in Broadcast): "Connect" on a phone, "Connect wallet" from sm (or always). */}
         <span>
-          Connect<span className="hidden sm:inline"> wallet</span>
+          Connect<span className={fullLabel ? undefined : "hidden sm:inline"}> wallet</span>
         </span>
       </Button>
     );

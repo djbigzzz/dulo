@@ -124,10 +124,9 @@ describe("RuleDisclosure — the literal rule beside the proof", () => {
     expect(pre).toContain("max-w-full");
     expect(pre).toContain("font-mono");
     expect(pre).toContain("text-xs");
-    // docs/DESIGN.md inset well.
-    expect(pre).toContain("rounded-xl");
-    expect(pre).toContain("bg-black/25");
-    expect(pre).toContain("border-white/[0.06]");
+    // docs/DESIGN.md ink well: a 1px rule on the panel surface.
+    expect(pre).toContain("border-rule");
+    expect(pre).toContain("bg-ink-2");
     // Gold is heritage and rank, never an action: the control does not wear it.
     expect(html).not.toContain("text-gold");
   });

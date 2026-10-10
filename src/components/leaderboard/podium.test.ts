@@ -62,11 +62,13 @@ describe("Podium ties (15 Sep review M-P)", () => {
     expect([0, 1, 2, 3, 7, Number.NaN].map(medalTier)).toEqual([1, 1, 2, 3, 3, 3]);
   });
 
-  it("Podium renders medal, crown and chip from the tier, not from the slot", () => {
+  it("Podium renders the seat's tone, tie mark and spoken label from the tier, not from the slot", () => {
     const src = readFileSync(path.join(__dirname, "Podium.tsx"), "utf8");
     expect(src).toContain("podiumSlots(rows)");
     expect(src).toContain("MEDAL[tier]");
-    expect(src).toContain("tier === 1 ? <Crown");
+    expect(src).not.toContain("MEDAL[slot]");
+    expect(src).toContain("{tied ? <span");
+    expect(src).toContain("${spokenLabel}: ${name}");
     expect(src).not.toMatch(/positions\s*:/);
   });
 });

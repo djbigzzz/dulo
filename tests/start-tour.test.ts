@@ -9,7 +9,7 @@ import { MIN_TRADES_FOR_WEEKLY_POINTS } from "@/lib/games/ledger-policy";
 import { SEASON0_PLAYS, activePlays, playAssetSource } from "@/lib/plays/catalogue";
 import { findScoutPlay } from "@/components/league/scout";
 import { competitionLine } from "@/components/start/share";
-import { TourStep } from "@/components/start/TourStep";
+import { TourProgress, TourStep } from "@/components/start/TourStep";
 import { BoardStepBody, QuestsStepBody, TourFinish } from "@/components/start/TourBodies";
 import {
   TOUR_COPY,
@@ -788,6 +788,32 @@ describe("source pins", () => {
   it("the progress bar only animates without reduced motion", () => {
     // Cream, not gold: gold is the primary action and "now" only.
     expect(repoFile("src/components/ui/progress.tsx")).toContain('"h-full bg-foreground transition-all motion-reduce:transition-none"');
+    // The tour's own running-order strip: every segment that changes colour stops changing under reduced motion.
+    const strip = html(createElement(TourProgress, { steps: [{ key: "predict", state: "done" }, { key: "compete", state: "current" }, { key: "quests", state: "todo" }, { key: "board", state: "unavailable" }], done: 1, signedIn: true }));
+    const animated = [...strip.matchAll(/class="([^"]*)"/g)].map((m) => m[1]).filter((c) => /\btransition-/.test(c));
+    expect(animated.length).toBeGreaterThanOrEqual(4);
+    for (const c of animated) expect(c).toContain("motion-reduce:transition-none");
+    expect(strip).not.toMatch(/\bbg-signal\b|\bbg-primary\b/);
+  });
+
+  it("the running-order strip is the tour's progress bar signed in, and says nothing signed out", () => {
+    const steps = [
+      { key: "predict", state: "done" },
+      { key: "compete", state: "current" },
+      { key: "quests", state: "todo" },
+      { key: "board", state: "todo" },
+    ] as const;
+    const inside = html(createElement(TourProgress, { steps, done: 1, signedIn: true }));
+    expect(inside).toContain('role="progressbar"');
+    expect(inside).toContain(`aria-label="${TOUR_COPY.progressAria}"`);
+    expect(inside).toContain('aria-valuenow="1"');
+    expect(inside).toContain('aria-valuemax="4"');
+    expect(inside).toContain(`aria-valuetext="${TOUR_COPY.progress(1)}"`);
+    expect(inside).toMatch(new RegExp(`<p aria-live="polite"[^>]*>${TOUR_COPY.progress(1)}</p>`));
+    const outside = html(createElement(TourProgress, { steps, done: 0, signedIn: false }));
+    expect(outside).not.toContain("progressbar");
+    expect(outside).not.toContain("aria-live");
+    expect(outside).not.toContain(TOUR_COPY.progress(0));
   });
 
   it("saves nothing in the browser and never imports the server-only competition module", () => {

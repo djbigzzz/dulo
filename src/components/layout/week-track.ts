@@ -38,6 +38,22 @@ export const TRACK_DAYS = [
   { long: "Sat–Sun", short: "S·S", x: WEEKDAYS_SHARE },
 ] as const;
 
+/**
+ * Where a day's label sits so the gold "now" marker never covers it: at its tick (the default),
+ * just after the marker, or just before it. A weekday label moves after the marker for the first
+ * 40% of its day (the label's own width at every size; Tuesday 02:00 UTC would otherwise sit under
+ * the diamond). The weekend's "Sat–Sun" fills most of its short tail, so once the marker is in the
+ * tail the label rides beside it: after it in the tail's first half, before it in the second.
+ */
+export type DayLabelPlace = "tick" | "after-now" | "before-now";
+
+export function dayLabelPlace(index: number, nowX: number | null): DayLabelPlace {
+  const day = TRACK_DAYS[index];
+  if (!day || nowX === null || !Number.isFinite(nowX) || nowX < day.x) return "tick";
+  if (index < 5) return nowX - day.x < 0.4 * (WEEKDAYS_SHARE / 5) ? "after-now" : "tick";
+  return nowX - day.x < (1 - WEEKDAYS_SHARE) / 2 ? "after-now" : "before-now";
+}
+
 export interface WeekTrackModel {
   /** Monday 00:00 UTC of the week on the track (on the weekend, the week that just closed). */
   monday: number;

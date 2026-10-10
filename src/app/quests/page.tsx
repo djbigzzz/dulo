@@ -32,6 +32,11 @@ function allPlays(groups: PartnerGroup[]): PlayView[] {
   return groups.flatMap((g) => g.campaigns.flatMap((c) => c.plays));
 }
 
+/**
+ * /quests in the Broadcast language: the serif title and its numbers on rules, the "Your slot" row
+ * for a visitor, the filter as plain tabs, then each kind of quest as one ruled board of segments
+ * under a segmented track of its own (cream once complete). Proof opens in the side drawer.
+ */
 export default function QuestsPage() {
   const { session, refresh: refreshSession } = useSession();
   const q = useApiQuery((signal) => apiGet<PlaysResponse>("/api/v1/plays", { signal }), session?.userId ?? "");
@@ -94,31 +99,35 @@ export default function QuestsPage() {
   const stats: Stat[] = q.data
     ? [
         { label: "Live quests", value: totals.livePlays, hint: `${kinds.inPlatform} in-platform · ${kinds.onChain} on-chain` },
-        { label: "Points available", value: formatPoints(totals.livePoints), tone: "ember", hint: "Points only, no cash value" },
+        { label: "Points available", value: formatPoints(totals.livePoints), hint: "Points only, no cash value" },
         signedIn
-          ? { label: "You completed", value: `${totals.completed}/${totals.livePlays}`, tone: totals.completed > 0 ? "positive" : "default" }
+          ? { label: "You completed", value: `${totals.completed}/${totals.livePlays}`, hint: "this Season" }
           : { label: "You completed", value: "—", hint: "Connect to track" },
       ]
     : [];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7 sm:gap-8">
       <PageHeader
         className="mb-0"
         extrasLastOnMobile
-        eyebrow="Season 0"
+        eyebrow="Stocks Season 0"
         title="Quests"
-        description="Complete quests in Dulo or from your own wallet. Points only."
+        description={
+          <>
+            Complete quests <b>in Dulo</b> or <b>from your own wallet</b>. Points only.
+          </>
+        }
         actions={
           signedIn ? (
             <Button
               variant="outline"
-              className="h-10 sm:h-8"
+              size="lg"
               onClick={() => void refreshPlays()}
               disabled={refreshing}
               title="Re-read your wallet now instead of waiting for the next 5-minute check"
             >
-              <RefreshCw className={refreshing ? "animate-spin" : undefined} data-icon="inline-start" aria-hidden />
+              <RefreshCw className={cn(refreshing && "animate-spin motion-reduce:animate-none")} data-icon="inline-start" aria-hidden />
               {refreshing ? "Reading wallet" : "Refresh"}
             </Button>
           ) : null
@@ -156,7 +165,7 @@ export default function QuestsPage() {
           title="Season 0 is being seeded."
           description="Quests land here in a moment. Your first prediction and your first paper trades already count."
           action={
-            <Link href="/predictions" className={cn(buttonVariants({ variant: "outline" }), "h-10")}>
+            <Link href="/predictions" className={cn(buttonVariants({ variant: "secondary", size: "lg" }))}>
               Make a prediction
               <ArrowRight data-icon="inline-end" aria-hidden />
             </Link>
@@ -165,9 +174,9 @@ export default function QuestsPage() {
       ) : (
         <>
           <PlayFilterBar value={filter} onChange={setFilter} counts={counts} />
-          <PlayGrid groups={groups} signedIn={signedIn} filter={filter} onProof={openProof} />
+          <PlayGrid groups={groups} signedIn={signedIn} filter={filter} onProof={openProof} className="pt-2" />
           {/* The board groups cards under Partner logos and names, so it carries the marks notice too. */}
-          <p className="text-xs leading-relaxed text-muted-foreground">{PARTNER_MARKS_NOTICE}</p>
+          <p className="-mt-4 text-[0.8125rem] leading-relaxed text-muted-foreground">{PARTNER_MARKS_NOTICE}</p>
         </>
       )}
 

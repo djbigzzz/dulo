@@ -8,19 +8,30 @@ import type { PlayRule } from "@/lib/plays/rules";
 import { STARTING_CASH_USD } from "@/lib/games/league";
 import { VIRTUAL_CASH_USD } from "@/lib/games/ledger-policy";
 import {
-  COMPACT_ROW_EMPTY,
   GAME_TILE_ORDER,
+  STRIKE_NOTE,
   TILE_COPY,
   TILE_PLACEHOLDER,
-  compactRowCopy,
+  competitionLaneFigure,
   competitionTileFigure,
   createSharedReads,
+  crowdLead,
   flattenPlays,
+  gapLabel,
+  gaugePosition,
+  nextQuestCheck,
+  offerParts,
   onChainQuestTileStat,
+  pickHeroMarkets,
   pickLiveMarkets,
+  predictionsLaneFigure,
   predictionsTileFigure,
   questTileFigure,
+  utcStamp,
+  verbParts,
+  type LandingWeek,
 } from "@/components/landing/game-tiles";
+import { WELCOME_OFFER_LINE } from "@/lib/games/ledger-policy";
 import { NEXT_WEEK_MARKETS_COPY } from "@/components/calls/calls-format";
 import { GameTiles, LivePredictions, SeasonTop } from "@/components/landing/ScoreboardPreview";
 
@@ -142,7 +153,7 @@ describe("predictionsTileFigure — points in this week's predictions", () => {
   it("says the total includes the house bots' seed, in the same words as the hero card", () => {
     // With one real account most of the pool is the bots' seed: the tile never reads as player activity.
     expect(predictionsTileFigure([market({ total: 1_900 })], NOW)?.line).toMatch(/incl\. bot seed$/);
-    expect(repoFile("src/components/landing/ScoreboardPreview.tsx")).toContain("pts in, incl. bot seed");
+    expect(repoFile("src/components/landing/ScoreboardPreview.tsx")).toContain("points in, incl. bot seed. Points only.");
   });
 
   it("still counts a prediction whose entries closed since the server answered", () => {
@@ -188,37 +199,152 @@ describe("pickLiveMarkets — the hero's prediction cards", () => {
   });
 });
 
-describe("compactRowCopy — the hero card's other predictions", () => {
-  const row = (over: Partial<CallMarketView> & { total?: number; yesProb?: number } = {}) => {
-    const { yesProb = 0.5, ...rest } = over;
-    const m = market(rest);
-    return { ...m, odds: { ...m.odds, yesProb, noProb: 1 - yesProb } };
-  };
+describe("pickHeroMarkets — the hero's stage and tabs (Broadcast, 9 Oct 2026)", () => {
+  // The week of Mon 14 Sep 2026; NOW is Wed 16 Sep 22:00 UTC, Friday's close is 18 Sep 20:00 UTC.
+  const MON = Date.parse("2026-09-14T00:00:00.000Z");
+  const WEEK: LandingWeek = { monday: MON, nextMonday: MON + 7 * 86_400_000, weekend: false };
 
-  it("names the row by its visible text first (WCAG 2.5.3), then the full question", () => {
-    const copy = compactRowCopy(row({ ticker: "TSLA", strike: 400, total: 500, yesProb: 0.64 }));
-    expect(copy.label).toBe("TSLA above $400.00");
-    expect(copy.split).toBe("64% Yes");
-    expect(copy.name.startsWith("TSLA above $400.00, 64% Yes. ")).toBe(true);
-    expect(copy.name).toMatch(/Will TSLA close above \$400\.00 on .+\?$/);
+  it("during the week shows this week's live predictions, as pickLiveMarkets", () => {
+    const markets = [market({ ticker: "SPY", total: 650 }), market({ ticker: "NVDA", total: 750 }), market({ ticker: "AAPL", total: 999, status: "settled" })];
+    const pick = pickHeroMarkets(markets, NOW, WEEK);
+    expect(pick.final).toBe(false);
+    expect(pick.shown.map((m) => m.ticker)).toEqual(["NVDA", "SPY"]);
+    expect(pick).toMatchObject(pickLiveMarkets(markets, NOW));
   });
 
-  it("says an empty pool instead of drawing a 50/50, on screen and in the name alike", () => {
-    const copy = compactRowCopy(row({ ticker: "SPY", strike: 769.33, total: 0 }));
-    expect(COMPACT_ROW_EMPTY).toBe("No points yet");
-    expect(copy.split).toBe(COMPACT_ROW_EMPTY);
-    expect(copy.name.startsWith("SPY above $769.33, No points yet. ")).toBe(true);
-    expect(copy.name).not.toContain("50%");
-    expect(`${copy.label} ${copy.split}`).not.toMatch(BANNED);
+  it("from Friday's close replays the week that just closed as final, not next week's open board", () => {
+    const weekend = { ...WEEK, weekend: true };
+    const after = Date.parse("2026-09-19T11:00:00.000Z");
+    const closed = [
+      market({ id: "a", ticker: "TSLA", total: 500, status: "settled", outcome: "no" }),
+      market({ id: "b", ticker: "NVDA", total: 500, status: "settled", outcome: "yes" }),
+      market({ id: "c", ticker: "SPY", total: 650, status: "settled", outcome: "no" }),
+    ];
+    const nextWeek = market({ id: "n", ticker: "NVDA", total: 300, settleAt: "2026-09-25T20:05:00.000Z", locksAt: "2026-09-24T20:00:00.000Z" });
+    const pick = pickHeroMarkets([...closed, nextWeek], after, weekend);
+    expect(pick.final).toBe(true);
+    expect(pick.shown.map((m) => m.id)).toEqual(["c", "b", "a"]);
+    expect(pick.count).toBe(3);
+    // Nothing in the closed week (or no week known yet): the live board, never an empty hero.
+    expect(pickHeroMarkets([nextWeek], after, weekend)).toEqual({ shown: [nextWeek], count: 1, final: false });
+    expect(pickHeroMarkets([nextWeek], after, null).final).toBe(false);
+    expect(pickHeroMarkets(null, after, weekend)).toEqual({ shown: [], count: 0, final: false });
+  });
+});
+
+describe("the hero's price track — the live price against the line it has to beat", () => {
+  it("puts the line in the middle and the price between 20% and 80% of the track", () => {
+    expect(gaugePosition(234.25, 234.25)).toEqual({ p: 50, gap: 0 });
+    const below = gaugePosition(234.01, 234.25)!;
+    expect(below.gap).toBeCloseTo(-0.24, 6);
+    expect(below.p).toBeLessThan(50);
+    expect(below.p).toBeGreaterThan(20);
+    const far = gaugePosition(774.81, 769.33)!;
+    expect(far.p).toBeCloseTo(80, 6);
+    expect(gaugePosition(1, 1_000)!.p).toBeCloseTo(20, 6);
   });
 
-  it("draws an empty pool's row track neutral and gives the strike the room below 400px", () => {
+  it("draws no price it does not have", () => {
+    expect(gaugePosition(null, 234.25)).toBeNull();
+    expect(gaugePosition(undefined, 234.25)).toBeNull();
+    expect(gaugePosition(Number.NaN, 234.25)).toBeNull();
+    expect(gaugePosition(234, 0)).toBeNull();
+  });
+
+  it("says the gap in dollars, and calls the strike what it is", () => {
+    expect(gapLabel(-0.24)).toBe("$0.24 below");
+    expect(gapLabel(5.4807)).toBe("$5.48 above");
+    expect(gapLabel(0.001)).toBe("At the line");
+    // The strike is the price when the prediction opened (lib/games/calls STRIKE_LABEL), never "last Friday's close".
+    expect(STRIKE_NOTE).toBe("price when it opened");
+    expect(repoFile("src/lib/games/calls.ts")).toContain('STRIKE_LABEL = "price when the market opened"');
+  });
+
+  it("names the side most points are on, and says an empty pool or an even split in words", () => {
+    expect(crowdLead({ total: 750, yesProb: 320 / 750 })).toEqual({ side: "no", pct: "57%" });
+    expect(crowdLead({ total: 650, yesProb: 400 / 650 })).toEqual({ side: "yes", pct: "62%" });
+    expect(crowdLead({ total: 0, yesProb: 0.5 })).toBeNull();
+    expect(crowdLead({ total: 200, yesProb: 0.5 })).toBeNull();
     const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
-    const rowSrc = src.slice(src.indexOf("function CompactRow"), src.indexOf("function LiveLabel"));
-    expect(rowSrc).toContain('empty ? "bg-white/[0.06]" : "bg-rose-400/40"');
-    expect(rowSrc).toContain("min-[400px]:flex");
-    expect(rowSrc).not.toContain("min-[360px]:flex");
-    expect(rowSrc).toContain("aria-label={name}");
+    expect(src).toContain('"No points in yet"');
+    expect(src).toContain('"An even split"');
+  });
+
+  it("stamps times in UTC, as the week track does", () => {
+    expect(utcStamp("2026-10-08T20:00:00.000Z")).toBe("Thu 8 Oct · 20:00 UTC");
+    expect(utcStamp("nope")).toBe("");
+  });
+});
+
+describe("the hero's tabs and copy", () => {
+  it("names each tab by its visible text (WCAG 2.5.3) and draws an empty pool neutral, never as 50 / 50", () => {
+    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
+    const tabs = src.slice(src.indexOf("function MarketTabs"), src.indexOf("function TabsSkeleton"));
+    expect(tabs).toContain('role="tab"');
+    expect(tabs).toContain("aria-selected={on}");
+    expect(tabs).toContain("tabIndex={on ? 0 : -1}");
+    expect(tabs).not.toContain("aria-label={");
+    for (const key of ["ArrowRight", "ArrowLeft", "Home", "End"]) expect(tabs).toContain(`"${key}"`);
+    const split = src.slice(src.indexOf("function SplitBar"), src.indexOf("const SOURCES"));
+    expect(split).toContain('empty ? "bg-ink-4" : "bg-yes"');
+    expect(split).toContain('{empty ? "Yes" : `${yes} Yes`}');
+  });
+
+  it("keeps the headline, the verbs and the welcome line byte-identical while it colours them", () => {
+    expect(verbParts("Predict. Compete. Complete on-chain quests.")).toEqual({ lead: "Predict. Compete. ", rest: "Complete on-chain quests." });
+    const offer = offerParts(WELCOME_OFFER_LINE);
+    expect(offer.strong).toBe("1,000 starter points and $10,000 of virtual cash");
+    expect(`${offer.lead}${offer.strong}${offer.rest}`).toBe(WELCOME_OFFER_LINE);
+    // A line that does not have the expected shape renders whole, never cut.
+    expect(offerParts("Points only.")).toEqual({ lead: "Points only.", strong: "", rest: "" });
+  });
+});
+
+describe("the lanes — each game on the week", () => {
+  const MON = Date.parse("2026-09-14T00:00:00.000Z");
+  const WEEKEND: LandingWeek = { monday: MON, nextMonday: MON + 7 * 86_400_000, weekend: true };
+
+  it("Predictions: this week's points in, or the week that just closed once it is final", () => {
+    const markets = [
+      market({ ticker: "NVDA", total: 500, status: "settled", outcome: "yes" }),
+      market({ ticker: "SPY", total: 650, status: "settled", outcome: "no" }),
+      market({ ticker: "TSLA", total: 300, status: "void", outcome: "void" }),
+      market({ ticker: "AAPL", total: 999, settleAt: "2026-09-25T20:05:00.000Z", locksAt: "2026-09-24T20:00:00.000Z" }),
+    ];
+    expect(predictionsLaneFigure(markets, NOW, WEEKEND)).toEqual({ figure: "1,150", line: "points in, week of 14 Sep, incl. bot seed" });
+    expect(predictionsLaneFigure(markets, NOW, { ...WEEKEND, weekend: false })).toEqual(predictionsTileFigure(markets, NOW));
+    expect(predictionsLaneFigure(null, NOW, WEEKEND)).toBeNull();
+  });
+
+  it("Competition: the standings and how many are house bots, always with virtual cash", () => {
+    const rows = [leader({ isBot: true }), leader({ rank: 2 }), leader({ rank: 3, isBot: true })];
+    expect(competitionLaneFigure({ leaderboard: rows, lastSettled: null }, false)).toEqual({
+      figure: "3",
+      line: "on this week's virtual-cash standings, 2 of them house bots",
+    });
+    expect(competitionLaneFigure({ leaderboard: [leader({ isBot: true })], lastSettled: null }, false)?.line).toBe("on this week's virtual-cash standings, a house bot");
+    expect(competitionLaneFigure({ leaderboard: [leader({ isBot: true }), leader({ isBot: true })], lastSettled: null }, false)?.line).toMatch(/all house bots$/);
+    expect(competitionLaneFigure({ leaderboard: [], lastSettled: null }, false)).toEqual({ figure: "$10,000", line: "virtual cash to start" });
+    const full = Array.from({ length: 50 }, (_, i) => leader({ rank: i + 1, isBot: i > 0 }));
+    expect(competitionLaneFigure({ leaderboard: full, lastSettled: null }, false)).toEqual({ figure: "50+", line: "on this week's virtual-cash standings, house bots included" });
+    // From Friday's close: the final #1 of the week that just closed.
+    const lastSettled = { id: "l", weekStart: "", weekEnd: "", top: [leader({ isBot: true, pnlPct: 1.755 })] };
+    expect(competitionLaneFigure({ leaderboard: [], lastSettled }, true)).toEqual({ figure: "+1.8%", line: "#1 at Friday's close · house bot · virtual cash" });
+    expect(competitionLaneFigure(null, false)).toBeNull();
+    for (const league of [{ leaderboard: rows, lastSettled: null }, { leaderboard: [], lastSettled }]) {
+      expect(competitionLaneFigure(league, true)?.line).toMatch(/virtual/);
+      expect(competitionLaneFigure(league, false)?.line).toMatch(/virtual/);
+    }
+  });
+
+  it("Quests: the next check names the first live on-chain xStocks quest not yet complete", () => {
+    const catalogue = board([
+      [play("oracle", INTERNAL), { ...play("first_position", HOLD), title: "First Position", status: "complete" }, { ...play("diversified", HOLD), title: "Diversified", points: 250 }],
+      [{ ...play("pre_ipo_position", HOLD), title: "Pre-IPO Position", assetSource: "prestocks" }],
+    ]);
+    expect(nextQuestCheck(catalogue)).toEqual({ title: "Diversified", points: 250 });
+    expect(nextQuestCheck(board([[{ ...play("pre_ipo_position", HOLD), assetSource: "prestocks" }]]))).toBeNull();
+    expect(nextQuestCheck(null)).toBeNull();
   });
 });
 
@@ -382,10 +508,11 @@ describe("GameTiles and the hero cards — first frame, before any read", () => 
     const cards = renderToStaticMarkup(createElement(LivePredictions));
     expect(cards).toContain('aria-busy="true"');
     expect(cards.match(/data-slot="skeleton"/g)?.length ?? 0).toBeGreaterThan(0);
-    // The placeholder holds the two compact rows of a normal week too, so the card keeps its height
-    // (and the hero does not jump) when the board arrives.
-    expect(cards.match(/class="flex min-h-12 items-center/g)?.length ?? 0).toBe(2);
-    expect(cards).not.toContain("pts in");
+    // The placeholder holds the three tabs of a normal week too, so the hero keeps its height (and
+    // nothing under it jumps) when the board arrives.
+    expect(cards.match(/data-slot="tab-skeleton"/g)?.length ?? 0).toBe(3);
+    expect(cards).not.toContain("points in");
+    expect(cards).not.toContain("Locks in");
     // No split figure in the text while the board loads.
     expect(cards).not.toMatch(/>\d+%</);
     // The Season top 3 renders nothing while it loads: never an empty board or a skeleton.
@@ -403,22 +530,42 @@ describe("GameTiles and the hero cards — first frame, before any read", () => 
     }
   });
 
-  it("keeps the locked card's header whole on a narrow phone: two items that wrap, never mid-phrase", () => {
+  it("keeps the stage's header whole on a narrow phone and says what changes once entries close", () => {
     const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
-    expect(src).toContain('<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">');
-    expect(src).toMatch(/whitespace-nowrap text-muted-foreground tabular-nums">\{lockLabel\(market, now\)\}/);
-    const label = src.slice(src.indexOf("function LiveLabel"), src.indexOf("const CARD_ACTION"));
-    expect(label.match(/inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap/g)).toHaveLength(2);
+    const stage = src.slice(src.indexOf("function Stage("), src.indexOf("function StageSkeleton"));
+    // The kick's items never break mid-phrase.
+    expect(stage).toContain('<b className="font-semibold whitespace-nowrap text-foreground">');
+    expect(stage).toContain('<span className="whitespace-nowrap">');
+    // Locked or final, the action is the board, never one nobody can take until next week.
+    expect(stage).toContain('final ? "See all results" : status === "open" ? "Make a prediction" : "See predictions"');
+    // The clock counts to the lock, then says Locked, Settling, or the result; it shows its time in UTC.
+    const clock = src.slice(src.indexOf("function Clock("), src.indexOf("function Crowd("));
+    for (const word of [">Locks in<", '"Locked"', '"Settling"', '"Result"', '"Entries closed"']) expect(clock).toContain(word);
+    expect(clock).toContain('role="timer"');
   });
 
-  it("keeps every animation behind motion-reduce", () => {
-    for (const rel of ["src/components/landing/ScoreboardPreview.tsx", "src/app/page.tsx"]) {
+  it("keeps every animation and transition behind motion-reduce (Broadcast: no entrance animations)", () => {
+    for (const rel of ["src/components/landing/ScoreboardPreview.tsx", "src/app/page.tsx", "src/components/landing/CheckWalletBox.tsx"]) {
       const src = repoFile(rel);
-      const classLists = src.match(/"[^"]*\banimate-(?:in|ping|pulse|spin)\b[^"]*"/g) ?? [];
-      expect(classLists.length, rel).toBeGreaterThan(0);
-      for (const list of classLists) expect(list, rel).toContain("motion-reduce:animate-none");
+      for (const list of src.match(/"[^"]*\banimate-(?:in|ping|pulse|spin)\b[^"]*"/g) ?? []) expect(list, rel).toContain("motion-reduce:animate-none");
+      for (const list of src.match(/"[^"]*\btransition-(?:colors|opacity|transform|\[[^\]]*\])[^"]*"/g) ?? []) expect(list, rel).toContain("motion-reduce:transition-none");
     }
     // The shared Skeleton pulses; the landing's wrapper turns it off for reduced motion.
     expect(repoFile("src/components/landing/ScoreboardPreview.tsx")).toMatch(/<Skeleton className=\{cn\("[^"]*motion-reduce:animate-none/);
+    // Under reduced motion the lock clock drops its seconds and ticks once a minute, as the week track does.
+    expect(repoFile("src/components/landing/ScoreboardPreview.tsx")).toContain("reduced ? 60_000 : 1_000");
+  });
+
+  it("keeps gold to the hero's one primary action and the 'now' marks, and greys every logo", () => {
+    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
+    // Gold only on the "now" tag above the lanes and the "now" line through them.
+    expect(src.match(/\bbg-signal\b/g)).toHaveLength(2);
+    expect(src).not.toMatch(/buttonVariants\(\{\s*(variant: "default"|size)/);
+    // Every xStock logo goes through the shared well, which draws it in greyscale.
+    expect(src).toContain('import { XStockLogo } from "@/components/common/XStockLogo"');
+    expect(src).not.toMatch(/<img\b/);
+    expect(repoFile("src/components/common/XStockLogo.tsx")).toContain("logo-greyscale");
+    // Green and red only mean Yes / No.
+    expect(src).not.toMatch(/emerald|rose-|text-green|text-red/);
   });
 });

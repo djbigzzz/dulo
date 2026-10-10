@@ -1,24 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Bot, Sparkles, Target, Trophy } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "cn";
 import type { LeagueLeaderboardRow, LeagueResponse } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { displayName, formatDate, formatUsd } from "@/components/common/format";
-import { MedalChip, Podium } from "@/components/leaderboard/Podium";
+import { BotMarker } from "@/components/league/LeagueLeaderboard";
 import { MIN_TRADES_FOR_WEEKLY_POINTS } from "@/lib/games/ledger-policy";
 
-/** Nav order: Predictions, Competition, Quests. */
+/** Nav order: Predictions, Competition, Quests. Each lane names its game, what scores, and the one way in. */
 const WAYS = [
-  { href: "/predictions", icon: Target, title: "Predictions", line: "Yes or No on Friday's close, for points" },
-  { href: "/competition", icon: Trophy, title: "Competition", line: `Virtual cash. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn up to 1,000 pts` },
-  { href: "/quests", icon: Sparkles, title: "Quests", line: "+50 to +500 pts per quest" },
+  { href: "/predictions", title: "Predictions", line: "Yes or No on Friday's close, for points", cta: "Make a prediction" },
+  {
+    href: "/competition",
+    title: "Competition",
+    line: `Virtual cash. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ paper trades earn up to 1,000 points`,
+    cta: "Start with $10,000 virtual cash",
+  },
+  { href: "/quests", title: "Quests", line: "+50 to +500 points per quest", cta: "See quests" },
 ] as const;
 
-const GLASS = "rounded-2xl border border-white/[0.07] bg-card";
-const EYEBROW = "text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase";
+const LANE_TITLE = "font-display text-[1.875rem] leading-none font-normal tracking-[-0.012em] sm:text-[2.25rem]";
 
 function formatPnl(pct: number): string {
   const sign = pct > 0 ? "+" : pct < 0 ? "−" : "";
@@ -30,59 +34,31 @@ function formatCash(usd: number): string {
 }
 
 function pnlTone(pct: number): string {
-  return pct > 0 ? "text-emerald-400" : pct < 0 ? "text-rose-400" : "text-muted-foreground";
+  return pct > 0 ? "text-yes" : pct < 0 ? "text-no" : "text-muted-foreground";
 }
 
-function BotTag({ row }: { row: LeagueLeaderboardRow }) {
-  return row.isBot ? (
-    <span className="inline-flex h-5 shrink-0 items-center gap-1 rounded-full border border-white/[0.07] bg-white/[0.02] px-1.5 text-xs text-muted-foreground/80">
-      <Bot className="size-3" aria-hidden />
-      house bot
-    </span>
-  ) : null;
-}
-
-/** "Be first on the board": three tappable ways to score. Shown while the Season board is empty. */
+/**
+ * "Be first on the board": the three games as lanes on 1px rules (the landing's "This week"
+ * lanes, without the timeline), each with its serif name, what scores and one way in. Shown while
+ * the Season board is empty.
+ */
 export function WaysToScore({ className }: { className?: string }) {
   return (
-    <section
-      className={cn(
-        "border-gradient flex animate-in flex-col gap-8 rounded-3xl bg-card ember-glow p-6 duration-500 fade-in-0 slide-in-from-bottom-2 motion-reduce:animate-none sm:p-10",
-        className,
-      )}
-      aria-labelledby="be-first"
-    >
-      <div className="flex max-w-xl flex-col gap-3">
-        <p className={EYEBROW}>Ways to score</p>
-        <h2 id="be-first" className="font-display text-3xl leading-[1.05] font-semibold tracking-[-0.04em]">
-          Be first on the <span className="text-gradient-ember">board</span>
+    <section className={cn("flex flex-col gap-5", className)} aria-labelledby="be-first">
+      <div className="flex flex-col gap-2">
+        <h2 id="be-first" className="font-display text-[2.25rem] leading-none font-normal tracking-[-0.012em] sm:text-[2.875rem]">
+          Be first on the board
         </h2>
-        <p className="text-base leading-relaxed text-muted-foreground">Nobody has scored this Season yet. Any of these puts you at #1.</p>
+        <p className="text-base leading-relaxed text-muted-foreground">Nobody has scored this Season yet. Any of these puts you in the first seat.</p>
       </div>
-      <ul className="grid gap-3 sm:grid-cols-3 sm:gap-4">
-        {WAYS.map(({ href, icon: Icon, title, line }) => (
-          <li key={href} className="min-w-0">
-            <Link
-              href={href}
-              className="group flex h-full items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgb(255_255_255/0.05)] backdrop-blur-sm transition-colors duration-200 outline-none hover:border-white/[0.14] hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none sm:flex-col sm:items-start sm:gap-5 sm:p-5"
-            >
-              <span className="flex shrink-0 items-center justify-between sm:w-full">
-                <span
-                  className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-gold shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]"
-                  aria-hidden
-                >
-                  <Icon className="size-5" />
-                </span>
-                <ArrowUpRight
-                  className="hidden size-4 text-muted-foreground transition-colors duration-200 group-hover:text-foreground sm:block"
-                  aria-hidden
-                />
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-base font-semibold tracking-tight">{title}</span>
-                <span className="text-sm leading-relaxed text-muted-foreground">{line}</span>
-              </span>
-              <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground sm:hidden" aria-hidden />
+      <ul className="border-b border-rule">
+        {WAYS.map(({ href, title, line, cta }) => (
+          <li key={href} className="grid gap-x-8 gap-y-2 border-t border-rule py-5 sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_auto] sm:items-center">
+            <h3 className={LANE_TITLE}>{title}</h3>
+            <p className="text-[0.9375rem] leading-snug text-muted-foreground">{line}</p>
+            <Link href={href} className={cn(buttonVariants({ variant: "link" }), "w-fit text-[0.9375rem]")}>
+              {cta}
+              <ArrowRight data-icon="inline-end" aria-hidden />
             </Link>
           </li>
         ))}
@@ -91,76 +67,79 @@ export function WaysToScore({ className }: { className?: string }) {
   );
 }
 
-/** Current weekly competition (virtual cash) top 3 plus, when there is one, last week's settled podium. */
+/** One competition row: rank, player (house bots dimmed and labelled), return and equity. */
+function CompetitionRow({ row }: { row: LeagueLeaderboardRow }) {
+  return (
+    <li className="grid h-12 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 border-t border-rule">
+      <span className={cn("figure text-[1.375rem] leading-none", row.rank === 1 ? "text-foreground" : "text-muted-foreground")}>
+        <span className="sr-only">Rank </span>
+        {row.rank}
+      </span>
+      <span className="flex min-w-0 items-center gap-2">
+        <span className={cn("truncate text-[0.96875rem]", row.isBot ? "text-muted-foreground" : "font-semibold text-foreground")}>
+          {displayName(row.handle, row.address)}
+        </span>
+        {row.isBot ? <BotMarker /> : null}
+      </span>
+      <span className="flex shrink-0 items-baseline gap-3">
+        <span className="hidden text-sm text-dim tabular-nums sm:inline">{formatUsd(row.equityUsd)}</span>
+        <span className={cn("text-base font-semibold tabular-nums font-stretch-[85%]", pnlTone(row.pnlPct))}>{formatPnl(row.pnlPct)}</span>
+      </span>
+    </li>
+  );
+}
+
+/** Current weekly competition (virtual cash) top 3 plus, when there is one, last week's FINAL. */
 export function LeaguePreview({ data, loading, className }: { data: LeagueResponse | null; loading: boolean; className?: string }) {
   if (loading) {
-    return <Skeleton className={cn("h-56 w-full rounded-2xl", className)} aria-hidden />;
+    return <Skeleton className={cn("h-56 w-full", className)} aria-hidden />;
   }
   if (!data) return null;
   const top = data.leaderboard.slice(0, 3);
   const settled = data.lastSettled && data.lastSettled.top.length > 0 ? data.lastSettled : null;
 
   return (
-    <div className={cn("grid gap-5", settled && "lg:grid-cols-2", className)}>
-      <section className={cn(GLASS, "flex flex-col gap-4 p-5 sm:p-6")} aria-labelledby="league-week">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className={EYEBROW}>Competition (virtual cash)</p>
-            <h2 id="league-week" className="text-base font-semibold tracking-tight">
-              This week&rsquo;s competition
-            </h2>
-          </div>
-          <Link href="/competition" className={buttonVariants({ variant: "outline", size: "lg", className: "h-9 rounded-full px-3.5" })}>
+    <div className={cn("grid gap-10", settled && "lg:grid-cols-2 lg:gap-12", className)}>
+      <section className="flex flex-col gap-3" aria-labelledby="league-week">
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+          <h2 id="league-week" className="text-[1.25rem] leading-tight font-semibold tracking-[-0.01em]">
+            This week&rsquo;s competition (virtual cash)
+          </h2>
+          <Link href="/competition" className={cn(buttonVariants({ variant: "link" }), "text-[0.9375rem]")}>
             Open the competition
             <ArrowRight data-icon="inline-end" aria-hidden />
           </Link>
         </div>
         {top.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No trades yet this week. Start with {formatCash(data.startingCashUsd)} of virtual cash.</p>
+          <p className="border-y border-rule py-4 text-[0.9375rem] text-muted-foreground">
+            No trades yet this week. Start with {formatCash(data.startingCashUsd)} of virtual cash.
+          </p>
         ) : (
-          <ol className="-mx-2 flex flex-col">
-            {top.map((row, i) => (
-              <li key={row.userId} className={cn(i > 0 && "border-t border-white/[0.05]")}>
-                <Link
-                  href="/competition"
-                  className="flex min-h-14 items-center gap-3 rounded-xl px-2 py-2 transition-colors outline-none hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
-                >
-                  <MedalChip rank={row.rank} />
-                  <span className="flex min-w-0 flex-1 items-center gap-2">
-                    <span className={cn("truncate font-medium", row.isBot && "text-muted-foreground")}>{displayName(row.handle, row.address)}</span>
-                    <BotTag row={row} />
-                  </span>
-                  <span className="flex shrink-0 flex-col items-end">
-                    <span className={cn("text-sm font-semibold tracking-tight tabular-nums", pnlTone(row.pnlPct))}>{formatPnl(row.pnlPct)}</span>
-                    <span className="text-xs text-muted-foreground tabular-nums">{formatUsd(row.equityUsd)}</span>
-                  </span>
-                </Link>
-              </li>
+          <ol className="border-b border-rule" aria-label="This week's top three">
+            {top.map((row) => (
+              <CompetitionRow key={row.userId} row={row} />
             ))}
           </ol>
         )}
-        <div className="h-px bg-white/[0.08]" aria-hidden />
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          House bots trade for company and never earn points. Real players in the top 10 with {MIN_TRADES_FOR_WEEKLY_POINTS}+ trades on Friday do.
+        <p className="text-[0.84375rem] leading-relaxed text-muted-foreground">
+          House bots trade for company and never earn points. Real players in the top 10 with {MIN_TRADES_FOR_WEEKLY_POINTS}+ paper trades on
+          Friday do.
         </p>
       </section>
 
       {settled ? (
-        <section className={cn(GLASS, "flex flex-col gap-4 p-5 sm:p-6")} aria-labelledby="league-last">
-          <div className="flex flex-col gap-1">
-            <p className={EYEBROW}>Competition closed {formatDate(settled.weekEnd)}</p>
-            <h2 id="league-last" className="text-base font-semibold tracking-tight">
-              Last week&rsquo;s podium
+        <section className="flex flex-col gap-3" aria-labelledby="league-last">
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+            <h2 id="league-last" className="text-[1.25rem] leading-tight font-semibold tracking-[-0.01em]">
+              Last week&rsquo;s finish
             </h2>
+            <span className="stamp">Final · {formatDate(settled.weekEnd)}</span>
           </div>
-          <Podium
-            rows={settled.top}
-            size="sm"
-            aria-label="Last week's competition podium"
-            renderValue={(row) => <span className={pnlTone(row.pnlPct)}>{formatPnl(row.pnlPct)}</span>}
-            renderTag={(row) => <BotTag row={row} />}
-            className="mt-auto pt-6"
-          />
+          <ol className="border-b border-rule" aria-label="Last week's competition podium">
+            {settled.top.slice(0, 3).map((row) => (
+              <CompetitionRow key={row.userId} row={row} />
+            ))}
+          </ol>
         </section>
       ) : null}
     </div>

@@ -1,37 +1,30 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import * as React from "react";
 import { cn } from "cn";
 import type { LeagueAccountView } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatStrip, type Stat } from "@/components/common/StatStrip";
 import { formatUsd } from "@/components/common/format";
-import { formatSignedPct, formatSignedUsd, formatUsdWhole, pnlClass } from "@/components/league/format";
+import { formatSignedPct, formatSignedUsd, formatUsdWhole } from "@/components/league/format";
 
-/** Tiny up / down arrow with the number of places moved since the last update (null = unknown). */
+/**
+ * The places moved since the last update, as the mockup's small "▲1" / "▼1" (green up, red down).
+ * Nothing shows for no move or no previous rank: the board carries no dashes.
+ */
 export function RankDelta({ delta, className }: { delta: number | null; className?: string }) {
-  if (delta === null) {
-    return (
-      <span className={cn("inline-flex items-center text-xs text-muted-foreground", className)} title="No previous rank yet" aria-label="No previous rank">
-        –
-      </span>
-    );
-  }
-  if (delta === 0) {
-    return (
-      <span className={cn("inline-flex items-center text-muted-foreground/70", className)} title="Unchanged" aria-label="Unchanged">
-        <Minus className="size-3" aria-hidden />
-      </span>
-    );
-  }
+  if (delta === null || delta === 0 || !Number.isFinite(delta)) return null;
   const up = delta > 0;
   return (
     <span
-      className={cn("inline-flex items-center gap-px text-xs font-medium tabular-nums", up ? "text-emerald-400/90" : "text-rose-400/90", className)}
+      className={cn("inline-flex items-center text-[0.71875rem] leading-none font-semibold tabular-nums", up ? "text-yes" : "text-no", className)}
       title={`${up ? "Up" : "Down"} ${Math.abs(delta)} since the last update`}
-      aria-label={`${up ? "up" : "down"} ${Math.abs(delta)}`}
     >
-      {up ? <ArrowUp className="size-3" strokeWidth={2.5} aria-hidden /> : <ArrowDown className="size-3" strokeWidth={2.5} aria-hidden />}
-      {Math.abs(delta)}
+      <span aria-hidden>
+        {up ? "▲" : "▼"}
+        {Math.abs(delta)}
+      </span>
+      <span className="sr-only">{`${up ? "up" : "down"} ${Math.abs(delta)}`}</span>
     </span>
   );
 }
@@ -40,59 +33,60 @@ export interface AccountCardProps {
   /** Null before the first trade. */
   me: LeagueAccountView | null;
   startingCashUsd: number;
+  /** "16" or "50+": the players the rank is out of. */
+  players?: string;
   className?: string;
 }
 
-const PANEL = "rounded-2xl border border-white/[0.07] bg-card";
-const CELL = "-mr-px -mb-px flex min-w-0 flex-col gap-1 border-r border-b border-white/[0.06] px-4 py-4 sm:px-5";
-
-function Stat({ label, value, sub, className }: { label: string; value: string; sub?: React.ReactNode; className?: string }) {
-  return (
-    <div className={CELL}>
-      <span className="truncate text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">{label}</span>
-      <span className={cn("truncate text-xl font-semibold tracking-tight tabular-nums sm:text-2xl", className)}>{value}</span>
-      {sub ? <span className="truncate text-xs text-muted-foreground">{sub}</span> : null}
-    </div>
-  );
+function tone(n: number): Stat["tone"] {
+  return Math.abs(n) < 0.005 ? "default" : n > 0 ? "positive" : "negative";
 }
 
-/** Cash / P&L / return / positions for the signed-in player (rank and equity live in the page header). */
-export function AccountCard({ me, startingCashUsd, className }: AccountCardProps) {
+/**
+ * The signed-in player's week (virtual cash): rank, equity, cash, P&L and positions as label / value
+ * pairs on rules (StatStrip), under a serif section name. No boxes: the board above is the hero.
+ */
+export function AccountCard({ me, startingCashUsd, players, className }: AccountCardProps) {
   const cash = me?.cashUsd ?? startingCashUsd;
+  const equity = me?.equityUsd ?? startingCashUsd;
   const pnlUsd = me?.pnlUsd ?? 0;
   const pnlPct = me?.pnlPct ?? 0;
   const positions = me?.positions.length ?? 0;
 
+  const stats: Stat[] = [
+    {
+      label: "Your rank",
+      value: me?.rank ? `#${me.rank}` : "Not yet",
+      hint: me?.rank ? (players ? `of ${players} this week` : "This week") : "Paper trade to get ranked",
+    },
+    { label: "Virtual equity", value: formatUsd(equity), hint: `${formatSignedPct(pnlPct, 2)} this week`, tone: tone(pnlPct) },
+    { label: "Cash", value: formatUsd(cash), hint: "Virtual cash" },
+    { label: "P&L", value: formatSignedUsd(pnlUsd), hint: `vs ${formatUsdWhole(startingCashUsd)} start`, tone: tone(pnlUsd) },
+    { label: "Positions", value: String(positions), hint: me ? (positions === 1 ? "1 open" : `${positions} open`) : "Place a trade to get ranked" },
+  ];
+
   return (
-    <section className={cn(PANEL, "overflow-hidden", className)} aria-labelledby="league-account">
-      <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 sm:px-5">
-        <h2 id="league-account" className="text-base font-semibold tracking-tight">
+    <section className={cn("flex flex-col gap-3", className)} aria-labelledby="league-account">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="league-account" className="font-display text-[1.625rem] leading-none font-normal tracking-[-0.01em] sm:text-[1.875rem]">
           Your competition account
         </h2>
-        <span className="text-xs text-muted-foreground">Virtual cash</span>
+        <span className="text-[0.84375rem] font-medium text-muted-foreground">Virtual cash</span>
       </div>
-      <div className="h-px bg-white/[0.08]" aria-hidden />
-      <div className="grid grid-cols-2 sm:grid-cols-4">
-        <Stat label="Cash" value={formatUsd(cash)} />
-        <Stat label="P&L" value={formatSignedUsd(pnlUsd)} sub={`vs ${formatUsdWhole(startingCashUsd)} start`} className={pnlClass(pnlUsd)} />
-        <Stat label="Return" value={formatSignedPct(pnlPct, 2)} className={pnlClass(pnlPct)} />
-        <Stat label="Positions" value={String(positions)} sub={me ? undefined : "Place a trade to get ranked"} />
-      </div>
+      <StatStrip stats={stats} />
     </section>
   );
 }
 
 export function AccountCardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn(PANEL, "overflow-hidden", className)} aria-hidden>
-      <div className="px-4 pt-4 pb-3 sm:px-5">
-        <Skeleton className="h-5 w-28" />
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className={CELL}>
-            <Skeleton className="h-3 w-12" />
-            <Skeleton className="h-7 w-24" />
+    <div className={cn("flex flex-col gap-3", className)} aria-hidden>
+      <Skeleton className="h-7 w-64 max-w-full" />
+      <div className="grid grid-cols-2 border-y border-rule sm:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-2 py-4 pr-4">
+            <Skeleton className="h-3 w-14" />
+            <Skeleton className="h-6 w-24" />
           </div>
         ))}
       </div>

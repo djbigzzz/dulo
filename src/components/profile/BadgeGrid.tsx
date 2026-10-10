@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ExternalLink, Lock } from "lucide-react";
+import { ArrowUpRight, Check } from "lucide-react";
 import { cn } from "cn";
 import { badgeImageUrl, type BadgeView } from "@/lib/api-client";
 import { BADGE_KEYS, badgeInfo, txExplorerUrl } from "@/lib/badges/keys";
@@ -13,47 +13,39 @@ export interface BadgeGridProps {
   className?: string;
 }
 
-/** Centred wrap so a short last row sits in the middle of the shelf. */
-const SHELF = "flex flex-wrap items-start justify-center gap-x-3 gap-y-8 sm:gap-x-8";
-const ITEM = "flex w-[5.5rem] flex-col items-center gap-3 text-center sm:w-36";
-const FRAME =
-  "relative flex size-20 shrink-0 items-center justify-center rounded-full bg-gold/[0.06] p-1.5 ring-1 ring-gold/30 sm:size-28 sm:p-2";
-const PILL = "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-medium whitespace-nowrap";
+/**
+ * The shelf as a ruled board of segments, like the quests board: each tile draws its own 1px rule
+ * and pulls back by a pixel, so neighbours share one rule. Two columns on a phone and in a side
+ * column, more where there is room.
+ */
+const SHELF = "grid grid-cols-2 pt-px pl-px [&>li]:-mt-px [&>li]:-ml-px";
+const ITEM = "flex min-w-0 flex-col items-center gap-3 border border-rule px-3 py-5 text-center";
+/** The medallion's round well (docs/DESIGN.md logo well); the artwork itself is unchanged by Broadcast. */
+const FRAME = "relative flex size-[4.5rem] shrink-0 items-center justify-center rounded-full bg-ink-4 p-1 ring-1 ring-inset sm:size-20";
+const TAG = "inline-flex h-5 items-center gap-1 border px-1.5 text-xs font-medium whitespace-nowrap";
 
-/** The shelf's backing layer (flat in Mono: no glow). Place inside a `relative` parent. */
+/** Kept for callers from earlier themes: a flat, empty layer (Broadcast has no glow). Place inside a `relative` parent. */
 export function ShelfGlow({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "pointer-events-none absolute inset-0 bg-transparent",
-        className,
-      )}
-      aria-hidden
-    />
-  );
+  return <div className={cn("pointer-events-none absolute inset-0 bg-transparent", className)} aria-hidden />;
 }
 
 /**
- * Badges as a trophy shelf: medallions in thin neutral rings on a flat panel (Mono: no glow).
- * Minted badges link to their transaction on Solscan; queued ones read "Minting soon"; designs
- * not yet earned are greyed out.
+ * Badges as a shelf of segments: the medallion in a round well, the name, when it was earned, and
+ * its mint status as a small ruled tag. Minted badges link to their transaction on Solscan; queued
+ * ones read "Minting soon"; designs not yet earned are greyed out.
  */
 export function BadgeGrid({ badges, showLocked = true, className }: BadgeGridProps) {
   const earned = new Set(badges.map((b) => b.playKey));
   const locked = showLocked ? BADGE_KEYS.filter((k) => !earned.has(k)) : [];
   return (
-    <div className={cn("relative overflow-hidden rounded-3xl border border-white/[0.07] bg-card px-3 py-8 sm:px-8 sm:py-10", className)}>
-      <ShelfGlow />
-      {/* Earned tiles carry a date and a mint status, so phones get two wider columns here. */}
-      <ul className={cn(SHELF, "relative gap-x-5 [&>li]:w-[8.25rem] sm:gap-x-8 sm:[&>li]:w-36")}>
-        {badges.map((b) => (
-          <BadgeTile key={b.playKey} badge={b} />
-        ))}
-        {locked.map((key) => (
-          <LockedBadgeTile key={key} badgeKey={key} />
-        ))}
-      </ul>
-    </div>
+    <ul className={cn(SHELF, className)}>
+      {badges.map((b) => (
+        <BadgeTile key={b.playKey} badge={b} />
+      ))}
+      {locked.map((key) => (
+        <LockedBadgeTile key={key} badgeKey={key} />
+      ))}
+    </ul>
   );
 }
 
@@ -62,9 +54,8 @@ function BadgeTile({ badge }: { badge: BadgeView }) {
   const title = info?.title ?? badge.title ?? badge.playKey;
   const minted = Boolean(badge.mint && badge.txSig);
   return (
-    <li className={ITEM}>
-      {/* Earned: the same ring as a locked tile, a touch brighter; the badge's own metal tone is in the art. */}
-      <span className={cn(FRAME, "ring-gold/45 shadow-[inset_0_1px_0_rgb(255_255_255/0.1)]")}>
+    <li className={cn(ITEM, "relative z-[1] bg-white/[0.025] before:absolute before:-inset-x-px before:-top-px before:h-0.5 before:bg-foreground")}>
+      <span className={cn(FRAME, "ring-rule-2")}>
         {info ? (
           // Plain <img>: the SVG is served by our own route and next/image would only re-encode it.
           <span className="block size-full overflow-hidden rounded-full">
@@ -72,35 +63,34 @@ function BadgeTile({ badge }: { badge: BadgeView }) {
             <img src={badgeImageUrl(badge.playKey)} alt={info.name} width={512} height={512} className="size-full scale-[1.2]" loading="lazy" />
           </span>
         ) : (
-          <span className="flex size-full items-center justify-center rounded-full bg-white/[0.04] text-xs text-muted-foreground">{badge.playKey}</span>
+          <span className="flex size-full items-center justify-center rounded-full text-xs text-muted-foreground">{badge.playKey}</span>
         )}
       </span>
       <div className="flex min-w-0 flex-col items-center gap-1.5">
-        <p className="text-sm leading-snug font-semibold tracking-tight text-balance" title={info?.description}>
+        <p className="text-[0.9375rem] leading-snug font-semibold text-balance" title={info?.description}>
           {title}
         </p>
-        <p className="text-xs whitespace-nowrap text-muted-foreground">Earned {formatDate(badge.createdAt)}</p>
+        <p className="text-[0.8125rem] whitespace-nowrap text-muted-foreground">
+          Earned <time dateTime={badge.createdAt}>{formatDate(badge.createdAt)}</time>
+        </p>
         {minted && badge.txSig ? (
           <div className="flex flex-col items-center gap-1">
-            <span className={cn(PILL, "border-emerald-400/25 bg-emerald-400/10 text-emerald-400")}>
-              <Check className="size-3" strokeWidth={2.75} aria-hidden />
+            <span className={cn(TAG, "border-foreground bg-foreground text-background")}>
+              <Check className="size-3" strokeWidth={3} aria-hidden />
               Minted
             </span>
             <a
               href={txExplorerUrl(badge.txSig)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-8 items-center gap-1 text-xs whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+              className="inline-flex min-h-8 items-center gap-1 text-[0.8125rem] whitespace-nowrap text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline motion-reduce:transition-none"
             >
               View on Solscan
-              <ExternalLink className="size-3" aria-hidden />
+              <ArrowUpRight className="size-3" aria-hidden />
             </a>
           </div>
         ) : (
-          <span
-            className={cn(PILL, "border-white/[0.08] bg-white/[0.03] text-muted-foreground")}
-            title="Badges mint to your wallet a few minutes after they are earned"
-          >
+          <span className={cn(TAG, "border-rule-2 text-muted-foreground")} title="Badges mint to your wallet a few minutes after they are earned">
             Minting soon
           </span>
         )}
@@ -110,21 +100,21 @@ function BadgeTile({ badge }: { badge: BadgeView }) {
 }
 
 /** A greyed-out design the user has not earned. Also used as the signed-out preview. */
-export function LockedBadgeTile({ badgeKey }: { badgeKey: string }) {
+export function LockedBadgeTile({ badgeKey, className }: { badgeKey: string; className?: string }) {
   const info = badgeInfo(badgeKey);
   if (!info) return null;
   return (
-    <li className={ITEM} aria-label={`${info.title}: not earned yet`}>
-      <span className={cn(FRAME, "shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]")}>
+    <li className={cn(ITEM, className)} aria-label={`${info.title}: not earned yet`}>
+      <span className={cn(FRAME, "ring-rule")}>
         <span className="block size-full overflow-hidden rounded-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={badgeImageUrl(badgeKey)} alt="" width={512} height={512} className="size-full scale-[1.2] opacity-40 grayscale" loading="lazy" />
         </span>
       </span>
       <div className="flex min-w-0 flex-col items-center gap-1">
-        <p className="text-sm leading-snug font-medium text-balance text-foreground/80">{info.title}</p>
-        <span className="inline-flex items-center gap-1 text-xs whitespace-nowrap text-muted-foreground">
-          <Lock className="hidden size-3 sm:block" aria-hidden />
+        <p className="text-[0.9375rem] leading-snug font-medium text-balance text-foreground/85">{info.title}</p>
+        <span className="inline-flex items-center gap-1.5 text-[0.8125rem] whitespace-nowrap text-muted-foreground">
+          <span className="size-3 rounded-full border border-dashed border-muted-foreground" aria-hidden />
           Not earned yet
         </span>
       </div>
@@ -132,10 +122,10 @@ export function LockedBadgeTile({ badgeKey }: { badgeKey: string }) {
   );
 }
 
-/** The five designs, locked, as a bare shelf (no panel) for embedding in a hero. */
+/** The five designs, locked, as one row of segments for the signed-out profile. */
 export function BadgePreviewGrid({ className }: { className?: string }) {
   return (
-    <ul className={cn(SHELF, className)}>
+    <ul className={cn(SHELF, "sm:grid-cols-3 lg:grid-cols-5", className)}>
       {BADGE_KEYS.map((key) => (
         <LockedBadgeTile key={key} badgeKey={key} />
       ))}

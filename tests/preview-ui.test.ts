@@ -11,7 +11,7 @@ vi.mock("@/components/layout/MobileTabBar", () => ({ MobileTabBar: () => null })
 
 import { footerLinks } from "@/components/layout/AppShell";
 import { CHECK_INVALID_MESSAGE, SAMPLE_WALLETS, checkHref } from "@/components/landing/check-wallet";
-import { SEASON_TOP_MIN_ROWS, seasonTopRows } from "@/components/landing/scoreboard-mode";
+import { SEASON_SEATS, openSeatCopy, seasonSeats } from "@/components/landing/scoreboard-mode";
 import { PRE_IPO_PUBLIC_WALLETS, PUBLIC_WALLETS, publicWalletLabel } from "@/lib/mirror/public-wallets";
 import { WELCOME_OFFER_LINE } from "@/lib/games/ledger-policy";
 import { NEXT_WEEK_MARKETS_COPY } from "@/components/calls/calls-format";
@@ -88,8 +88,9 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(input).toContain("h-11");
     expect(input).toContain("sm:flex-1");
     expect(input).not.toMatch(/[" ]flex-1\b/);
-    // The landing strips the card, so it gives the field a stronger edge than the 6% well border.
-    expect(repoFile("src/app/page.tsx")).toMatch(/<CheckWalletBox className="[^"]*\[&_input\]:border-white\/\[0\.14\]/);
+    // The landing sets the box straight on the page (no panel); the field keeps its own strong rule (17%), so it stays visible.
+    expect(repoFile("src/app/page.tsx")).toMatch(/<CheckWalletBox bare \/>/);
+    expect(input).toContain("border-rule-2");
   });
 
   it("keeps the hero's Sign in as tall as the Connect it replaces: the pair fills the caller's size, never its padding", () => {
@@ -131,13 +132,16 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(preIpo?.[1]).toContain("focus-visible:ring-2 focus-visible:ring-[var(--focus)]");
     expect(preIpo?.[1]).toContain("min-h-6");
     expect(landing).toMatch(/import \{[^}]*\bCOMPLIANCE_LINE\b[^}]*\} from "@\/components\/common\/compliance"/);
-    // Phones read the pitch, then the status line, then the live card.
+    // Broadcast (9 Oct 2026): the pitch and the way in, then the live stage and its tabs, then the status line under them.
     expect(hero.indexOf("<MarketSessionChip")).toBeGreaterThan(hero.indexOf("Check a wallet"));
-    expect(hero.indexOf("<MarketSessionChip")).toBeLessThan(hero.indexOf("<LivePredictions"));
-    // The H1 steps down below sm so Connect sits on the first 375 px screen (Mono: 40px, then 60px from sm),
-    // set heavy and tight in Geist, never the old serif italic.
-    expect(landing).toMatch(/id="hero-title"\s+className="font-display text-\[2\.5rem\] [^"]*\bfont-semibold\b[^"]*\bsm:text-6xl\b/);
-    expect(landing.slice(landing.indexOf('id="hero-title"'), landing.indexOf("</h1>"))).not.toContain("italic");
+    expect(hero.indexOf("<MarketSessionChip")).toBeGreaterThan(hero.indexOf("<LivePredictions"));
+    // On a phone the grid puts the stage between the headline and the way in, so the headline, the prediction,
+    // the welcome line, Connect and Check a wallet all sit on the first 390 px screen.
+    expect(hero).toContain("[grid-template-areas:'head'_'stage'_'join'_'mkts'_'status']");
+    expect(hero).toContain("lg:[grid-template-areas:'head_join'_'stage_stage'_'mkts_mkts'_'status_status']");
+    // The H1 is Instrument Serif at its one weight: 41px on a phone, 56px from lg, 68px from xl (the 1440 mockup); never italic.
+    expect(landing).toMatch(/id="hero-title"\s+className="[^"]*\bfont-display text-\[2\.5625rem\] [^"]*\bfont-normal\b[^"]*\blg:text-\[3\.5rem\] xl:text-\[4\.25rem\]/);
+    expect(landing.slice(landing.indexOf('id="hero-title"'), landing.indexOf("</h1>"))).not.toMatch(/italic|font-semibold|font-bold/);
   });
 
   it("signed in, the hero's first button is the next step, never the wallet chip again", () => {
@@ -169,8 +173,9 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(src).toContain("export function LivePredictions");
     expect(src).not.toContain("export function RankCard");
     expect(src).toContain("export function GameTiles");
-    expect(src).toContain("Live right now");
-    const cards = src.slice(src.indexOf("export function LivePredictions"), src.indexOf("export function GameTiles"));
+    expect(src).toContain("This week's prediction");
+    // The stage and its tabs (Broadcast): from the stage component through LivePredictions.
+    const cards = src.slice(src.indexOf("function Stage("), src.indexOf("export function GameTiles"));
     expect(cards).not.toMatch(/min-height/);
     expect(cards).toContain("See all {count} predictions");
     expect(cards).toContain("NEXT_WEEK_MARKETS_COPY");
@@ -194,21 +199,33 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
   });
 });
 
-describe("SeasonTop — the landing top 3 once three real players exist", () => {
+describe("SeasonTop — the landing's three Season seats (Broadcast, 9 Oct 2026)", () => {
   const board = (n: number): LeaderboardResponse => ({
     season: null,
     limit: 3,
     rows: Array.from({ length: n }, (_, i) => ({ rank: i + 1, userId: `u${i}`, handle: null, address: null, points: 300 - i * 50 })),
   });
 
-  it("shows nothing until the board has three rows, then the first three", () => {
-    expect(SEASON_TOP_MIN_ROWS).toBe(3);
-    expect(seasonTopRows(null)).toBeNull();
-    expect(seasonTopRows(undefined)).toBeNull();
-    expect(seasonTopRows(board(0))).toBeNull();
-    expect(seasonTopRows(board(2))).toBeNull();
-    expect(seasonTopRows(board(3))?.map((r) => r.userId)).toEqual(["u0", "u1", "u2"]);
-    expect(seasonTopRows(board(5))).toHaveLength(3);
+  it("always draws three seats: each real player takes one in rank order, every other seat is open; nothing while loading", () => {
+    expect(SEASON_SEATS).toBe(3);
+    expect(seasonSeats(null)).toBeNull();
+    expect(seasonSeats(undefined)).toBeNull();
+    expect(seasonSeats(board(0))?.map((s) => s.row)).toEqual([null, null, null]);
+    const one = seasonSeats(board(1));
+    expect(one?.map((s) => s.rank)).toEqual([1, 2, 3]);
+    expect(one?.map((s) => s.row?.userId ?? null)).toEqual(["u0", null, null]);
+    expect(seasonSeats(board(3))?.map((s) => s.row?.userId)).toEqual(["u0", "u1", "u2"]);
+    expect(seasonSeats(board(5))).toHaveLength(3);
+    // An open seat is an invitation, never a made-up player: it says "Your slot" and "Open", no name and no points.
+    expect(openSeatCopy(one ?? [], null)).toEqual({ title: "Your slot", hint: "Open" });
+    expect(openSeatCopy(one ?? [], "u9")).toEqual({ title: "Your slot", hint: "Open" });
+    // Once the visitor holds a seat, the seats left wait for someone else (as /leaderboard says it).
+    expect(openSeatCopy(one ?? [], "u0")).toEqual({ title: "Open seat", hint: "Waiting for the next player" });
+    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
+    const seats = src.slice(src.indexOf("export function SeasonTop"));
+    expect(seats).toContain("openSeatCopy(seats, userId)");
+    expect(seats).toContain("{open.title}");
+    expect(seats).toContain("border-dashed");
   });
 
   it("sits in the closing section, below the fold, never in the hero", () => {
@@ -230,21 +247,30 @@ describe("mobile layout at 375 px — the /competition Trade button", () => {
     // The tab bar shows up to lg now, so the button keeps clearing it at md too.
     expect(cls).not.toContain("md:bottom-6");
     expect(cls).not.toContain("fixed");
-    // In flow after the grid (so its resting slot is under the last section), before the sheet.
-    expect(page.indexOf('data-slot="league-trade-fab"')).toBeGreaterThan(page.indexOf("</aside>"));
-    expect(page.indexOf('data-slot="league-trade-fab"')).toBeLessThan(page.indexOf("<Sheet open="));
+    // In flow after the grid and the session line (so its resting slot is at the end of the page).
+    expect(page.indexOf('data-slot="league-trade-fab"')).toBeGreaterThan(page.indexOf('data-slot="league-trade-panel"'));
+    expect(page.indexOf('data-slot="league-trade-fab"')).toBeGreaterThan(page.indexOf("<MarketSessionChip />"));
     // The old fixed-button clearance padding is gone.
     expect(page).not.toContain("pb-24");
   });
 
-  it("hides the Trade button while the sign-in banner is in view, so it never covers the banner's Connect", () => {
+  it("jumps to the trade panel, and steps aside while the standings (and the open seat's Connect) or the panel are in view", () => {
+    // Broadcast (9 Oct): the paper-trade panel sits under the standings on a phone (the 390 mockup),
+    // so the floating button scrolls to it and moves focus there instead of opening a sheet.
     const page = repoFile("src/app/competition/page.tsx");
     expect(page).toMatch(/import \{ useInView \} from "@\/hooks\/useInView"/);
-    expect(page).toContain("const bannerInView = useInView(bannerRef, !session);");
-    expect(page).toContain("const hideFab = !session && bannerInView;");
-    expect(page).toMatch(/<div ref=\{bannerRef\} data-slot="league-sign-in"[^>]*>\s*<SignInBanner/);
-    const fab = page.slice(page.indexOf('data-slot="league-trade-fab"'), page.indexOf("<Sheet open="));
+    expect(page).toContain("const boardInView = useInView(boardRef, loaded);");
+    expect(page).toContain("const panelInView = useInView(panelRef, loaded);");
+    expect(page).toContain("const hideFab = boardInView || panelInView;");
+    // The open seat (and its Connect) lives inside the observed standings section.
+    expect(page).toMatch(/<section ref=\{boardRef\}[^>]*aria-labelledby="league-board"/);
+    expect(page.indexOf("<section ref={boardRef}")).toBeLessThan(page.indexOf("seat={seat}"));
+    expect(page).toMatch(/<section\s+id="league-trade"\s+ref=\{panelRef\}\s+tabIndex=\{-1\}/);
+    expect(page).toContain("el.focus({ preventScroll: true });");
+    expect(page).not.toContain("<Sheet");
+    const fab = page.slice(page.indexOf('data-slot="league-trade-fab"'));
     expect(fab).toContain('hideFab && "pointer-events-none invisible opacity-0"');
+    expect(fab).toContain("onClick={jumpToPanel}");
     // Fails open: no observer (server, old browser) means the button shows.
     const hook = repoFile("src/hooks/useInView.ts");
     expect(hook).toContain('typeof IntersectionObserver === "undefined"');

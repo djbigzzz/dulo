@@ -18,23 +18,22 @@ import { PARTNER_MARKS_NOTICE } from "@/components/partners/PartnerCard";
 import { PartnerHeader, PartnerHeaderSkeleton } from "@/components/partners/PartnerHeader";
 import { PlayCard, PlayCardSkeleton } from "@/components/plays/PlayCard";
 import { questKind } from "@/components/plays/play-meta";
+import { SECTION_TITLE } from "@/components/common/SectionHeading";
 
 export interface PartnerViewProps {
   slug: string;
 }
 
-const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";
+/** The quests board's segment grid (each card's rule overlaps its neighbour's into one board). */
+const GRID = "grid pt-px pl-px sm:grid-cols-2 lg:grid-cols-3 [&>li]:-mt-px [&>li]:-ml-px [&>div]:-mt-px [&>div]:-ml-px";
 
 /** The Partner page body: header, a few honest totals, and the Partner's quests as cards. */
 export function PartnerView({ slug }: PartnerViewProps) {
   const q = useApiQuery((signal) => apiGet<PartnerDetail>(`/api/v1/partners/${encodeURIComponent(slug)}`, { signal }), slug);
 
   return (
-    <div className="flex flex-col gap-6 sm:gap-8">
-      <Link
-        href="/partners"
-        className={cn(buttonVariants({ variant: "ghost" }), "group/back -ml-2.5 h-10 w-fit sm:h-8")}
-      >
+    <div className="flex flex-col gap-7 sm:gap-9">
+      <Link href="/partners" className={cn(buttonVariants({ variant: "ghost", size: "lg" }), "group/back -mb-3 -ml-3 w-fit")}>
         <ArrowLeft data-icon="inline-start" className="transition-transform group-hover/back:-translate-x-0.5" aria-hidden />
         All Partners
       </Link>
@@ -54,7 +53,7 @@ export function PartnerView({ slug }: PartnerViewProps) {
           title="Partner not found"
           description={`No Partner is listed at "${slug}".`}
           action={
-            <Link href="/partners" className={cn(buttonVariants({ variant: "outline" }), "h-10")}>
+            <Link href="/partners" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
               <ArrowLeft data-icon="inline-start" aria-hidden />
               Back to Partners
             </Link>
@@ -75,7 +74,7 @@ export function isPreIpoPartner(slug: string, plays: ReadonlyArray<{ key: string
 }
 
 /**
- * The corporate actions on record for an issuer Partner's mints, one glass row each: the symbol,
+ * The corporate actions on record for an issuer Partner's mints, one row each on 1px rules: the symbol,
  * a plain label ("5-for-1 adjustment"), when it takes effect, the multiplier before and after, and
  * the one sentence that says what an action is. Renders nothing for an empty list: no placeholder,
  * no heading. Never a price, a percentage or a word that reads as a signal.
@@ -89,20 +88,17 @@ export function CorporateActionsSection({ actions, className }: { actions: Reado
   const shown = capped ? [...rows].sort((x, y) => changeSize(y) - changeSize(x)).slice(0, CORPORATE_ACTIONS_SHOWN) : rows;
   const rest = capped ? rows.filter((r) => !shown.includes(r)) : [];
   return (
-    <section aria-labelledby="partner-corporate-actions" data-slot="corporate-actions" className={cn("flex flex-col gap-4 pt-2", className)}>
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">Read from the mint</p>
-          <h2 id="partner-corporate-actions" className="font-display text-2xl leading-tight font-semibold tracking-[-0.035em] sm:text-3xl">
-            Corporate actions
-          </h2>
-        </div>
-        <div className="h-px bg-white/[0.08]" aria-hidden />
+    <section aria-labelledby="partner-corporate-actions" data-slot="corporate-actions" className={cn("flex flex-col gap-4", className)}>
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1.5 pb-1">
+        <h2 id="partner-corporate-actions" className={SECTION_TITLE}>
+          Corporate actions
+        </h2>
+        <p className="text-[0.9375rem] text-muted-foreground">Read from the mint</p>
       </div>
       <CorporateActionList rows={shown} />
       {rest.length > 0 ? (
         <details data-slot="corporate-actions-more" className="group [&_summary::-webkit-details-marker]:hidden">
-          <summary className={cn(buttonVariants({ variant: "outline" }), "h-10 w-fit cursor-pointer list-none")}>
+          <summary className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-fit cursor-pointer list-none")}>
             <span className="group-open:hidden">Show the other {rest.length.toLocaleString("en-US")} actions</span>
             <span className="hidden group-open:inline">Hide the other {rest.length.toLocaleString("en-US")} actions</span>
           </summary>
@@ -123,17 +119,17 @@ function changeSize(a: CorporateActionView): number {
 
 function CorporateActionList({ rows, className }: { rows: ReadonlyArray<CorporateActionView>; className?: string }) {
   return (
-    <ul className={cn("divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card", className)}>
+    <ul className={cn("border-b border-rule", className)}>
       {rows.map((a) => (
-        <li key={a.assetId} data-slot="corporate-action" data-kind={a.kind} className="flex flex-col gap-2 px-4 py-3 sm:px-5 sm:py-4">
+        <li key={a.assetId} data-slot="corporate-action" data-kind={a.kind} className="flex flex-col gap-1.5 border-t border-rule py-3.5">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="font-mono text-sm font-semibold">{a.symbol}</span>
+            <span className="text-[0.96875rem] font-semibold">{a.symbol}</span>
             <IssuerPill source={a.source} />
-            <span className="text-sm text-foreground">{corporateActionLabel(a)}</span>
-            <span className="text-sm text-muted-foreground tabular-nums">{corporateActionWhen(a)}</span>
-            <span className="text-sm text-muted-foreground tabular-nums sm:ml-auto">{multiplierChangeLabel(a)}</span>
+            <span className="text-[0.9375rem] text-foreground">{corporateActionLabel(a)}</span>
+            <span className="text-[0.9375rem] text-muted-foreground tabular-nums">{corporateActionWhen(a)}</span>
+            <span className="text-[0.9375rem] text-muted-foreground tabular-nums sm:ml-auto">{multiplierChangeLabel(a)}</span>
           </div>
-          <p className="text-xs leading-relaxed text-pretty text-muted-foreground">{CORPORATE_ACTION_EXPLANATION}</p>
+          <p className="text-[0.8125rem] leading-relaxed text-pretty text-muted-foreground">{CORPORATE_ACTION_EXPLANATION}</p>
         </li>
       ))}
     </ul>
@@ -167,7 +163,6 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
             {
               label: "Points on offer",
               value: formatPoints(livePoints),
-              tone: "ember",
               hint: detail.totals.completions > 0 ? `${formatPoints(detail.totals.completions)} completions so far` : undefined,
             },
           ]}
@@ -177,18 +172,15 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
       {/* Issuer Partners only (the route sends [] for every other Partner): the actions on their mints, above the quests. */}
       <CorporateActionsSection actions={detail.corporateActions} />
 
-      <section aria-labelledby="partner-plays" className="flex flex-col gap-5 pt-2">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-end justify-between gap-4">
-            <h2 id="partner-plays" className="font-display text-2xl leading-tight font-semibold tracking-[-0.035em] sm:text-3xl">
-              Quests
-            </h2>
-            <Link href="/quests" className={cn(buttonVariants({ variant: "ghost" }), "group/link h-10 shrink-0 sm:h-8")}>
-              Your progress
-              <ArrowRight data-icon="inline-end" className="transition-transform group-hover/link:translate-x-0.5" aria-hidden />
-            </Link>
-          </div>
-          <div className="h-px bg-white/[0.08]" aria-hidden />
+      <section aria-labelledby="partner-plays" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 pb-1">
+          <h2 id="partner-plays" className={SECTION_TITLE}>
+            Quests
+          </h2>
+          <Link href="/quests" className={cn(buttonVariants({ variant: "link" }), "group/link shrink-0 text-[0.9375rem]")}>
+            Your progress
+            <ArrowRight data-icon="inline-end" className="transition-transform group-hover/link:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+          </Link>
         </div>
 
         {plays.length === 0 ? (
@@ -197,7 +189,7 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
           campaigns.map((campaign) => (
             <div key={campaign.id} className="flex flex-col gap-3">
               {campaigns.length > 1 ? (
-                <h3 className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">{campaign.title}</h3>
+                <h3 className="text-[1.0625rem] font-semibold">{campaign.title}</h3>
               ) : null}
               <ul className={GRID}>
                 {campaign.plays.map((play) => (
@@ -210,15 +202,15 @@ export function PartnerBody({ detail }: { detail: PartnerDetail }) {
           ))
         )}
         {/* One compliance line for the section, as the on-chain group on /quests prints it; the pre-IPO line beside it on the PreStocks page. */}
-        {listsOnChain || preIpo ? <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p> : null}
+        {listsOnChain || preIpo ? <p className="text-[0.8125rem] leading-relaxed text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p> : null}
         {preIpo ? (
-          <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
+          <p data-slot="pre-ipo-compliance" className="-mt-2 text-[0.8125rem] leading-relaxed text-pretty text-muted-foreground">
             {PRE_IPO_COMPLIANCE_LINE}
           </p>
         ) : null}
       </section>
 
-      <p className="text-xs leading-relaxed text-muted-foreground">{PARTNER_MARKS_NOTICE}</p>
+      <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">{PARTNER_MARKS_NOTICE}</p>
     </>
   );
 }

@@ -4,9 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { Share2Icon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "cn";
 import { api, apiGet, errorMessage, type CallMarketView, type CallPositionView, type CallSide, type PlaysResponse } from "@/lib/api-client";
 import { APP_URL } from "@/lib/config";
-import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/common/ErrorState";
 import { useApiQuery } from "@/components/common/useApiQuery";
 import { useCallsQuery, useLeagueQuery } from "@/components/layout/WeekData";
@@ -20,8 +21,8 @@ import { ScoutChip } from "@/components/league/ScoutChip";
 import { findScoutPlay, scoutProgress } from "@/components/league/scout";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { START_PATH, competitionLineParts, rankShareOnXUrl, shareOnXUrl } from "@/components/start/share";
-import { TourStep } from "@/components/start/TourStep";
-import { BoardStepBody, QuestsStepBody, TOUR_LINK, TourFinish } from "@/components/start/TourBodies";
+import { TourProgress, TourStep } from "@/components/start/TourStep";
+import { BoardStepBody, LinkArrow, QuestsStepBody, StepColumns, TOUR_LINK, TOUR_NOTE, TourFinish } from "@/components/start/TourBodies";
 import {
   TOUR_COPY,
   TOUR_HREFS,
@@ -29,7 +30,6 @@ import {
   TOUR_QUICK_BUY_USD,
   TOUR_STEP_TEASER,
   TOUR_STEP_TITLE,
-  TOUR_TOTAL,
   TOUR_TRADE_SOURCES,
   boardLine,
   boardSummary,
@@ -59,6 +59,16 @@ import {
 } from "@/components/start/tour";
 
 const NO_POSITIONS: CallPositionView[] = [];
+
+/** Step 2's trade slip sits on one ruled panel, as the competition's paper-trade panel (nothing boxed inside it). */
+const STAGE_PANEL = "rounded-md bg-card p-5 ring-1 ring-rule sm:p-6";
+/**
+ * Step 1's prediction on a rule, as /predictions lists its segments: the segment has no box of its
+ * own and lays itself out by its width (the question, the price track against the line, the split).
+ */
+const SEGMENT = "border-t border-rule";
+/** An invitation or a seat that waits: the dashed outline of the competition's "Your slot". */
+const OPEN_SEAT = "border border-dashed border-[rgb(243_240_232/0.38)] px-5 py-5";
 
 /**
  * /start: the entry for shared links, and a four-step tour of Dulo (8 Oct 2026). Step 1 is this
@@ -257,7 +267,7 @@ export default function StartPage() {
     leagueMe && !leagueMe.isBot && leagueMe.rank !== null ? rankShareOnXUrl(leagueMe.rank, leagueMe.pnlPct, `${APP_URL}${START_PATH}`) : null;
 
   const shareLink = shareUrl ? (
-    <a href={shareUrl} target="_blank" rel="noopener noreferrer" className={`${TOUR_LINK} gap-1.5`}>
+    <a href={shareUrl} target="_blank" rel="noopener noreferrer" className={TOUR_LINK}>
       <Share2Icon className="size-3.5" aria-hidden />
       {TOUR_COPY.predictShare}
       <span className="sr-only"> (opens in a new tab)</span>
@@ -274,7 +284,7 @@ export default function StartPage() {
         const line = predictionSummary(pick, firstPrediction);
         if (!line) return null;
         return (
-          <span className="flex flex-col items-start gap-0.5">
+          <span className="flex flex-col items-start gap-3.5">
             <span>{line}</span>
             {shareLink}
           </span>
@@ -290,78 +300,119 @@ export default function StartPage() {
   };
 
   const predictBody = (state: TourStepState): React.ReactNode => {
-    if (q.loading) return <MarketCardSkeleton />;
+    if (q.loading) {
+      return (
+        <StepColumns
+          layout="full"
+          notes={
+            <div className="flex flex-col gap-2.5 pt-1" aria-hidden>
+              <Skeleton className="h-4 w-full max-w-sm" />
+              <Skeleton className="h-4 w-2/3 max-w-60" />
+            </div>
+          }
+          stage={
+            <div className={SEGMENT}>
+              <MarketCardSkeleton />
+            </div>
+          }
+        />
+      );
+    }
     // A failed background refetch keeps the data on screen; the error shows only when there is none.
     if (q.error && !q.data) {
-      return <ErrorState title={TOUR_COPY.predictLoadError} message={q.error} onRetry={refetch} className="rounded-xl border-white/[0.08] py-8" />;
+      return <StepColumns notes={<ErrorState title={TOUR_COPY.predictLoadError} message={q.error} onRetry={refetch} className="py-8 sm:py-10" />} />;
     }
     if (state === "unavailable" || (state !== "done" && !featured)) {
       return (
-        <>
-          <p className="text-sm text-pretty text-muted-foreground">{TOUR_COPY.predictLocked}</p>
-          {signedIn ? null : (
-            <>
-              <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-                <p className="text-sm font-medium text-pretty sm:flex-1">{TOUR_COPY.predictLockedSignIn}</p>
-                <ConnectButton size="lg" className="h-10" />
+        <StepColumns
+          notes={<p className={TOUR_NOTE}>{TOUR_COPY.predictLocked}</p>}
+          stage={
+            signedIn ? null : (
+              // An open seat, as the competition's "Your slot": the dashed invitation with Connect.
+              <div className={cn(OPEN_SEAT, "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6")}>
+                <p className="text-base leading-snug font-semibold text-pretty text-foreground">{TOUR_COPY.predictLockedSignIn}</p>
+                <ConnectButton size="lg" className="shrink-0" />
               </div>
+            )
+          }
+          actions={
+            signedIn ? null : (
               <Link href={TOUR_HREFS.competition} className={TOUR_LINK}>
                 {TOUR_COPY.predictLockedCompetition}
+                <LinkArrow />
               </Link>
-            </>
-          )}
-        </>
+            )
+          }
+        />
       );
     }
+    const segment = featured ? (
+      <div className={SEGMENT}>
+        <MarketCard market={featured} positions={positions} nowMs={nowMs} signedIn={signedIn} onPlace={onPlace} />
+      </div>
+    ) : null;
     if (state === "done") {
       return (
-        <>
-          {featured ? <MarketCard market={featured} positions={positions} nowMs={nowMs} signedIn={signedIn} onPlace={onPlace} /> : null}
-          <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
-            {shareLink}
-            <Link href={TOUR_HREFS.predictions} className={TOUR_LINK}>
-              {TOUR_COPY.predictMore}
-            </Link>
-          </div>
-        </>
+        <StepColumns
+          layout="full"
+          stage={segment}
+          actions={
+            <>
+              {shareLink}
+              <Link href={TOUR_HREFS.predictions} className={TOUR_LINK}>
+                {TOUR_COPY.predictMore}
+                <LinkArrow />
+              </Link>
+            </>
+          }
+        />
       );
     }
-    return (
-      <>
-        <p className="text-sm text-pretty text-muted-foreground">{TOUR_COPY.predictBody}</p>
-        {featured ? <MarketCard market={featured} positions={positions} nowMs={nowMs} signedIn={signedIn} onPlace={onPlace} /> : null}
-      </>
-    );
+    return <StepColumns layout="full" notes={<p className={TOUR_NOTE}>{TOUR_COPY.predictBody}</p>} stage={segment} />;
   };
 
   const competeBody = (): React.ReactNode => {
     const formOpen = Boolean(lq.data?.league?.open);
     return (
-      <>
-        <p className="text-sm text-pretty text-muted-foreground">{TOUR_COPY.competeBody}</p>
-        <ScoutChip progress={scoutProgress(scout, leagueMe?.trades.length ?? 0)} className="self-start" />
-        {lq.loading ? (
-          <TradeFormSkeleton />
-        ) : lq.error && !lq.data ? (
-          <ErrorState title={TOUR_COPY.competeLoadError} message={lq.error} onRetry={refetchLeague} className="rounded-xl border-white/[0.08] py-8" />
-        ) : lq.data && formOpen ? (
-          <TradeForm
-            league={lq.data.league}
-            signedIn={lq.data.signedIn}
-            serverNow={lq.data.now}
-            refreshKey={`${sessionKey}:${lq.data.now}`}
-            onPlaced={onTraded}
-            sources={TOUR_TRADE_SOURCES}
-            quickBuyUsd={TOUR_QUICK_BUY_USD}
-          />
-        ) : (
-          <p className="text-sm font-medium text-pretty">{competeUnavailableLine(league)}</p>
-        )}
-        {formOpen ? <p className="text-xs text-pretty text-muted-foreground">{TOUR_COPY.competeHint}</p> : null}
-        <Link href={TOUR_HREFS.competition} className={TOUR_LINK}>
-          {TOUR_COPY.competeLink}
-        </Link>
-      </>
+      <StepColumns
+        notes={
+          <>
+            <p className={TOUR_NOTE}>{TOUR_COPY.competeBody}</p>
+            <ScoutChip progress={scoutProgress(scout, leagueMe?.trades.length ?? 0)} className="self-start" />
+            {formOpen ? <p className="max-w-[34rem] text-sm leading-[1.45] text-pretty text-muted-foreground">{TOUR_COPY.competeHint}</p> : null}
+          </>
+        }
+        stage={
+          lq.loading ? (
+            <div className={STAGE_PANEL}>
+              <TradeFormSkeleton />
+            </div>
+          ) : lq.error && !lq.data ? (
+            <ErrorState title={TOUR_COPY.competeLoadError} message={lq.error} onRetry={refetchLeague} className="py-8 sm:py-10" />
+          ) : lq.data && formOpen ? (
+            <div className={STAGE_PANEL}>
+              <TradeForm
+                league={lq.data.league}
+                signedIn={lq.data.signedIn}
+                serverNow={lq.data.now}
+                refreshKey={`${sessionKey}:${lq.data.now}`}
+                onPlaced={onTraded}
+                sources={TOUR_TRADE_SOURCES}
+                quickBuyUsd={TOUR_QUICK_BUY_USD}
+              />
+            </div>
+          ) : (
+            // The seat waits for the next week: a dashed open seat, never a closed box.
+            <p className={cn(OPEN_SEAT, "text-base leading-snug font-semibold text-pretty text-foreground")}>{competeUnavailableLine(league)}</p>
+          )
+        }
+        actions={
+          <Link href={TOUR_HREFS.competition} className={TOUR_LINK}>
+            {TOUR_COPY.competeLink}
+            <LinkArrow />
+          </Link>
+        }
+      />
     );
   };
 
@@ -392,35 +443,47 @@ export default function StartPage() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
-      <header className="flex flex-col gap-2 text-center">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{TOUR_COPY.eyebrow}</p>
-        <h1 className="text-3xl font-semibold text-balance sm:text-4xl">{tourHeading(tour, finished)}</h1>
-        {compLine ? (
-          // A neutral status pill (Mono: the accent marks live data, never an action); the dot is the live part.
-          <Link
-            href="/competition"
-            className="mx-auto mt-1 inline-flex items-start gap-2 rounded-full border border-white/[0.1] bg-white/[0.03] px-3 py-1 text-xs font-medium text-pretty text-foreground transition-colors hover:bg-white/[0.06]"
-          >
-            {compLine.live ? <span className="mt-[0.3125rem] size-1.5 shrink-0 rounded-full bg-ember" aria-hidden /> : null}
-            <span>
-              {compLine.before}
-              <span className="whitespace-nowrap">{compLine.countdown}</span>
-              {compLine.after}
+    <div className="flex w-full flex-col">
+      {/*
+        The show's opening: what is on this week, then the running order at a glance. PageHeader's
+        measures (the title lands where every page's does); its rule is the running order's top rule.
+      */}
+      <header className="flex flex-col gap-6 border-b border-rule-2 pt-2 pb-6 lg:flex-row lg:items-end lg:justify-between lg:gap-16 lg:pb-7">
+        <div className="flex min-w-0 flex-col gap-3">
+          <p className="text-sm font-medium text-muted-foreground">{TOUR_COPY.eyebrow}</p>
+          <h1 className="font-display text-[2.25rem] leading-none font-normal tracking-[-0.012em] text-balance text-foreground sm:text-5xl lg:text-[3.625rem]">
+            {tourHeading(tour, finished)}
+          </h1>
+          {compLine ? (
+            // A status line, as the market-session line reads; the dot is the live part.
+            <Link
+              href="/competition"
+              className="inline-flex max-w-xl items-start gap-2.5 self-start text-base leading-[1.45] text-pretty text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+            >
+              {compLine.live ? <span className="mt-[0.59375rem] size-1.5 shrink-0 rounded-full bg-foreground" aria-hidden /> : null}
+              <span>
+                {compLine.before}
+                <span className="font-semibold whitespace-nowrap text-foreground">{compLine.countdown}</span>
+                {compLine.after} <LinkArrow />
+              </span>
+            </Link>
+          ) : lq.loading ? (
+            // The status line's place while the competition loads (two lines on a phone), so the running order never moves.
+            <span aria-hidden className="flex flex-col gap-2 py-[0.1875rem]">
+              <Skeleton className="h-[1.0625rem] w-full max-w-[26rem]" />
+              <Skeleton className="h-[1.0625rem] w-1/3 sm:hidden" />
             </span>
-          </Link>
-        ) : null}
-        {signedIn ? (
-          <div className="mx-auto mt-2 flex w-full max-w-xs flex-col gap-1.5">
-            <p aria-live="polite" className="text-xs font-medium text-muted-foreground tabular-nums">
-              {TOUR_COPY.progress(tour.done)}
-            </p>
-            <Progress value={(tour.done / TOUR_TOTAL) * 100} aria-label={TOUR_COPY.progressAria} />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
+        <TourProgress
+          steps={tour.steps.map((s) => ({ key: s.key, state: shownStepState(s.state, finished) }))}
+          done={tour.done}
+          signedIn={signedIn}
+          className="lg:w-[26rem] lg:shrink-0"
+        />
       </header>
 
-      <ol aria-label={TOUR_COPY.listLabel} className="flex flex-col gap-3">
+      <ol aria-label={TOUR_COPY.listLabel} className="border-b border-rule">
         {tour.steps.map((step, i) => {
           const isOpen = openKey === step.key;
           const state = shownStepState(step.state, finished);
@@ -441,9 +504,13 @@ export default function StartPage() {
         })}
       </ol>
 
-      {finished ? <TourFinish rankShareUrl={rankShareUrl} /> : null}
+      {finished ? (
+        <div className="mt-8 lg:mt-10">
+          <TourFinish rankShareUrl={rankShareUrl} />
+        </div>
+      ) : null}
 
-      <p className="text-center text-xs text-pretty text-muted-foreground">
+      <p className="mt-6 max-w-2xl text-[0.8125rem] leading-[1.45] text-pretty text-muted-foreground lg:mt-7">
         {CALLS_LOCK_COPY} Points only, no cash value.
       </p>
 

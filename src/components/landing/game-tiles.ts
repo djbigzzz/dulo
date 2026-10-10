@@ -1,7 +1,9 @@
 /**
- * The landing's three game tiles (approved wireframe, 16 Sep 2026): Predictions, Competition and
- * On-chain quests, each with one large live figure, one short line and one button (calmer pass,
- * 9 Oct 2026). Pure and client-safe, no React.
+ * The landing's three games (approved wireframe, 16 Sep 2026): Predictions, Competition and
+ * On-chain quests, each with one large live figure, one short line and one button. Since the
+ * Broadcast pass (9 Oct 2026) each game is a lane on the same Monday-to-Friday axis as the week
+ * track, and the hero draws this week's prediction as the live price against the line it has to
+ * beat. Pure and client-safe, no React.
  *
  * Every number is read from /api/v1. While a read is loading, or after it failed, a helper
  * returns null and the tile prints an em dash: the landing never shows a made-up figure.
@@ -10,9 +12,11 @@
  * (virtual cash), quests, points.
  */
 import type { CallMarketView, LeagueResponse, PlayView, PlaysResponse } from "@/lib/api-client";
-import { formatPoints, formatUsd } from "@/components/common/format";
-import { NEXT_WEEK_MARKETS_COPY, liveStatus, marketQuestion, splitPct } from "@/components/calls/calls-format";
+import { formatPoints } from "@/components/common/format";
+import { NEXT_WEEK_MARKETS_COPY, liveStatus, splitPct } from "@/components/calls/calls-format";
+import { isPreIpoQuest } from "@/components/common/issuer";
 import { formatSignedPct, formatUsdWhole } from "@/components/league/format";
+import { utcDayMonth } from "@/components/layout/week-track";
 import { VIRTUAL_CASH_USD } from "@/lib/games/ledger-policy";
 
 /** What a tile prints while its number is loading or unavailable. */
@@ -126,23 +130,6 @@ export function pickLiveMarkets<T extends Pick<CallMarketView, "status" | "locks
   return { shown: live.slice(0, Math.max(0, limit)), count: live.length };
 }
 
-/** A compact hero row's split when nobody has put points in yet (said, not drawn as a 50/50). */
-export const COMPACT_ROW_EMPTY = "No points yet";
-
-/**
- * One of the hero card's compact rows: what it shows ("NVDA above $210.00", then "64% Yes" or
- * COMPACT_ROW_EMPTY) and its accessible name, which starts with exactly that visible text, so a
- * voice user can say what they see (WCAG 2.5.3), and then adds the full question.
- */
-export function compactRowCopy(m: Pick<CallMarketView, "ticker" | "strike" | "settleAt" | "odds">): {
-  label: string;
-  split: string;
-  name: string;
-} {
-  const label = `${m.ticker} above ${formatUsd(m.strike)}`;
-  const split = m.odds.total === 0 ? COMPACT_ROW_EMPTY : `${splitPct(m.odds).yes} Yes`;
-  return { label, split, name: `${label}, ${split}. ${marketQuestion(m)}` };
-}
 
 export interface QuestTileStat {
   /** "9 quests live" */
@@ -223,4 +210,171 @@ export function createSharedReads(ttlMs: number, clock: () => number = Date.now)
       entries.clear();
     },
   };
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Broadcast (9 Oct 2026): the hero's price track and the lanes on the week                    */
+/* ------------------------------------------------------------------------------------------ */
+
+/** The week the hero and the lanes are drawn on: the week track's own (WeekTrackModel). */
+export interface LandingWeek {
+  /** Monday 00:00 UTC. */
+  monday: number;
+  /** The Monday after. */
+  nextMonday: number;
+  /** True from Friday's close until Monday: the week is replayed as final. */
+  weekend: boolean;
+}
+
+function settlesIn(m: Pick<CallMarketView, "settleAt">, week: LandingWeek): boolean {
+  const t = Date.parse(m.settleAt);
+  return Number.isFinite(t) && t >= week.monday && t < week.nextMonday;
+}
+
+/**
+ * The hero's predictions. During the week: this week's open (then locked) ones, as pickLiveMarkets.
+ * From Friday's close to Monday: the week that just closed, as final results (the week track
+ * replays the same week), most points in first, then by ticker. `final` says which. With no week
+ * known yet, or nothing in the closed week, it falls back to the live board.
+ */
+export function pickHeroMarkets<T extends Pick<CallMarketView, "status" | "locksAt" | "settleAt" | "odds" | "ticker">>(
+  markets: readonly T[] | null | undefined,
+  nowMs: number,
+  week: LandingWeek | null,
+  limit = 3,
+): { shown: T[]; count: number; final: boolean } {
+  if (!markets) return { shown: [], count: 0, final: false };
+  if (week?.weekend) {
+    const closed = markets
+      .filter((m) => settlesIn(m, week))
+      .sort((a, b) => (b.odds?.total ?? 0) - (a.odds?.total ?? 0) || a.ticker.localeCompare(b.ticker));
+    if (closed.length > 0) return { shown: closed.slice(0, Math.max(0, limit)), count: closed.length, final: true };
+  }
+  return { ...pickLiveMarkets(markets, nowMs, limit), final: false };
+}
+
+/**
+ * Where the price sits on the hero's track, as a percent of its width. The line (the strike) is
+ * always the middle; the scale is wide enough that the price lands between 20% and 80% (nearer the
+ * middle when it is close: the scale is at least 0.4% of the strike either side). Null without a
+ * usable price.
+ */
+export function gaugePosition(price: number | null | undefined, strike: number): { p: number; gap: number } | null {
+  if (price === null || price === undefined || !Number.isFinite(price) || !Number.isFinite(strike) || strike <= 0) return null;
+  const gap = price - strike;
+  const half = Math.max(Math.abs(gap) / 0.6, strike * 0.004);
+  const p = 50 + (gap / half) * 50;
+  return { p: Math.min(97, Math.max(3, p)), gap };
+}
+
+const CENTS = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** "$0.24 below" | "$5.48 above" | "At the line": where the price stands against the line, to the cent. */
+export function gapLabel(gap: number): string {
+  if (!Number.isFinite(gap) || Math.abs(gap) < 0.005) return "At the line";
+  return `${CENTS.format(Math.abs(gap))} ${gap > 0 ? "above" : "below"}`;
+}
+
+/** What the strike is: the price when the prediction opened (lib/games/calls STRIKE_LABEL), never an official print. */
+export const STRIKE_NOTE = "price when it opened";
+
+/**
+ * The side with most points in, for the hero's "57% say No". Null for an empty pool or an even
+ * split, which the hero says in words instead.
+ */
+export function crowdLead(odds: Pick<CallMarketView["odds"], "total" | "yesProb">): { side: "yes" | "no"; pct: string } | null {
+  if (!(odds.total > 0)) return null;
+  const yes = Math.round(odds.yesProb * 100);
+  if (yes === 50) return null;
+  const split = splitPct(odds);
+  return yes > 50 ? { side: "yes", pct: split.yes } : { side: "no", pct: split.no };
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** "Thu 8 Oct · 20:00 UTC" ("" for a bad date). */
+export function utcStamp(iso: string): string {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const d = new Date(t);
+  return `${WEEKDAY[d.getUTCDay()]} ${utcDayMonth(t)} · ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())} UTC`;
+}
+
+/**
+ * The Predictions lane's figure. During the week: predictionsTileFigure (every point in this week's
+ * open or locked predictions). From Friday's close: the week that just closed, settled or still
+ * settling (a void market refunded its points and is left out).
+ */
+export function predictionsLaneFigure(
+  markets: readonly (MarketLike & Pick<CallMarketView, "settleAt">)[] | null | undefined,
+  nowMs: number,
+  week: LandingWeek | null,
+): TileFigure | null {
+  if (!markets) return null;
+  if (week?.weekend) {
+    let total = 0;
+    let any = false;
+    for (const m of markets) {
+      if (!settlesIn(m, week) || m.status === "void") continue;
+      any = true;
+      const pts = m.odds?.total;
+      if (typeof pts === "number" && Number.isFinite(pts) && pts > 0) total += pts;
+    }
+    if (any) return { figure: formatPoints(total), line: `points in, week of ${utcDayMonth(week.monday)}, incl. bot seed` };
+  }
+  return predictionsTileFigure(markets, nowMs);
+}
+
+/** LeagueResponse.leaderboard is the top 50: a full list says "50+". */
+const STANDINGS_CAP = 50;
+
+/**
+ * The Competition lane's figure: how many accounts are on this week's virtual-cash standings and
+ * how many of them are house bots ("16" / "on this week's virtual-cash standings, 15 of them house
+ * bots"), or the starting virtual cash before anyone trades. From Friday's close, the week's final
+ * #1 (LeagueResponse.lastSettled), with the bot label. Every line says virtual cash.
+ */
+export function competitionLaneFigure(
+  league: Pick<LeagueResponse, "leaderboard" | "lastSettled"> | null | undefined,
+  weekend: boolean,
+): TileFigure | null {
+  if (!league) return null;
+  const top = weekend ? league.lastSettled?.top?.[0] : undefined;
+  if (top) return { figure: formatSignedPct(top.pnlPct), line: `#1 at Friday's close${top.isBot ? " · house bot" : ""} · virtual cash` };
+  const rows = league.leaderboard ?? [];
+  if (rows.length === 0) return { figure: formatUsdWhole(VIRTUAL_CASH_USD), line: "virtual cash to start" };
+  const bots = rows.filter((r) => r.isBot).length;
+  const n = rows.length;
+  if (n >= STANDINGS_CAP) {
+    return { figure: `${STANDINGS_CAP}+`, line: `on this week's virtual-cash standings${bots > 0 ? ", house bots included" : ""}` };
+  }
+  const tail =
+    bots === 0 ? "" : bots === n ? (n === 1 ? ", a house bot" : ", all house bots") : `, ${bots} of them ${bots === 1 ? "a house bot" : "house bots"}`;
+  return { figure: formatPoints(n), line: `on this week's virtual-cash standings${tail}` };
+}
+
+/**
+ * The quest the next wallet check could complete, for the quests lane ("Next check · First
+ * Position · +100"): the first live on-chain xStocks quest on the board that is not complete yet.
+ * Null while loading, or when none is left.
+ */
+export function nextQuestCheck(plays: Pick<PlaysResponse, "groups"> | null | undefined): { title: string; points: number } | null {
+  for (const play of flattenPlays(plays)) {
+    if (play.rule.type === "internal_event" || play.comingSoon || play.status === "complete" || isPreIpoQuest(play)) continue;
+    return { title: play.title, points: play.points };
+  }
+  return null;
+}
+
+/** The welcome offer with its grant in cream: "Sign in free: " / "1,000 starter points and $10,000 of virtual cash" / " to play. …". */
+export function offerParts(line: string): { lead: string; strong: string; rest: string } {
+  const m = /^(.*?:\s)(.+?)(\sto play\..*)$/.exec(line);
+  return m ? { lead: m[1], strong: m[2], rest: m[3] } : { lead: line, strong: "", rest: "" };
+}
+
+/** The three verbs, the first two in cream: "Predict. Compete. " / "Complete on-chain quests." */
+export function verbParts(line: string): { lead: string; rest: string } {
+  const at = line.indexOf("Complete");
+  return at > 0 ? { lead: line.slice(0, at), rest: line.slice(at) } : { lead: "", rest: line };
 }

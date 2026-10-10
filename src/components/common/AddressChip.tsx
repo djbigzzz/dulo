@@ -18,7 +18,7 @@ export interface AddressChipProps {
   className?: string;
 }
 
-/** Monospace truncated address with optional copy + explorer actions. */
+/** A truncated address (mono: it is data) on a square ruled well, with optional copy + explorer actions. */
 export function AddressChip({ address, chainId, chars = 4, copy = true, explorer = false, className }: AddressChipProps) {
   const [copied, setCopied] = React.useState(false);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,7 +45,7 @@ export function AddressChip({ address, chainId, chars = 4, copy = true, explorer
   return (
     <span
       className={cn(
-        "inline-flex h-6 max-w-full items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] px-2 font-mono text-xs text-foreground",
+        "inline-flex h-6 max-w-full items-center gap-1 rounded-[2px] border border-rule-2 bg-ink-3 px-2 font-mono text-xs text-foreground",
         className,
       )}
     >

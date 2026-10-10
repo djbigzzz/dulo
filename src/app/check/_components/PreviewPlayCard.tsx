@@ -1,14 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Award, CheckCircle2, CircleDashed, Clock, FileSearch, Gamepad2 } from "lucide-react";
+import { Award, Check, CircleDashed, Clock, FileSearch, Gamepad2 } from "lucide-react";
 import { cn } from "cn";
 import type { PreviewPlayStatus, PreviewPlayView } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { PointsChip } from "@/components/common/PointsChip";
-import { formatDateTime } from "@/components/common/format";
+import { formatDateTime, formatPoints } from "@/components/common/format";
 import { isPreIpoSource } from "@/components/common/issuer";
 import { IssuerPill } from "@/components/common/IssuerPill";
 import { ruleToHint } from "@/components/plays/rule-hint";
@@ -18,14 +17,15 @@ import { ProofList } from "@/components/plays/ProofDrawer";
 import { RuleDisclosure } from "@/components/plays/RuleDisclosure";
 import { PREVIEW_STATUS_LABEL } from "@/app/check/_components/check-format";
 
-const PILL = "inline-flex h-7 w-fit items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium whitespace-nowrap";
-const PILL_GLASS = "border-white/[0.08] bg-white/[0.03] text-muted-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]";
+/** A small ruled tag: the verdict "Meets it now" is the cream stamp, every other state a quiet rule (no hue). */
+const PILL = "inline-flex h-6 w-fit items-center gap-1.5 border px-2 text-xs font-semibold whitespace-nowrap";
+const PILL_QUIET = "border-rule-2 text-muted-foreground";
 
 const STATUS_STYLE: Record<PreviewPlayStatus, { icon: React.ComponentType<{ className?: string }>; className: string }> = {
-  qualifies: { icon: CheckCircle2, className: "border-emerald-400/25 bg-emerald-400/10 text-emerald-400" },
-  not_yet: { icon: CircleDashed, className: PILL_GLASS },
-  needs_history: { icon: Clock, className: PILL_GLASS },
-  needs_activity: { icon: Gamepad2, className: PILL_GLASS },
+  qualifies: { icon: Check, className: "border-foreground bg-foreground text-background" },
+  not_yet: { icon: CircleDashed, className: PILL_QUIET },
+  needs_history: { icon: Clock, className: PILL_QUIET },
+  needs_activity: { icon: Gamepad2, className: PILL_QUIET },
 };
 
 export function PreviewStatusPill({ status, className }: { status: PreviewPlayStatus; className?: string }) {
@@ -38,42 +38,43 @@ export function PreviewStatusPill({ status, className }: { status: PreviewPlaySt
   );
 }
 
-/** One Play as this wallet would see it: status, one-line reason and a Proof button. */
+/**
+ * One Play as this wallet would see it, as a segment of the verdict board (the quests board's
+ * segment): the points as a scoreboard numeral, the verdict, the rule, the one-line reason, and a
+ * Proof button. A quest the wallet already meets carries the cream rule along its top edge.
+ */
 export function PreviewPlayCard({ play, onProof }: { play: PreviewPlayView; onProof: (play: PreviewPlayView) => void }) {
   const qualifies = play.status === "qualifies";
   // Same rule as the quests board: no dollar target on a card, units labelled for people (the quest's own issuer noun).
   const progress = qualifies ? null : cardProgress(play.progress, play.assetSource);
   return (
     <article
+      data-status={play.status}
       className={cn(
-        "relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 sm:p-5",
-        qualifies ? "border-emerald-400/20" : "border-white/[0.07]",
+        "relative flex h-full flex-col gap-3 border border-rule bg-background p-4 sm:p-5",
+        qualifies && "z-[1] bg-white/[0.025] before:absolute before:-inset-x-px before:-top-px before:h-0.5 before:bg-foreground",
       )}
     >
-      {qualifies ? (
-        <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-emerald-400/40" aria-hidden />
-      ) : null}
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="text-base font-semibold tracking-tight">{play.title}</h3>
-            {isPreIpoSource(play.assetSource) ? <IssuerPill source={play.assetSource} /> : null}
-          </div>
-          <p className="text-sm text-muted-foreground">{ruleToHint(play.rule, play.assetSource)}</p>
-        </div>
-        <PointsChip points={play.points} signed muted={!qualifies} className="shrink-0" />
+        <p className="flex items-baseline gap-1.5 leading-none">
+          <span className={cn("figure text-[2rem] leading-[0.8]", qualifies ? "text-foreground" : "text-muted-foreground")}>+{formatPoints(play.points)}</span>
+          <span className="text-[0.8125rem] text-muted-foreground">points</span>
+        </p>
+        <PreviewStatusPill status={play.status} />
       </div>
-      <p className="text-sm leading-relaxed text-foreground/90">{play.note}.</p>
-      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <PreviewStatusPill status={play.status} />
-          {progress ? (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {`${progress.current} of ${progress.target}${progress.unit ? ` ${progress.unit}` : ""}`}
-            </span>
-          ) : null}
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 className="text-[1.0625rem] leading-snug font-semibold">{play.title}</h3>
+          {isPreIpoSource(play.assetSource) ? <IssuerPill source={play.assetSource} /> : null}
         </div>
-        <Button type="button" variant="ghost" size="sm" className="-mr-2 h-10 text-muted-foreground hover:text-foreground sm:h-8" onClick={() => onProof(play)}>
+        <p className="text-[0.9375rem] leading-snug text-muted-foreground">{ruleToHint(play.rule, play.assetSource)}</p>
+      </div>
+      <p className="border-l border-rule-2 pl-3 text-sm leading-relaxed text-foreground/90">{play.note}.</p>
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-rule pt-3">
+        <span className="text-[0.8125rem] text-muted-foreground tabular-nums">
+          {progress ? `${progress.current} of ${progress.target}${progress.unit ? ` ${progress.unit}` : ""}` : null}
+        </span>
+        <Button type="button" variant="outline" size="sm" className="h-10 sm:h-8" onClick={() => onProof(play)}>
           <FileSearch data-icon="inline-start" aria-hidden />
           Proof
           <span className="sr-only"> for {play.title}</span>
@@ -85,7 +86,7 @@ export function PreviewPlayCard({ play, onProof }: { play: PreviewPlayView; onPr
   );
 }
 
-/** Side sheet with the evidence the engine produced on this one live read. */
+/** Side sheet with the evidence the engine produced on this one live read (the quests' proof drawer, read-only). */
 export function PreviewProofSheet({
   play,
   readAt,
@@ -101,15 +102,19 @@ export function PreviewProofSheet({
   return (
     <Sheet open={open} onOpenChange={(next) => onOpenChange(next)}>
       <SheetContent side="right" className="w-full gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-md">
-        <SheetHeader className="border-b border-white/[0.06] pr-12">
-          <SheetTitle className="truncate">{play ? play.title : "Proof"}</SheetTitle>
-          <SheetDescription className="truncate">{play ? ruleToHint(play.rule, play.assetSource) : "Evidence behind this quest"}</SheetDescription>
+        <SheetHeader className="gap-2 border-b border-rule-2 px-5 pt-5 pr-14 pb-5">
+          <p className="text-[0.84375rem] font-medium text-muted-foreground">Proof from one live read</p>
+          <SheetTitle className="text-[2rem] leading-none text-balance">{play ? play.title : "Proof"}</SheetTitle>
+          <SheetDescription className="text-[0.9375rem] leading-snug">{play ? ruleToHint(play.rule, play.assetSource) : "Evidence behind this quest"}</SheetDescription>
           {play ? (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <PreviewStatusPill status={play.status} className="h-6" />
-              <PointsChip points={play.points} signed />
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <PreviewStatusPill status={play.status} />
+              <span className="flex items-baseline gap-1.5 leading-none">
+                <span className="figure text-[1.5rem] leading-none text-foreground">+{formatPoints(play.points)}</span>
+                <span className="text-[0.8125rem] text-muted-foreground">points</span>
+              </span>
               {play.badgeKey ? (
-                <Badge variant="outline" className="h-6 gap-1 border-gold/20 bg-gold/[0.06] px-2.5 text-gold">
+                <Badge variant="outline" className="h-6 gap-1 px-2 text-muted-foreground">
                   <Award className="size-3" aria-hidden />
                   Badge
                 </Badge>
@@ -117,14 +122,14 @@ export function PreviewProofSheet({
             </div>
           ) : null}
         </SheetHeader>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          {play ? <p className="text-sm leading-relaxed text-muted-foreground">{play.note}.</p> : null}
+        <div className="flex flex-1 flex-col gap-4 px-5 py-5">
+          {play ? <p className="text-[0.9375rem] leading-relaxed text-foreground/90">{play.note}.</p> : null}
           {entries.length > 0 ? (
             <ProofList entries={entries} />
           ) : null}
         </div>
-        <p className="border-t border-white/[0.06] p-4 text-xs text-muted-foreground">
-          Read live from Solana {formatDateTime(readAt)}. Nothing stored, never scored.
+        <p className="border-t border-rule px-5 py-4 text-[0.8125rem] text-muted-foreground">
+          Read live from Solana <time dateTime={readAt} className="font-mono text-foreground">{formatDateTime(readAt)}</time>. Nothing stored, never scored.
         </p>
       </SheetContent>
     </Sheet>

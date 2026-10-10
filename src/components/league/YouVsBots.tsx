@@ -99,32 +99,30 @@ export function YouVsBots({ me, rows, className }: YouVsBotsProps) {
 
   const share = Math.max(0, Math.min(1, c.ahead / c.bots));
   const dot = (
-    <span className="px-1.5 text-muted-foreground/50" aria-hidden>
+    <span className="px-1.5 text-dim" aria-hidden>
       ·
     </span>
   );
 
+  // Broadcast: one line on a rule and a thin cream fill on the ink-4 well, never a card.
   return (
-    <div className={cn("flex flex-col gap-2.5 rounded-2xl border border-white/[0.07] bg-card px-4 py-3.5 sm:px-5", className)} title={botComparisonLabel(c)}>
+    <div className={cn("flex flex-col gap-2.5 border-b border-rule pb-3.5", className)} title={botComparisonLabel(c)}>
       <p className="text-sm text-pretty text-muted-foreground">
-        <span className="font-medium text-foreground">You</span>{" "}
-        <span className={cn("font-semibold tabular-nums", pnlClass(c.youPct))}>{formatSignedPct(c.youPct, DISPLAY_DIGITS)}</span>
+        <span className="font-semibold text-foreground">You</span>{" "}
+        <span className={cn("font-semibold tabular-nums font-stretch-[85%]", pnlClass(c.youPct))}>{formatSignedPct(c.youPct, DISPLAY_DIGITS)}</span>
         {dot}
         house bots median{" "}
-        <span className="font-medium text-foreground/90 tabular-nums">{formatSignedPct(c.medianPct, DISPLAY_DIGITS)}</span>
+        <span className="font-semibold text-foreground tabular-nums font-stretch-[85%]">{formatSignedPct(c.medianPct, DISPLAY_DIGITS)}</span>
         {dot}
         ahead of{" "}
-        <span className="font-medium text-foreground/90 tabular-nums">
+        <span className="font-semibold text-foreground tabular-nums">
           {c.ahead} of {c.bots}
         </span>{" "}
         bots
       </p>
       {/* Decorative: every number in it is already in the sentence above. */}
-      <span className="block h-1.5 w-full overflow-hidden rounded-full border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]" aria-hidden>
-        <span
-          className="block h-full rounded-full bg-foreground/80 transition-[width] duration-500 motion-reduce:transition-none"
-          style={{ width: `${(share * 100).toFixed(1)}%` }}
-        />
+      <span className="block h-1 w-full overflow-hidden bg-ink-4" aria-hidden>
+        <span className="block h-full bg-[rgb(243_240_232/0.6)] transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${(share * 100).toFixed(1)}%` }} />
       </span>
     </div>
   );

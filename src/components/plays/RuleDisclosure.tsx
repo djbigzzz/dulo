@@ -53,7 +53,7 @@ export interface RuleDisclosureProps {
 export function RuleDisclosure({ rule, showHint = true, className }: RuleDisclosureProps) {
   return (
     <details data-slot="rule-disclosure" className={cn("group min-w-0", className)}>
-      <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-lg py-2 text-xs font-medium text-muted-foreground outline-none transition-colors select-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+      <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 py-2 text-[0.8125rem] font-medium text-muted-foreground outline-none transition-colors select-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
         {RULE_DISCLOSURE_LABEL}
         <ChevronDownIcon
           className="size-3.5 shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
@@ -61,11 +61,12 @@ export function RuleDisclosure({ rule, showHint = true, className }: RuleDisclos
         />
       </summary>
       <div className="flex min-w-0 flex-col gap-2 pb-1">
-        {showHint ? <p className="text-xs leading-relaxed text-muted-foreground">{ruleToHint(rule)}</p> : null}
+        {showHint ? <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">{ruleToHint(rule)}</p> : null}
         {/* Always shown, never gated on showHint: the JSON below carries internal identifiers on
             every surface that mounts this, so the caption travels with it. */}
-        <p className="text-xs leading-relaxed text-muted-foreground">{RULE_DISCLOSURE_GLOSS}</p>
-        <pre className="max-w-full overflow-x-auto rounded-xl border border-white/[0.06] bg-black/25 p-3 font-mono text-xs leading-relaxed text-foreground shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]">
+        <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">{RULE_DISCLOSURE_GLOSS}</p>
+        {/* The ink well of docs/DESIGN.md: a 1px rule, no shadow, no radius. */}
+        <pre className="max-w-full overflow-x-auto border border-rule bg-ink-2 p-3 font-mono text-xs leading-relaxed text-foreground">
           {ruleJson(rule)}
         </pre>
       </div>

@@ -10,7 +10,7 @@ import { formatDate } from "@/components/common/format";
  * means the API answered with no season.
  */
 export function SeasonBadgeSkeleton({ className }: { className?: string }) {
-  return <Skeleton className={cn("h-6 w-36 rounded-4xl", className)} aria-hidden />;
+  return <Skeleton className={cn("h-7 w-36", className)} aria-hidden />;
 }
 
 export interface SeasonBadgeProps {
@@ -31,8 +31,8 @@ const PHASE_LABEL: Record<SeasonView["phase"], string> = {
 export function SeasonBadge({ season, className }: SeasonBadgeProps) {
   if (!season) {
     return (
-      <Badge variant="outline" className={cn("h-7 gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground", className)}>
-        <span className="size-1.5 rounded-full bg-muted-foreground/60" aria-hidden />
+      <Badge variant="outline" className={cn("h-7 gap-1.5 px-2.5 text-xs font-medium text-muted-foreground", className)}>
+        <span className="size-1.5 rounded-full bg-dim" aria-hidden />
         No Season yet
       </Badge>
     );
@@ -42,10 +42,11 @@ export function SeasonBadge({ season, className }: SeasonBadgeProps) {
   return (
     <Badge
       variant="outline"
-      className={cn("h-7 max-w-full gap-1.5 rounded-full border-gold/20 bg-gold/[0.06] px-3 text-xs font-medium", className)}
+      className={cn("h-7 max-w-full gap-1.5 px-2.5 text-xs font-medium", className)}
       title={`${season.name}: ${range}`}
     >
-      <span className={cn("size-1.5 shrink-0 rounded-full", live ? "bg-ember" : "bg-muted-foreground/60")} aria-hidden />
+      {/* A live dot (a circle is allowed: logos and live dots are the only circles). Cream, never gold. */}
+      <span className={cn("size-1.5 shrink-0 rounded-full", live ? "bg-foreground" : "bg-dim")} aria-hidden />
       <span className="truncate text-foreground">{season.name}</span>
       <span className="text-muted-foreground">· {PHASE_LABEL[season.phase]}</span>
     </Badge>

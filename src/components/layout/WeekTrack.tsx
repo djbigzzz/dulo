@@ -4,11 +4,13 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "cn";
 import { useWeekData } from "@/components/layout/WeekData";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import {
   DAY_MS,
   READOUT_LABEL,
   TRACK_DAYS,
   WEEKDAYS_SHARE,
+  dayLabelPlace,
   formatTrackClock,
   readoutFocusFor,
   spokenTrackClock,
@@ -37,18 +39,6 @@ import {
 
 const pct = (x: number) => `${(x * 100).toFixed(2)}%`;
 
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = React.useState(false);
-  React.useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setReduced(mq.matches);
-    on();
-    mq.addEventListener?.("change", on);
-    return () => mq.removeEventListener?.("change", on);
-  }, []);
-  return reduced;
-}
 
 /** The client clock, corrected by the server's `now` once a response carries one; null until mounted. */
 function useTrackClock(serverNow: string | null, tickMs: number): number | null {
@@ -84,15 +74,21 @@ function Track({ model }: { model: WeekTrackModel | null }) {
       />
       {TRACK_DAYS.map((d, i) => {
         const past = model !== null && now !== null && (i < 5 ? model.monday + i * DAY_MS <= now : at(now) >= WEEKDAYS_SHARE);
+        // The label steps aside when the now marker would cover it (dayLabelPlace); the tick stays put.
+        const place = model && now !== null ? dayLabelPlace(i, at(now)) : "tick";
         return (
           <React.Fragment key={d.long}>
             <span className="absolute top-6 h-3 w-px bg-rule-2 lg:top-7" style={{ left: pct(d.x) }} />
             <span
+              data-place={place}
               className={cn(
-                "absolute top-[9px] translate-x-[5px] text-[11.5px] leading-none font-medium whitespace-nowrap lg:top-3 lg:translate-x-1.5 lg:text-xs",
+                "absolute top-[9px] text-[11.5px] leading-none font-medium whitespace-nowrap lg:top-3 lg:text-xs",
+                place === "tick" && "translate-x-[5px] lg:translate-x-1.5",
+                place === "after-now" && "translate-x-[9px] lg:translate-x-2.5",
+                place === "before-now" && "-translate-x-[calc(100%+9px)] lg:-translate-x-[calc(100%+10px)]",
                 past ? "text-muted-foreground" : "text-dim",
               )}
-              style={{ left: pct(d.x) }}
+              style={{ left: pct(place === "tick" || now === null ? d.x : at(now)) }}
             >
               <span className="hidden lg:inline">{d.long}</span>
               <span className="lg:hidden">{d.short}</span>

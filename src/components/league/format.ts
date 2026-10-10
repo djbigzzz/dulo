@@ -30,10 +30,18 @@ export function formatSignedPct(n: number | null | undefined, digits = 1): strin
   return `${n > 0 ? "+" : "−"}${abs}%`;
 }
 
-/** Tailwind text colour for a signed number. */
+/** Tailwind text colour for a signed number: Broadcast's gain green and loss red, muted when flat. */
 export function pnlClass(n: number | null | undefined): string {
   if (n === null || n === undefined || !Number.isFinite(n) || Math.abs(n) < 0.005) return "text-muted-foreground";
-  return n > 0 ? "text-emerald-400" : "text-rose-400";
+  return n > 0 ? "text-yes" : "text-no";
+}
+
+/** "1st", "2nd", "3rd", "4th", "11th", "22nd": where an open seat would start on the board. */
+export function ordinal(n: number): string {
+  const v = Math.abs(Math.trunc(n));
+  const tens = v % 100;
+  const suffix = tens >= 11 && tens <= 13 ? "th" : v % 10 === 1 ? "st" : v % 10 === 2 ? "nd" : v % 10 === 3 ? "rd" : "th";
+  return `${Math.trunc(n)}${suffix}`;
 }
 
 /** "4d 07:14:52" or "07:14:52" — never negative. */
@@ -61,6 +69,23 @@ export function formatUtcDateTime(iso: string): string {
   const day = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(d);
   const time = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(d);
   return `${day}, ${time} UTC`;
+}
+
+/** "Fri 9 Oct · 20:00 UTC": the competition clock's mono time line, in UTC like the week track. */
+export function formatUtcDayDotTime(iso: string): string {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "";
+  return `${formatUtcWeekday(iso)} · ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
+}
+
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Fri 2 Oct" in UTC, spelled out by hand so no locale adds a comma or a "Sept". */
+export function formatUtcWeekday(iso: string): string {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "";
+  return `${WEEKDAY_SHORT[d.getUTCDay()]} ${d.getUTCDate()} ${MONTH_SHORT[d.getUTCMonth()]}`;
 }
 
 /** "14 Sep" in UTC (the League week label). */
