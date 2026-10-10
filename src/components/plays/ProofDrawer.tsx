@@ -11,6 +11,7 @@ import { formatDateTime, formatPoints } from "@/components/common/format";
 import { questAssetSource } from "@/components/common/issuer";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { playStatusChip } from "@/components/plays/PlayCard";
+import { WALLET_CHECK_TIMING, questKind } from "@/components/plays/play-meta";
 import { ruleToHint } from "@/components/plays/rule-hint";
 import { flattenProof, isEmptyProof, type ProofEntry } from "@/components/plays/proof";
 
@@ -82,6 +83,8 @@ export function ProofDrawer({ play, open, onOpenChange }: ProofDrawerProps) {
   const entries = React.useMemo(() => (play ? flattenProof(play.proof, { assetSource }) : []), [play, assetSource]);
   const chip = play ? playStatusChip(play) : null;
   const ChipIcon = chip?.icon;
+  // In-platform quests fill in from predictions and paper trades; only on-chain ones wait on a wallet read.
+  const inPlatform = play ? questKind(play) === "in-platform" : false;
 
   return (
     <Sheet open={open} onOpenChange={(next) => onOpenChange(next)}>
@@ -113,7 +116,11 @@ export function ProofDrawer({ play, open, onOpenChange }: ProofDrawerProps) {
               variant="plain"
               icon={<Lock aria-hidden />}
               title="Sign in to see your proof"
-              description="Connect a wallet and sign in. We check your wallet every 5 minutes and keep the evidence here."
+              description={
+                inPlatform
+                  ? "Connect a wallet and sign in. Your predictions and paper trades fill in the evidence here."
+                  : `Connect a wallet and sign in. We check your wallet ${WALLET_CHECK_TIMING} and keep the evidence here.`
+              }
               action={<ConnectButton size="default" />}
             />
           ) : play.comingSoon && play.status !== "complete" ? (
@@ -124,7 +131,16 @@ export function ProofDrawer({ play, open, onOpenChange }: ProofDrawerProps) {
               description="This Partner listing is pending. Once it goes live we verify it from your wallet like any other on-chain quest."
             />
           ) : isEmptyProof(play.proof) || entries.length === 0 ? (
-            <EmptyState variant="plain" icon={<ScanSearch aria-hidden />} title="No proof yet." description="We check your wallet every 5 minutes." />
+            <EmptyState
+              variant="plain"
+              icon={<ScanSearch aria-hidden />}
+              title="No proof yet."
+              description={
+                inPlatform
+                  ? "It fills in with your first prediction or paper trade."
+                  : `We check your wallet ${WALLET_CHECK_TIMING}. Press Refresh on the Quests page to check now.`
+              }
+            />
           ) : (
             <section aria-label="Evidence" className="flex flex-col gap-3">
               <p className="text-[0.84375rem] font-medium text-muted-foreground">What the engine checked</p>
@@ -142,7 +158,11 @@ export function ProofDrawer({ play, open, onOpenChange }: ProofDrawerProps) {
             .
           </p>
         ) : play && play.status === "in_progress" ? (
-          <p className="border-t border-rule px-5 py-4 text-[0.8125rem] text-muted-foreground">Proof updates on every snapshot, about every 5 minutes.</p>
+          <p className="border-t border-rule px-5 py-4 text-[0.8125rem] text-muted-foreground">
+            {inPlatform
+              ? "Proof updates with each prediction or paper trade."
+              : "Proof updates each time we read your wallet. Press Refresh on the Quests page to read it now."}
+          </p>
         ) : null}
       </SheetContent>
     </Sheet>

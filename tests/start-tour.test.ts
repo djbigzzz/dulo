@@ -468,7 +468,7 @@ describe("line builders", () => {
       "Verified on-chain 2m ago: your connected wallets hold TSLAx worth $412.50 (Jupiter price). First Position complete, +100.",
     );
     expect(walletLine(withProof({ reason: "no_in_scope_holding", takenAt: ago(2), minUsd: 5 }), "empty", 1, NOW_MS)).toBe(
-      "Read from Solana just now: your wallet holds no xStock. On-chain quests check every connected wallet every 5 minutes; there is nothing to submit.",
+      "Read from Solana just now: your wallet holds no xStock. On-chain quests check every connected wallet when you sign in and again through the day; there is nothing to submit.",
     );
     const below = walletLine(withProof({ reason: "below_min_usd", symbol: "NVDAx", usd: 3.21, minUsd: 5, takenAt: ago(300) }), "below", 3, NOW_MS);
     expect(below).toBe("Read from Solana 5m ago: your connected wallets hold NVDAx, below the $5.00 that First Position reads.");
@@ -480,7 +480,7 @@ describe("line builders", () => {
 
   it("walletLine leaves the age out when the proof has no takenAt", () => {
     expect(walletLine(withProof({ reason: "no_in_scope_holding" }), "empty", 1, NOW_MS)).toBe(
-      "Read from Solana: your wallet holds no xStock. On-chain quests check every connected wallet every 5 minutes; there is nothing to submit.",
+      "Read from Solana: your wallet holds no xStock. On-chain quests check every connected wallet when you sign in and again through the day; there is nothing to submit.",
     );
     expect(walletLine(withProof({ symbol: "SPYx", usd: 20, priceSource: "pyth" }), "complete", 1, NOW_MS)).toBe(
       "Verified on-chain: your wallet holds SPYx worth $20.00 (Pyth price). First Position complete, +100.",

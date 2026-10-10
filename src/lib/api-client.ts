@@ -40,7 +40,7 @@ export class ApiClientError extends Error {
 }
 
 export interface ApiRequestOptions {
-  /** Absolute origin for server-side callers (e.g. "https://dulo.fun"). Browsers can leave this out. */
+  /** Absolute origin for server-side callers (e.g. "https://projectdulo.com"). Browsers can leave this out. */
   baseUrl?: string;
   headers?: HeadersInit;
   signal?: AbortSignal;
@@ -783,7 +783,7 @@ export interface MirrorRecordBody {
   budgetUsd: number;
 }
 
-/** POST /api/v1/mirror/record: the intent is stored; the next snapshot (<= 5 min, sooner after sign-in/refresh) verifies it. */
+/** POST /api/v1/mirror/record: the intent is stored; the wallet is read at once after the response, and every later read checks again. */
 export interface MirrorRecordResponse {
   targetWallet: string;
   recordedAt: string;

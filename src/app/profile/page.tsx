@@ -267,7 +267,7 @@ function ProfileBody({ profile }: { profile: UserProfile }) {
         <div className="flex min-w-0 flex-col gap-12">
           {/* Badges */}
           <section aria-labelledby="badges" className="flex flex-col gap-3">
-            <SectionHeading id="badges" title="Badges" note="Soulbound tokens minted to your wallet a few minutes after you earn them." />
+            <SectionHeading id="badges" title="Badges" note="Soulbound tokens minted to your wallet on a later scheduled run after you earn them." />
             <BadgeGrid badges={profile.badges} />
           </section>
 

@@ -56,6 +56,7 @@ import {
   type TileFigure,
 } from "@/components/landing/game-tiles";
 import { openSeatCopy, seasonSeats } from "@/components/landing/scoreboard-mode";
+import { WALLET_CHECK_TIMING } from "@/components/plays/play-meta";
 
 /**
  * The live landing, Broadcast (9 Oct 2026), all read from /api/v1:
@@ -742,7 +743,7 @@ function RunBar({ end, nowX }: { end: number; nowX: number }) {
  */
 function laneLabel(kind: GameTileKey, week: WeekTrackModel | null, next: { title: string; points: number } | null = null, weekCount = 0): string {
   if (kind === "quests") {
-    const base = "On-chain quests: your wallet is checked all week, about every 5 minutes.";
+    const base = `On-chain quests: your wallet is checked ${WALLET_CHECK_TIMING}.`;
     return next ? `${base} Next check: ${next.title}, +${formatPoints(next.points)} points.` : base;
   }
   if (kind === "predictions") {
@@ -818,7 +819,7 @@ function LaneTrack({
       content = (
         <>
           <span className={cn(LANE_TEXT, "left-0")}>
-            Checked from your wallet<span className="hidden xl:inline">, about every 5 minutes</span>
+            Checked from your wallet<span className="hidden xl:inline">, at sign-in and through the day</span>
           </span>
           {/* Checks, not a bar: a dotted rail, the checks already run in cream, the rest of the week faint. */}
           <span className="absolute inset-x-0 top-[59px] h-0.5 -translate-y-1/2 bg-[repeating-linear-gradient(90deg,var(--rule-2)_0_2px,transparent_2px_7px)] xl:top-[76px]" />

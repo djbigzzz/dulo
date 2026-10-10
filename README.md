@@ -5,9 +5,9 @@
 **The entertainment layer for xStocks. Compete, predict and get rewarded, for points.**
 
 [![CI](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml/badge.svg)](https://github.com/djbigzzz/dulo/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-1%2C555%20passing-3b82f6?style=flat&labelColor=09090b)](#tests)
-[![Solana](https://img.shields.io/badge/Solana-mainnet-e4e4e7?style=flat&labelColor=09090b)](#why-solana)
-[![Licence](https://img.shields.io/badge/licence-MIT-a1a1aa?style=flat&labelColor=09090b)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-1%2C558%20passing-ffd23c?style=flat&labelColor=0b0b0c)](#run-locally)
+[![Solana](https://img.shields.io/badge/Solana-mainnet-f3f0e8?style=flat&labelColor=0b0b0c)](#why-solana)
+[![Licence](https://img.shields.io/badge/licence-MIT-8a877f?style=flat&labelColor=0b0b0c)](LICENSE)
 
 </div>
 
@@ -29,15 +29,15 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 | **Licence** | [MIT](LICENSE) |
 
 <p align="center">
-  <img src="docs/screenshots/landing.jpg" width="49.5%" alt="The landing: the live prediction cards for the week and the three game tiles">
-  <img src="docs/screenshots/prestocks.jpg" width="49.5%" alt="Pre-IPO: the eight PreStocks pre-IPO tokens with a price chip each and paper trades with virtual cash">
+  <img src="docs/screenshots/landing.jpg" width="49.5%" alt="The landing: the week track, the headline and its three verbs, the welcome offer with Connect wallet first, and this week's NVDA prediction on stage with its result and the other questions as tabs">
+  <img src="docs/screenshots/prestocks.jpg" width="49.5%" alt="Pre-IPO: the board of PreStocks pre-IPO tokens, each with its DEX price from Jupiter and the issuer's mark, two sources with their own age">
 </p>
 <p align="center">
-  <img src="docs/screenshots/predictions.jpg" width="32.8%" alt="Predictions: points-only Yes or No on Friday closes">
-  <img src="docs/screenshots/competition.jpg" width="32.8%" alt="Weekly competition (virtual cash): countdown, players, points for first, starting cash">
-  <img src="docs/screenshots/quests.jpg" width="32.8%" alt="Quests: in-platform, on-chain with proofs, partner quests coming soon">
+  <img src="docs/screenshots/predictions.jpg" width="32.8%" alt="Predictions: points-only Yes or No on Friday's close, with the lock countdown and the current split">
+  <img src="docs/screenshots/competition.jpg" width="32.8%" alt="Weekly competition (virtual cash): the countdown, next week's standings with your slot among the house bots, and the paper-trade panel">
+  <img src="docs/screenshots/quests.jpg" width="32.8%" alt="Quests: live in-platform and on-chain quests, the points available, and filters for in-platform, on-chain and badges">
 </p>
-<p align="center"><sub>Production screenshots, 22 Sep 2026, 1280×800. Phone captures and the check-a-wallet view are in <a href="docs/screenshots">docs/screenshots</a>.</sub></p>
+<p align="center"><sub>Production data, 10 Oct 2026, 1280×800. Phone captures and the check-a-wallet view are in <a href="docs/screenshots">docs/screenshots</a>.</sub></p>
 
 ---
 
@@ -45,19 +45,19 @@ Three games on one Season leaderboard: points-only **predictions** on Friday clo
 
 **Open https://projectdulo.com/start for the guided tour, or https://projectdulo.com — nothing to install.** Or run it yourself in about 5 minutes: [Run locally](#run-locally). Every chain read goes to Solana mainnet, so nothing here is a testnet mock. You do not need to hold an xStock: starter points and virtual cash cover everything except the on-chain quests.
 
-The landing opens on this week's live predictions (one featured with its price, the other two as rows; 9 Oct 2026: calm redesign), the three game tiles (Predictions, Competition, On-chain quests) and the welcome offer, with Connect wallet first and Check a wallet second.
+The app is in the Live Broadcast design ([docs/DESIGN.md](docs/DESIGN.md), 9 Oct 2026): a thin Monday-to-Friday week track under the header of every page, with the predictions lock, the competition close, a gold "now" marker and one countdown. The landing opens on this week's live prediction as the stage (its live price against the line it must beat, the week's other questions as tabs) and the welcome offer, with Connect wallet first and Check a wallet second; below it, the three game tiles (Predictions, Competition, On-chain quests) run as lanes on the same week, each with one live number and one button.
 
 1. **Connect.** Phantom, Solflare or another Wallet Standard wallet such as Backpack, then sign one message (Sign-In With Solana). No transaction.
 2. **Welcome.** Your first sign-in writes 1,000 starter points to the ledger, and the toast says so: 1,000 starter points for predictions and $10,000 of virtual cash for this week's competition. The account menu shows a points balance of 1,000 and Season points of 0, "Not ranked yet", because starter points never count toward rank.
 3. **Predict.** On `/predictions`, put points on Yes or No: will NVDA, TSLA or SPY close above the strike on Friday? The dialog defaults to 100 points. First Prediction (+50) completes in the same request, and you are on the Season leaderboard with 50 Season points. The 100 points you put in only count once the prediction settles.
 4. **Compete.** On `/competition` (the weekly competition, virtual cash), place paper trades in three different xStocks with virtual cash at Jupiter prices, with a $10 minimum per trade. First Paper Trades (+50) and Paper Portfolio (+75) complete in the same requests. Your rank updates live against the labelled house bots, and weekend trades count too.
 5. **Pre-IPO.** On `/prestocks`, paper trade one of the eight PreStocks pre-IPO tokens with the same virtual cash, around the clock. First Pre-IPO Trade (+50) completes in the same request, and paper trades in three different pre-IPO tokens complete Pre-IPO Trio (+100). The issuer's mark and Jupiter's pool quote show as two separate numbers.
-6. **Quests.** On `/quests`, filter by All, In-platform, On-chain or Badges. In-platform quests show your next steps (Ten Paper Trades, Five Predictions and the rest). On-chain quests each describe a wallet state and open a proof once complete. If your wallet holds $5 or more of any xStock, First Position usually lands within seconds of sign-in.
+6. **Quests.** On `/quests`, filter by All, In-platform, On-chain or Badges. In-platform quests show your next steps (Ten Paper Trades, Five Predictions and the rest). On-chain quests each describe a wallet state and open a proof once complete. If your wallet holds $5 or more of any xStock, First Position usually lands within seconds of sign-in, because sign-in reads your wallets at once. After a later transfer, press **Refresh** (once a minute at most) rather than wait for the scheduled tick, which runs hours apart on the free plan.
 
 Two more things to try, and the first needs no sign-in:
 
 - **Check a wallet.** Under "Check any wallet" on the landing, tap **Public holder A** or paste any Solana address. `/check/<address>` reads that wallet's xStocks live from Token-2022 balances and runs every live on-chain quest against that one read. Nothing is stored or scored.
-- **Copy a portfolio.** On `/copy`, pick a public wallet, enter a USDC budget and open one prefilled Jupiter swap per leg. You sign each swap in your own wallet, then press "I've done my swaps"; if the next snapshot is within 20% of the allocation, Portfolio Match (+500) completes. You can skip the swaps on a first look.
+- **Copy a portfolio.** On `/copy`, pick a public wallet, enter a USDC budget and open one prefilled Jupiter swap per leg. You sign each swap in your own wallet, then press "I've done my swaps", which reads your wallets at once; if that read, or a later one, is within 20% of the allocation, Portfolio Match (+500) completes. You can skip the swaps on a first look.
 
 ## What it is
 
@@ -65,9 +65,11 @@ Two more things to try, and the first needs no sign-in:
 
 Predict. Compete. Complete on-chain quests.
 
-- **Today:** the entertainment layer for xStocks. Competitions, predictions and rewards for people who hold xStocks on Solana, verified from their own wallets.
-- **Next:** the entertainment layer for tokenized assets, since every asset read sits behind one interface.
-- **Then:** any app or issuer runs competitions, predictions and rewards for its own holders on Dulo's API, and a player carries one score across them.
+- Today, the entertainment layer for xStocks.
+- Next, the entertainment layer for tokenized assets.
+- Then, any app or issuer runs competitions, predictions and rewards for its own holders on Dulo's API, and a player carries one score across them.
+
+Quests are JSON rules behind one asset interface, so a second issuer is an implementation, not a rewrite: PreStocks pre-IPO tokens are already the second issuer.
 
 800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Getting someone to buy once is the easy part. Giving them a reason to keep holding, diversify and add over time is harder, and every app building on tokenized stocks has to find those holders on its own.
 
@@ -81,11 +83,11 @@ Copy a portfolio is a tool, not a fourth game. Season 0, the Stocks Season, read
 
 ### Pages
 
-The nav reads Predictions · Competition · Quests · Pre-IPO · Copy a portfolio · Leaderboard, and the phone tab bar reads Predict · Compete · Quests · Board · Profile (five tabs; Pre-IPO is reached from the header and the competition).
+The nav reads Predictions · Competition · Quests · Pre-IPO · Copy a portfolio · Leaderboard, and the phone tab bar reads Predict · Compete · Quests · Board · Profile (five tabs; Pre-IPO is reached from the header and the competition). Every page wears the Live Broadcast design ([docs/DESIGN.md](docs/DESIGN.md)): the week track under the header, serif headlines, near-black ground with cream text, gold only for the one primary action and "now", green and red only for Yes / No and gain / loss.
 
 | Page | What it shows | Sign-in |
 |---|---|---|
-| `/` | The landing: this week's featured prediction and the other two as rows (9 Oct 2026: calm redesign), the three game tiles, the welcome offer and check any wallet | no |
+| `/` | The landing (Live Broadcast, 9 Oct 2026): this week's prediction as the stage with the other questions as tabs, the welcome offer, the three game tiles as lanes on the week, check any wallet and the Stocks Season 0 seats | no |
 | `/predictions` | Predictions: points-only Yes or No on Friday closes | to predict |
 | `/competition` | Weekly competition (virtual cash): trade form, positions and the board with labelled house bots | to trade |
 | `/quests` | Quests: in-platform, on-chain and coming soon, with a proof on every completed on-chain quest | to earn |
@@ -107,9 +109,9 @@ Dulo is independent and not affiliated with xStocks. Backed Finance owns that br
 | Criterion | What Dulo shows |
 |---|---|
 | **Real user and problem** | 800,000+ Solana addresses hold a tokenized stock (Blockworks via Solana Compass, 12 Sep 2026). Holders need a reason to keep holding after the first buy, and apps need a way to reach them. On-chain quests pay points for holding, diversifying, buying steadily and holding through earnings, never for trading volume. Newcomers who hold nothing still get a full game: starter points for predictions and virtual cash for the competition. A listed project's on-chain quests are JSON rows on its campaign, and its page shows the verified completions it drove. Season 0 partners are seeded by hand and no project has signed up yet, so every count reads zero. |
-| **Working end-to-end demo** | Reads Solana mainnet. Anyone can check any wallet without signing in. A SIWS sign-in grants starter points and starts scoring. In-platform quests complete in the same request as the trade or prediction. On-chain quests are verified at sign-in and by a 5-minute cron. The weekly competition and the weekly points-only predictions both settle and roll over on their own. Copying a portfolio hands off to prefilled Jupiter swaps, and quests that carry a badge queue a soulbound Token-2022 badge mint (see [Proof on mainnet](#proof-on-mainnet)). It keeps working with US markets closed. |
+| **Working end-to-end demo** | Reads Solana mainnet. Anyone can check any wallet without signing in. A SIWS sign-in grants starter points and starts scoring. In-platform quests complete in the same request as the trade or prediction. On-chain quests are verified at sign-in, on Refresh and by a scheduled tick (on the free plan a GitHub Actions pinger plus Vercel's daily cron, hours apart rather than minutes). The weekly competition and the weekly points-only predictions both settle and roll over on their own, at the next tick or the next time either board is read after the close. Copying a portfolio hands off to prefilled Jupiter swaps, and quests that carry a badge queue a soulbound Token-2022 badge mint (see [Proof on mainnet](#proof-on-mainnet)). It keeps working with US markets closed. |
 | **Why Solana** | Holdings are public state, so an on-chain quest is checked from RPC, not claimed by a broker. Token-2022 ScaledUiAmount gives multiplier-correct holdings. Jupiter quotes and swaps the xStock mint itself. Badges are NonTransferable Token-2022 mints. A second Token-2022 issuer, PreStocks pre-IPO tokens, is read, priced and scored through the same interfaces with zero extra RPC calls. See [Why Solana](#why-solana). |
-| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,556 tests across 75 files pass today (`npx vitest run`, 10 Oct 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
+| **Execution quality** | Chain reads, asset math and prices each sit behind one interface, and asset ids are CAIP-19. Points are an append-only ledger with a unique ref per row, one Season points rule shared by every board, and house bots filtered in the database. 1,558 tests across 75 files pass today (`npx vitest run`, 10 Oct 2026), and CI runs lint, typecheck, tests and a production build on every push. The app is an installable PWA with security headers and rate-limited public endpoints. MIT licence. |
 
 ## How points work
 
@@ -151,7 +153,7 @@ The full ledger table, with every limit and the code that enforces it, is in [`d
 
 - Points-only Yes or No on whether NVDA, TSLA and SPY close above the strike on Friday.
 - Each prediction takes 10 to 5,000 points. The dialog defaults to 100, never to your whole balance, and a balance can never go below zero.
-- Entries close 24 hours before the Friday close (since 2 Oct 2026, so nobody enters once the answer is nearly known), and settlement runs 5 minutes after the close. The side that settles right shares the whole pool pro rata, with largest-remainder rounding, and nobody on it gets back less than they put in. Dulo takes no cut.
+- Entries close 24 hours before the Friday close (since 2 Oct 2026, so nobody enters once the answer is nearly known), and settlement falls due 5 minutes after the close. It runs at the next scheduled tick (Vercel's daily run is scheduled for 21:10 UTC, and the free plan may fire it any time in that hour) or the first time a prediction board is read after that, whichever comes first. The side that settles right shares the whole pool pro rata, with largest-remainder rounding, and nobody on it gets back less than they put in. Dulo takes no cut.
 - Before you confirm, the dialog warns: "If it doesn't settle your way, the points you put in count against your Season points."
 - Settlement reads a price at or after the Friday close (Pyth when a key is set, otherwise Jupiter's quote of the xStock mint), with the source and time printed on the card.
 - Everyone gets their points back if nobody took the other side. A market voids and refunds if no usable price arrives within 24 hours.
@@ -163,7 +165,7 @@ The full ledger table, with every limit and the code that enforces it, is in [`d
 - A weekly trading competition with $10,000 of virtual cash at real xStock and pre-IPO prices. It is not real money and places no real trades.
 - Fills use lib/price plus a 0.1% virtual spread, and the smallest trade is $10.
 - Since 22 Sep the eight PreStocks pre-IPO tokens trade in the same competition from `/prestocks`, with the same virtual cash, around the clock, and count on the weekly board (`LEAGUE_ASSET_SOURCES` in `src/lib/games/league.ts`; a symbol no registered issuer knows is refused). House bots trade xStocks only.
-- The week runs Monday 00:00 to Friday 20:00 UTC and settles on its own. Weekend trades count toward next week's competition.
+- The week runs Monday 00:00 to Friday 20:00 UTC and settles on its own, at the next scheduled tick or the first read of the board after the close. Weekend trades count toward next week's competition.
 - Ranks 1 to 10 earn 1,000 / 700 / 500 / 300 / 200 / 100 / 100 / 100 / 100 / 100 points, but only real accounts with 3 or more trades that week are paid.
 - Fifteen house bot accounts keep the board alive. They are labelled and ranked, but never paid, never snapshotted and never shown on the Season leaderboard.
 
@@ -216,7 +218,7 @@ A quest is a JSON rule on a database row, validated by a zod schema with eight r
 - Pick a wallet: a Season leader, one of ten curated public holders (not Dulo players, never scored), a paper model portfolio, or any address you paste.
 - See its allocation, plus its 7d / 30d value change when it has snapshot history.
 - Enter a USDC budget and open one prefilled Jupiter swap per leg: `https://jup.ag/swap?sell=<USDC>&buy=<xStock>&inAmount=<usdc>`. You sign each swap in your own wallet. Legs worth under $1 are dropped.
-- Press verify. The tool only says that the next snapshot checks whether your wallet matches. The Portfolio Match quest completes when every leg is within 20%, the total distance is within 20% and the copy is worth at least $1.
+- Press "I've done my swaps". That reads your wallets again at once, and every later read (Refresh, sign-in or the scheduled tick) checks again; the tool only says that a read checks whether your wallet matches. The Portfolio Match quest completes when every leg is within 20%, the total distance is within 20% and the copy is worth at least $1.
 
 ### Badges: what a big quest leaves in your wallet
 
@@ -226,8 +228,8 @@ Four quests (First Position, Diamond Hands, Earnings Holder, Portfolio Match) an
 
 ```mermaid
 flowchart TD
-  cron["Tick every 5 min: GitHub Actions pinger, Vercel Cron daily as backstop<br/>/api/cron/tick: games, snapshot, evaluate, badges"]
-  fast["Sign-in or Refresh<br/>runForUser fast path"]
+  cron["Scheduled tick: GitHub Actions pinger, median gap about 4.75 h,<br/>+ Vercel Cron daily at 21:10 UTC<br/>/api/cron/tick: games, snapshot, evaluate, badges"]
+  fast["Sign-in, Refresh on /quests, Read my wallet now on /start<br/>runForUser fast path, one player, at once"]
   adapter["ChainAdapter: src/lib/adapters/solana.ts<br/>SPL + Token-2022 token accounts<br/>ScaledUiAmount multiplier per mint, pending newMultiplier applied when due"]
   assets["AssetSource registry: src/lib/assets/registry.ts<br/>xstocks.ts (catalogue, sectors) + prestocks.ts (eight pre-IPO mints)<br/>CAIP-19 asset ids; qty = raw / 10^decimals x multiplier"]
   price["lib/price: src/lib/price.ts<br/>Jupiter Price v3, Pyth only when keyed<br/>every quote carries source + age"]
@@ -237,17 +239,17 @@ flowchart TD
   queue["Badge row queued, mint empty"]
   mint["Token-2022 mint<br/>NonTransferable + MetadataPointer, supply 1"]
 
-  hook["Solami webhook, optional<br/>/api/hooks/solami: a signed transfer event for a player's wallet<br/>triggers runForUser within seconds"]
+  hook["Solami webhook: built, switched off in production, no key set<br/>/api/hooks/solami: a signed transfer event for a player's wallet<br/>would trigger runForUser"]
 
   cron --> adapter
   fast --> adapter
-  hook --> fast
+  hook -.->|off until a key is set| fast
   adapter --> assets --> price --> snap --> engine --> ledger --> queue --> mint
 ```
 
-### Seconds, not minutes: Solami webhooks
+### Solami webhooks: built, switched off until a key is set
 
-Without help, an on-chain quest completes at sign-in, on Refresh, or at the next 5-minute tick. With a [Solami](https://solami.dev) key, one Solami webhook watches every real player's linked wallets (never a house bot's), filtered server-side to token transfers of the xStocks and PreStocks mints, and POSTs each matching transaction to `/api/hooks/solami` as it lands.
+Today an on-chain quest completes at sign-in, when the player presses Refresh on `/quests` (or Read my wallet now on `/start`, both limited to once a minute), or at the next scheduled tick, which runs hours apart on the free plan. The Solami webhook is built to close that gap, but it is **not configured in production**: no Solami key is set, so `/api/hooks/solami` answers 503 and nothing completes within seconds of a transfer today. With a [Solami](https://solami.dev) key, one Solami webhook would watch every real player's linked wallets (never a house bot's), filtered server-side to token transfers of the xStocks and PreStocks mints, and POST each matching transaction to `/api/hooks/solami` as it lands.
 
 - **A trigger, not a source of truth.** The route checks the `X-Webhook-Signature` HMAC (SHA-256 of the raw body under `SOLAMI_WEBHOOK_SECRET`), drops Solami's retries by transaction signature, maps the addresses in the event to real players' Wallet rows, and runs `runForUser` after the 200 is sent. That re-reads the holdings through the ChainAdapter and evaluates the quests exactly as the cron does, so nothing in the payload is ever scored.
 - **The watch list keeps itself current.** A sign-in that links a new wallet updates the webhook's address list (`src/lib/cron/solami-sync.ts`).
@@ -263,7 +265,7 @@ SOLAMI_API_KEY="<key>" npm run solami:webhook   # creates the webhook, prints SO
 curl -s "$APP/api/hooks/solami" | jq .data      # delivery health
 ```
 
-Without a key nothing changes: the route answers 503 and the tick keeps verifying quests on its own.
+Without a key, which is production today, nothing changes: the route answers 503, and quests keep verifying at sign-in, on Refresh and at the scheduled tick.
 
 The Diversified rule, exactly as stored on its row (`src/lib/plays/catalogue.ts`):
 
@@ -302,7 +304,7 @@ The same tick also writes:
 ```mermaid
 flowchart LR
   user["Browser PWA<br/>wallet-adapter + SIWS"]
-  vcron["Tick */5: Actions pinger<br/>+ Vercel Cron daily"]
+  vcron["Scheduled tick: Actions pinger,<br/>median gap about 4.75 h,<br/>+ Vercel Cron daily"]
 
   subgraph routes["Next.js 15 route handlers"]
     v1["/api/v1/* typed envelope handlers, zod"]
@@ -320,7 +322,7 @@ flowchart LR
     badges["badges/mint.ts"]
   end
 
-  db[("Postgres via Prisma<br/>append-only PointsEvent")]
+  db[("Postgres via Prisma, Neon in us-east-1<br/>append-only PointsEvent")]
   rpc["Solana mainnet RPC via Helius"]
   xapi["xStocks public API"]
   jprice["Jupiter Price v3"]
@@ -452,7 +454,7 @@ npm run db:seed                  # Season 0, Partners, quests, this week's compe
 npm run dev                      # http://localhost:3000
 ```
 
-Run one cron tick, the same request the scheduler sends (every 5 minutes from the Actions pinger; once a day from Vercel). `?steps=` picks a subset of `games,snapshot,evaluate,badges`. The evaluate step also gives starter points to any real player who signed in before they existed:
+Run one cron tick, the same request the scheduler sends (in production, the GitHub Actions pinger, whose median gap has been about 4.75 hours, and Vercel's daily cron; see [Deploy](#deploy)). `?steps=` picks a subset of `games,snapshot,evaluate,badges`. The evaluate step also gives starter points to any real player who signed in before they existed:
 
 ```bash
 curl -s -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/tick"
@@ -462,7 +464,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/
 Checks:
 
 ```bash
-npx vitest run      # 1,556 tests across 75 files on 10 Oct 2026; no database needed
+npx vitest run      # 1,558 tests across 75 files on 10 Oct 2026; no database needed
 npx next typegen    # once on a fresh clone: next-env.d.ts and .next/types are gitignored, and tsc needs the route types
 npm run typecheck
 npm run lint
@@ -475,8 +477,8 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 | Variable | Required | What it does |
 |---|---|---|
-| `DATABASE_URL` | yes | Postgres. On Supabase, use the transaction pooler (port 6543) with `?pgbouncer=true&connection_limit=1&connect_timeout=5`. |
-| `DIRECT_URL` | Prisma CLI | Used by `prisma db push` / `migrate` only. On Supabase this is the session pooler (port 5432); locally it is the same value as `DATABASE_URL`. |
+| `DATABASE_URL` | yes | Postgres, pooled for the app runtime. Production runs on Neon: its pooled URL (the `-pooler` host) with `pgbouncer=true&connection_limit=1`, which `npm run db:neon` adds. On Supabase, use the transaction pooler (port 6543) with `?pgbouncer=true&connection_limit=1&connect_timeout=5`. Locally, a plain URL. |
+| `DIRECT_URL` | Prisma CLI | Used by `prisma db push` / `migrate` only, because schema changes cannot run through a pooler. On Neon this is the direct (unpooled) URL; on Supabase the session pooler (port 5432); locally it is the same value as `DATABASE_URL`. |
 | `JWT_SECRET` | yes | HS256 session key, 32+ characters (`openssl rand -base64 48`). |
 | `CRON_SECRET` | yes | 16+ characters (`openssl rand -hex 16`), accepted only as `Authorization: Bearer` in production. The `.env.example` placeholder is refused in production. |
 | `HELIUS_API_KEY` | production | Helius RPC for every chain read. When empty, reads fall back to `NEXT_PUBLIC_RPC`, and the production tick health lists a warning. |
@@ -490,21 +492,21 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 | `NEXT_PUBLIC_APP_NAME` | no | Default `Dulo`. |
 | `NEXT_PUBLIC_GITHUB_URL`, `NEXT_PUBLIC_X_URL`, `NEXT_PUBLIC_VIDEO_URL` | no | Footer links, rendered only when set. Read at build time. |
 | `NEXT_PUBLIC_PARTNER_CONTACT` | no | A `mailto:` or https URL for the `/partners` "Talk to us" button. Hidden when unset. |
-| `SOLAMI_API_KEY` | no | Solami standard key with WebhooksManage. Enables the webhook that verifies on-chain quests within seconds of a transfer. Empty = the tick alone. |
+| `SOLAMI_API_KEY` | no | Solami standard key with WebhooksManage. Enables the webhook that re-reads a player's wallets within seconds of a transfer. Unset in production, so the webhook is off; empty = sign-in, Refresh and the scheduled tick alone. |
 | `SOLAMI_API_URL` | no | Default `https://api.solami.dev`. |
 | `SOLAMI_WEBHOOK_ID`, `SOLAMI_WEBHOOK_SECRET` | with a Solami key | Printed once by `npm run solami:webhook`. Without the secret, `/api/hooks/solami` refuses every delivery. |
 | `FOUNDER_WALLETS` | script only | Comma-separated founder wallets that `npm run stats` excludes. |
 
 ## Deploy
 
-**[docs/DEPLOY.md](docs/DEPLOY.md) is the short version: a free Vercel + Neon deploy in about twenty minutes, with one command for the database.** What follows is the paid, long-term setup.
+**[docs/DEPLOY.md](docs/DEPLOY.md) is the short version: a free Vercel + Neon deploy in about twenty minutes, with one command for the database.** Production runs that way today (Vercel Hobby, Neon Postgres in us-east-1). What follows is the full setup, and what a paid plan would change.
 
-1. **Scheduling.** `vercel.json` pins functions to `iad1` and schedules `/api/cron/tick` once a day at 21:10 UTC, after the Friday settle in both summer and winter time, because Hobby refuses any cron that runs more than once a day. `.github/workflows/tick.yml` carries the real 5-minute cadence for free once `TICK_PINGER_ENABLED` is set, and the daily Vercel run is the backstop if it is ever down. Both send `CRON_SECRET` as the Bearer header, and the tick route allows up to 300 seconds. On Pro, raise the `vercel.json` schedule to `*/5 * * * *` and the pinger becomes redundant.
-2. **Supabase in us-east-1**, next to `iad1`:
-   - `DATABASE_URL` is the transaction pooler: `postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&connect_timeout=5`
-   - `DIRECT_URL` is the session pooler on port 5432 of the same host, not `db.<ref>.supabase.co`.
-3. **Keys and URLs.** Set `HELIUS_API_KEY`, `JUPITER_API_KEY`, `JWT_SECRET` and `CRON_SECRET`. Set `NEXT_PUBLIC_APP_URL` to `https://<project>.vercel.app` until a custom domain resolves, and set it before the first badge mint.
-4. **Schema and seed.** With the production variables loaded in your shell, run `npx prisma db push` then `npx prisma db seed`. The seed is idempotent.
+1. **Scheduling.** `vercel.json` pins functions to `iad1` and schedules `/api/cron/tick` once a day at 21:10 UTC, chosen to fall after the Friday settle in both summer and winter time, because Hobby refuses any cron that runs more than once a day; Hobby may fire it any time in that hour. `.github/workflows/tick.yml` asks GitHub Actions for a tick every 5 minutes once `TICK_PINGER_ENABLED` is set, but GitHub runs scheduled workflows late or skips them under load: in production the median gap between pinger runs has been about 4.75 hours, so the scheduled tick runs hours apart, not minutes. Both send `CRON_SECRET` as the Bearer header, and the tick route allows up to 300 seconds. Reads cover the gaps: sign-in and Refresh re-read one player's wallets and evaluate their quests at once (`runForUser`), and the prediction and competition boards run an overdue settlement or weekly rollover when they are read (`src/lib/cron/catch-up.ts`). On Pro, raise the `vercel.json` schedule to `*/5 * * * *` for a real 5-minute tick, and the pinger becomes redundant.
+2. **Postgres in us-east-1**, next to `iad1`. Production uses Neon; any Postgres works.
+   - **Neon (production):** `DATABASE_URL` is the pooled URL (its host contains `-pooler`) with `pgbouncer=true&connection_limit=1`, and `DIRECT_URL` is the direct, unpooled one. Paste Neon's `.env` block into `.env.production.local` and `npm run db:neon` maps it onto those two names.
+   - **Supabase:** `DATABASE_URL` is the transaction pooler: `postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&connect_timeout=5`, and `DIRECT_URL` is the session pooler on port 5432 of the same host, not `db.<ref>.supabase.co`.
+3. **Keys and URLs.** Set `HELIUS_API_KEY`, `JUPITER_API_KEY`, `JWT_SECRET` and `CRON_SECRET`. Set `NEXT_PUBLIC_APP_URL` to the public origin before the first badge mint: `https://projectdulo.com` in production since 7 Oct 2026, or `https://<project>.vercel.app` until a custom domain resolves.
+4. **Schema and seed.** With the production variables loaded in your shell, run `npx prisma db push` then `npx prisma db seed` (or `npm run db:setup -- --env .env.production.local`, which does both against that file's database only). The seed is idempotent.
 5. **Check the tick.**
    ```bash
    curl -s -H "Authorization: Bearer $CRON_SECRET" "$APP/api/cron/tick" | jq '.data.health'
@@ -515,7 +517,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 ## Known limitations
 
-- **Brand new.** Live since 21 Sep 2026 (at https://projectdulo.com since 7 Oct) with no external players yet (one account so far: the founder's), so the Season leaderboard is empty and no badge has been minted. It runs on Vercel's free plan: the five-minute tick comes from a GitHub Actions pinger with Vercel's daily run as backstop, and since 7 Oct the prediction and competition boards run an overdue settlement or weekly rollover themselves when they are read (`src/lib/cron/catch-up.ts`), and without a Helius or Jupiter key the public RPC and keyless Jupiter rate-limit under load.
+- **Brand new.** Live since 21 Sep 2026 (at https://projectdulo.com since 7 Oct) with no external players yet (one account so far: the founder's), so the Season leaderboard is empty and no badge has been minted. It runs on Vercel's free plan, so there is no five-minute tick: the scheduled tick (games, snapshot, evaluate, badges) comes from a GitHub Actions pinger whose median gap has been about 4.75 hours, plus Vercel's daily run. A player's wallets are also read and their quests evaluated at sign-in and when they press Refresh (once a minute at most), and since 7 Oct the prediction and competition boards run an overdue settlement or weekly rollover themselves when they are read (`src/lib/cron/catch-up.ts`). Without a Helius or Jupiter key the public RPC and keyless Jupiter rate-limit under load.
 - **No Pyth key.** Pyth Hermes needs a key and Season 0 runs without one. Jupiter Price v3 therefore prices the competition and settles the predictions, and the source and age are printed on every chip and card. Outside the US session a price is Jupiter's last quote; after 6 hours it is marked stale.
 - **Entries close 24 hours before the Friday close (since 2 Oct 2026).** That removes the near-riskless last-minute entry against the house-bot pools; a Thursday entry still carries a day of price risk. Next week's questions still open after Friday's settle.
 - **Throwaway accounts.** Someone can put a throwaway account's starter points on the side that is about to lose, which moves those points to their main account as Season points. A new-account limit of 20 an hour per network only slows this down, and it lives in memory on each server instance. The planned fix weights accounts by account or wallet age, never by holdings.
@@ -524,7 +526,7 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 - **Logout is stateless.** A session is a 30-day HS256 JWT in an httpOnly cookie. Logout clears the cookie but does not revoke a token already issued.
 - **The `bigint: Failed to load bindings, pure JS will be used` warning is expected.** A transitive Solana dependency prints it during tests and builds, and it is harmless.
 - **Check any wallet is one live read.** On-chain quests that need daily history (Diamond Hands, Steady Buyer, Earnings Holder) show "Needs daily snapshots". The per-IP and per-instance rate limits live in memory.
-- **The Solami webhook is a trigger, and optional.** It needs a Solami plan that includes a webhook; its delivery health lives in memory per server instance. Without it, quests still verify at sign-in, on Refresh and at the 5-minute tick.
+- **The Solami webhook is built and switched off.** No Solami key is set in production, so `/api/hooks/solami` answers 503 and nothing completes within seconds of a transfer today; quests verify at sign-in, on Refresh and at the scheduled tick. Switching it on needs a Solami plan that includes a webhook, and even then it is only a trigger; its delivery health lives in memory per server instance.
 - **The Jupiter Recurring and Kamino quests are coming soon.** They are listed but cannot be verified yet.
 - **PreStocks pre-IPO tokens trade on thin pools and are Jupiter-only priced.** None of the eight has a Pyth feed, so a pre-IPO price is always Jupiter's quote from a thin Meteora pool, with its source and age shown. The issuer's mark (`markPrice` from the PreStocks API) is a separate number and not a tradeable quote; the app never presents the gap between the two as a discount. Pre-IPO Position is therefore count-based, and the copy tool stays xStocks-only. Since 22 Sep the competition does trade them, with virtual cash, and a pool that thin means a virtual-cash trade fills at a quote that a real trade of the same size would move, so a paper fill there is not a price a real trade would get. Points only, so nobody rational moves a market for them, and house bots do not trade them.
 - **Held Through a Split cannot have completed yet.** Both PreStocks adjustments on record (SpaceX's 5-for-1, effective 10 Jun 2026, and OpenAI's x1.4861, effective 17 Jul 2026, read from each mint's ScaledUiAmount config) predate Dulo's first production snapshot on 21 Sep 2026, so no wallet on record held through either. The quest completes on the next adjustment, and its copy says so. An adjustment changes the number of tokens shown, not the holder's value, and the app never presents one as a price signal.
@@ -532,9 +534,9 @@ Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` var
 
 ## Disclosure
 
-- Original work, written for this hackathon: no code was ported from earlier projects.
+- Started for the Stocklana hackathon, public from its first commit on 17 Sep 2026, and continued for the Colosseum Crypto World's Fair; no code was ported from earlier projects. AI coding tools, Claude Code, were used throughout.
 - Open-source dependencies (Next.js, React, Prisma, @solana/web3.js, @solana/spl-token, Solana wallet-adapter, zod, jose, tweetnacl, Tailwind CSS, shadcn/ui on Base UI, lucide, sonner, vitest and the rest of `package.json`) are used under their own licences.
-- Data comes from the xStocks public API (asset catalogue and multipliers), Jupiter Price v3 (prices), Solana RPC via Helius (balances and mint extensions) and, when configured, Solami webhooks (transfer events that trigger a re-read).
+- Data comes from the xStocks public API (asset catalogue and multipliers), Jupiter Price v3 (prices), Solana RPC via Helius (balances and mint extensions) and, once a key is set, Solami webhooks (transfer events that trigger a re-read; built, not configured in production).
 - Dulo is independent and not affiliated with xStocks, Backed Finance, Jupiter or Kamino. Partner names and logos belong to their owners; inclusion does not imply endorsement.
 
 **Points only, no cash value. Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions.**

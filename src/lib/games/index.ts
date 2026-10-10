@@ -3,7 +3,7 @@ import { league } from "./league";
 import { calls } from "./calls";
 
 /**
- * Registered game modules, ticked in order by the 5-minute cron
+ * Registered game modules, ticked in order by the scheduled cron
  * (src/lib/cron/tick.ts step "games": `for (const g of games) await g.tick(now)`,
  * each inside its own try/catch so one module can never block the others).
  *

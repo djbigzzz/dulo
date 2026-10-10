@@ -68,7 +68,7 @@ export const POST = handler(async (req) => {
   });
 
   // Snapshot + evaluate this user once the response is out, so a mirror done before
-  // pressing the button completes in seconds instead of waiting for the 5-minute tick.
+  // pressing the button completes in seconds instead of waiting for the scheduled tick.
   after(() =>
     runForUser(session.userId).catch((e: unknown) => {
       console.warn(`[mirror/record] post-record run failed: ${e instanceof Error ? e.message : String(e)}`);

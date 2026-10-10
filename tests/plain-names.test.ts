@@ -8,6 +8,7 @@ import { MOBILE_TABS, NAV_ITEMS } from "@/components/layout/nav";
 import { activePlays } from "@/lib/plays/catalogue";
 import type { PlayRule } from "@/lib/plays/rules";
 import { RULE_DISCLOSURE_GLOSS, RuleDisclosure } from "@/components/plays/RuleDisclosure";
+import { WALLET_CHECK_TIMING } from "@/components/plays/play-meta";
 
 /**
  * Plain names (founder decision, 15 Sep 2026, updated 16 Sep). Play / Streak / Call / League / Mirror
@@ -268,6 +269,51 @@ describe("plain names — no retired vocabulary in user-facing copy", () => {
     expect(labels).not.toContain("Rewards");
     expect(labels).not.toContain("Paper trading");
     for (const label of labels) for (const { re } of BANNED) expect(re.test(label), label).toBe(false);
+  });
+});
+
+/**
+ * Honest timing (10 Oct 2026). A player's wallets are read at sign-in, by Refresh on /quests and by
+ * a scheduled check a few times a day; nothing reads them on a fixed fast cadence, and the Solami
+ * webhook is not configured in production. So no user-facing string promises a check "every 5
+ * minutes", "within seconds" or a Badge "a few minutes after". The same net as above, reused.
+ */
+describe("honest timing — no fixed fast wallet-check cadence in user-facing copy", () => {
+  const FAST_CADENCE = [
+    /\bevery (?:\d+|few|five|ten)[- ]min/i,
+    /\babout every\b/i,
+    /\bwithin (?:\d+|a few|five|ten)[- ]min/i,
+    /\bwithin seconds\b/i,
+    /\bfew minutes after\b/i,
+    /\b(?:\d+|five)-minute (?:check|tick|snapshot)/i,
+  ];
+  const fast = (text: string) => FAST_CADENCE.some((re) => re.test(text));
+
+  it("no user-facing string promises a wallet check every few minutes", () => {
+    const offenders: string[] = [];
+    for (const rel of copyFiles()) {
+      const src = readFileSync(path.join(ROOT, rel), "utf8");
+      for (const candidate of candidates(src, rel.endsWith(".tsx"))) {
+        const text = prose(candidate);
+        if (text && fast(text)) offenders.push(`${rel}: ${JSON.stringify(text.slice(0, 120))}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("is not vacuous: the retired timing lines fail, the true ones pass", () => {
+    for (const old of [
+      "We check your wallet every 5 minutes.",
+      "Proof updates on every snapshot, about every 5 minutes.",
+      "Dulo then snapshots it every few minutes",
+      "Got it. We'll check your wallet within 5 minutes.",
+      "Re-read your wallet now instead of waiting for the next 5-minute check",
+      "Badges mint to your wallet a few minutes after they are earned",
+    ]) {
+      expect(fast(old), old).toBe(true);
+    }
+    expect(fast(`We check your wallet ${WALLET_CHECK_TIMING}. Press Refresh on the Quests page to check now.`)).toBe(false);
+    expect(fast("Entries close 24 hours before the Friday close; settlement falls due 5 minutes after the close.")).toBe(false);
   });
 });
 

@@ -60,7 +60,7 @@ describe("calls-format — first-session copy and helpers (15 Sep review M-F)", 
   });
 
   it("says entries close 24 hours before the Friday close (locksAt = settleAt - 24 h 5 min, settleAt = close + 5 min), everywhere on /predictions", () => {
-    expect(CALLS_LOCK_COPY).toBe("Entries close 24 hours before the Friday close; settlement runs 5 minutes after the close.");
+    expect(CALLS_LOCK_COPY).toBe("Entries close 24 hours before the Friday close; settlement falls due 5 minutes after the close.");
     const page = readFileSync(path.join(process.cwd(), "src/app/predictions/page.tsx"), "utf8");
     expect(page).not.toMatch(/lock 5 minutes before/i);
     expect(page.match(/CALLS_LOCK_COPY/g)?.length ?? 0).toBeGreaterThanOrEqual(3);

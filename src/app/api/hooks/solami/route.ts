@@ -29,7 +29,7 @@ const MAX_USERS_PER_DELIVERY = 10;
  * of the raw body, SOLAMI_WEBHOOK_SECRET). The payload is a trigger only: the players whose
  * linked wallets it names are re-read through the ChainAdapter and their quests evaluated
  * (runForUser) after the 200 is sent, so an on-chain quest completes seconds after the
- * transfer instead of at the next 5-minute tick. House bots are never matched.
+ * transfer instead of at the next scheduled tick. House bots are never matched.
  *   401 bad or missing signature; 503 no secret configured; 413 body too large.
  * -> ok({ matched, duplicate })
  */

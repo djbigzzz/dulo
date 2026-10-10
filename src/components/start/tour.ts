@@ -20,6 +20,7 @@ import type { PriceSourceName } from "@/lib/core";
 import { ageSeconds, formatAge, formatPoints, formatUsd } from "@/components/common/format";
 import { priceSourceLabel } from "@/components/common/PriceChip";
 import { isPreIpoQuest, questAssetSource } from "@/components/common/issuer";
+import { WALLET_CHECK_TIMING } from "@/components/plays/play-meta";
 import { NEXT_WEEK_MARKETS_COPY } from "@/components/calls/calls-format";
 import { findScoutPlay } from "@/components/league/scout";
 import { rankLabel } from "@/hooks/session-helpers";
@@ -486,7 +487,7 @@ export function walletLine(
     return `Verified on-chain${age}: ${noun} ${holds} ${symbol} worth ${formatUsd(usd)}${priced}. ${reward}`;
   }
   if (state === "empty") {
-    return `Read from Solana${age}: ${noun} ${holds} no xStock. On-chain quests check every connected wallet every 5 minutes; there is nothing to submit.`;
+    return `Read from Solana${age}: ${noun} ${holds} no xStock. On-chain quests check every connected wallet ${WALLET_CHECK_TIMING}; there is nothing to submit.`;
   }
   // below: the proof carries no price source, so no USD figure for the holding itself.
   const minUsd = proofNumber(play.proof, "minUsd");

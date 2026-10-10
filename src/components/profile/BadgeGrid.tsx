@@ -90,7 +90,7 @@ function BadgeTile({ badge }: { badge: BadgeView }) {
             </a>
           </div>
         ) : (
-          <span className={cn(TAG, "border-rule-2 text-muted-foreground")} title="Badges mint to your wallet a few minutes after they are earned">
+          <span className={cn(TAG, "border-rule-2 text-muted-foreground")} title="Badges mint to your wallet on a later scheduled run, not the moment they are earned">
             Minting soon
           </span>
         )}

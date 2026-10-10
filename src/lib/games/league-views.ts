@@ -413,7 +413,7 @@ export function isLeagueTradeRule(rule: unknown): boolean {
 
 /**
  * Evaluate the paper-trade quests for one user right after a trade, so First Paper Trades
- * completes (and its PointsEvent lands) in the same response instead of on the next 5-minute
+ * completes (and its PointsEvent lands) in the same response instead of on the next scheduled
  * tick. Only quests whose points this run wrote are reported (newlyCompleted && awarded), so
  * the "Quest complete" toast never repeats an award another request or the cron already made.
  * DB-only: only internal_event league_trade / game_action Plays are evaluated, with no

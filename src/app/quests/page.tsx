@@ -19,7 +19,7 @@ import { PARTNER_MARKS_NOTICE } from "@/components/common/compliance";
 import { PlayGrid, PlayGridSkeleton } from "@/components/plays/PlayGrid";
 import { PlayFilterBar } from "@/components/plays/PlayFilterBar";
 import { ProofDrawer } from "@/components/plays/ProofDrawer";
-import { PLAY_FILTERS, boardTotals, matchesFilter, questKind, type PlayFilter } from "@/components/plays/play-meta";
+import { PLAY_FILTERS, WALLET_CHECK_TIMING, boardTotals, matchesFilter, questKind, type PlayFilter } from "@/components/plays/play-meta";
 
 /**
  * Sign-in kicks off a wallet snapshot + quest evaluation on the server (auth/verify ->
@@ -125,7 +125,7 @@ export default function QuestsPage() {
               size="lg"
               onClick={() => void refreshPlays()}
               disabled={refreshing}
-              title="Re-read your wallet now instead of waiting for the next 5-minute check"
+              title="Re-read your wallet now instead of waiting for the next scheduled check"
             >
               <RefreshCw className={cn(refreshing && "animate-spin motion-reduce:animate-none")} data-icon="inline-start" aria-hidden />
               {refreshing ? "Reading wallet" : "Refresh"}
@@ -140,13 +140,14 @@ export default function QuestsPage() {
               cash. They complete the moment the prediction or trade goes through.
             </p>
             <p>
-              On-chain quests are verified from your own wallet. Connect one or more wallets and sign a message once; every 5 minutes Dulo takes a
-              snapshot of the xStocks and pre-IPO tokens in each connected wallet and checks it against every live on-chain quest. Each one describes a wallet state,
-              and its proof shows the snapshot that reached it. Nothing to submit and no transaction to sign.
+              On-chain quests are verified from your own wallet. Connect one or more wallets and sign a message once; Dulo then takes a snapshot of
+              the xStocks and pre-IPO tokens in each connected wallet {WALLET_CHECK_TIMING} and checks it against every live on-chain quest. Each
+              one describes a wallet state, and its proof shows the snapshot that reached it. Nothing to submit and no transaction to sign.
+              {signedIn ? " Press Refresh to check now." : null}
             </p>
             <p>
               Partner quests are coming soon. The plan is that partners list on-chain quests and pay per verified completion; nothing is billed
-              today and no partner has signed. Badge quests also mint a soulbound Badge to your wallet a few minutes after you complete them.
+              today and no partner has signed. Badge quests also mint a soulbound Badge to your wallet on a later scheduled run after you complete them.
               Points only, no cash value.
             </p>
           </>

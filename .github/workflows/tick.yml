@@ -1,20 +1,21 @@
 # Cron tick pinger — the Vercel HOBBY fallback. STAYS DISABLED unless enabled in repo settings.
 #
-# Vercel Pro is the default plan for the judging window: vercel.json schedules /api/cron/tick
-# every 5 minutes and nothing here runs. If the deployment is on Hobby (daily crons only), this
-# workflow takes over the 5-minute cadence: it sends the same `Authorization: Bearer <CRON_SECRET>`
-# header Vercel Cron sends and fails the run unless every step reports ok.
+# Production runs on Vercel Hobby (daily crons only): vercel.json schedules /api/cron/tick once a
+# day at 21:10 UTC, and this workflow, enabled there, asks for a tick every 5 minutes. It sends the
+# same `Authorization: Bearer <CRON_SECRET>` header Vercel Cron sends and fails the run unless every
+# step reports ok. On Vercel Pro, set vercel.json to */5 and leave this disabled.
 #
 # The job is gated on a repository VARIABLE so the schedule is inert until someone opts in:
 #   Settings -> Secrets and variables -> Actions
 #     Variables: TICK_PINGER_ENABLED = true            (delete it, or set anything else, to disable)
 #                APP_URL             = https://<project>.vercel.app (the deployed origin, no trailing slash;
-#                                      switch to https://dulo.fun only once that domain resolves)
+#                                      production uses its public origin, https://projectdulo.com)
 #     Secrets:   CRON_SECRET         = the same value as the Vercel env var
-# Then, on Hobby, set vercel.json to a daily "10 20 * * *" (Friday settle/rollover backstop
-# inside the Calls void window) and keep this at */5. GitHub schedules can run 5-30 minutes
-# late under load; that is fine for snapshots and evaluation, and the daily Vercel entry
-# still covers the Friday 20:00/20:05 UTC settle.
+# On Hobby, keep vercel.json at its daily "10 21 * * *" (after the Friday settle in summer and
+# winter time) and this at */5. GitHub runs scheduled workflows late or skips them under load:
+# in production the median gap between runs has been about 4.75 hours, so ticks land hours
+# apart. Sign-in and Refresh read a player's wallets at once, and the prediction and competition
+# boards run an overdue settlement or rollover when read (src/lib/cron/catch-up.ts).
 #
 # Manual run: Actions -> "Cron tick (Hobby fallback)" -> Run workflow (also respects the variable).
 name: Cron tick (Hobby fallback)

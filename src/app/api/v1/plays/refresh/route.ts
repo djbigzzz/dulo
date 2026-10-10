@@ -27,7 +27,7 @@ function prune(now: number) {
 /**
  * POST /api/v1/plays/refresh
  * Re-read the caller's wallets now and re-evaluate their Plays (lib/cron/tick runForUser),
- * instead of waiting for the next 5-minute tick. Session cookie required; cross-site
+ * instead of waiting for the next scheduled tick. Session cookie required; cross-site
  * requests are refused (403); more than one call per minute per user is a 429.
  * -> ok(RefreshPlaysResponse)
  */

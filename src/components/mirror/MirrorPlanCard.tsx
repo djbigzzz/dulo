@@ -75,7 +75,7 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
         budgetUsd: budget,
       });
       setRecordedAt(r.recordedAt);
-      toast.success("Got it. We'll check your wallet within 5 minutes.", {
+      toast.success("Got it. We're checking your wallet now.", {
         description: r.status === "complete" ? "Your wallet already matched a copied portfolio; this refreshes the check." : `${toleranceCopy(tolerance)} for the next snapshot to count it as a match.`,
       });
       onRecorded?.();
@@ -222,7 +222,7 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
             </Button>
             {recordedAt ? (
               <p className="text-[0.9375rem] font-semibold text-foreground" role="status">
-                Saved. The next snapshot, within 5 minutes, checks your wallet.
+                Saved. We&apos;re checking your wallet now. If a swap is still landing, press Refresh on the Quests page in a minute.
               </p>
             ) : null}
           </Step>

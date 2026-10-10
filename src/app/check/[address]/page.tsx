@@ -51,8 +51,8 @@ function ConnectPanel({ address }: { address: string }) {
         {CONNECT_CTA_TITLE}
       </h2>
       <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">
-        Sign one message with it (no transaction). Dulo then snapshots it every few minutes, so the on-chain quests it meets earn points and the streaks
-        start counting.
+        Sign one message with it (no transaction). Dulo then reads it at sign-in and again through the day, so the on-chain quests it meets earn points
+        and the streaks start counting.
       </p>
       <ConnectButton size="lg" fullLabel className="h-12 w-full text-base" />
       <Link href={`/copy/${encodeURIComponent(address)}`} className={buttonVariants({ variant: "outline", size: "lg", className: "h-12 w-full text-base" })}>

@@ -120,8 +120,9 @@ function tickHealth(result: TickResult, took: number, nowMs: number): TickHealth
 
 /**
  * GET|POST /api/cron/tick[?steps=games,snapshot,evaluate,badges]
- * Scheduled by vercel.json every 5 minutes (Vercel sends `Authorization: Bearer <CRON_SECRET>`;
- * the GitHub Actions pinger in .github/workflows/tick.yml sends the same header; `?secret=` is
+ * Scheduled by vercel.json once a day at 21:10 UTC (Hobby) and by the GitHub Actions pinger in
+ * .github/workflows/tick.yml, which asks for every 5 minutes but runs hours apart in production
+ * (Vercel sends `Authorization: Bearer <CRON_SECRET>`; the pinger sends the same header; `?secret=` is
  * accepted outside production only). Runs docs/HANDOFF.md §4.2 via lib/cron/tick, in this order:
  *   games     every registered GameModule: League ensure/rollover, Calls settlement
  *   snapshot  every real user's wallet xStocks holdings via the ChainAdapter, priced through lib/price

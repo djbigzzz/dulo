@@ -12,7 +12,7 @@ export const QUICK_STAKES = [50, 100, 250] as const;
 export const NEXT_WEEK_MARKETS_COPY = "Next week's predictions open right after Friday's settle.";
 
 /** Calls lock 24 hours before the session close (locksAt = settleAt - 24 h 5 min, settleAt = close + 5 min in lib/games/calls). */
-export const CALLS_LOCK_COPY = "Entries close 24 hours before the Friday close; settlement runs 5 minutes after the close.";
+export const CALLS_LOCK_COPY = "Entries close 24 hours before the Friday close; settlement falls due 5 minutes after the close.";
 
 /**
  * Points put into a prediction are debited from the ledger at once, so they leave the spendable

@@ -131,7 +131,7 @@ export function ListProjectSection({
   const external = contactHref?.startsWith("https:") ?? false;
   const points = [
     "Describe the on-chain action as one JSON rule: hold, deposit, trade or keep a position.",
-    "Dulo checks it against players' own wallets every 5 minutes. Nothing to deploy.",
+    "Dulo checks it against players' own wallets when they sign in and again through the day. Nothing to deploy.",
     "Your quests sit on the board with your logo and a page of their own.",
   ];
   return (
