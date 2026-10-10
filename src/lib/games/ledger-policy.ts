@@ -33,7 +33,7 @@ export const WELCOME_OFFER_LINE = "Sign in free: 1,000 starter points and $10,00
 
 export const STARTER_HINT = "Includes 1,000 starter points";
 
-export const SEASON_POINTS_HINT = "Starter grant not ranked; settled predictions are";
+export const SEASON_POINTS_HINT = "Starter points don't rank; settled predictions do.";
 
 export const PREDICTION_LOSS_COPY = "If it doesn't settle your way, the points you put in count against your Season points.";
 

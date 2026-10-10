@@ -17,7 +17,7 @@ export type SiwsCheck = { ok: true } | { ok: false; reason: string };
 export interface SiwsExpectation {
   /** Address the client claims to be signing in with. */
   address: string;
-  /** Host (incl. port) of the app, e.g. "dulo.fun" or "localhost:3000". */
+  /** Host (incl. port) of the app, e.g. "projectdulo.com" or "localhost:3000". */
   domain: string;
   /** Full app URL; only its origin is compared against the message URI. */
   appUrl: string;

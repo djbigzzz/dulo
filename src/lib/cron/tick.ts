@@ -1,5 +1,5 @@
 /**
- * The 5-minute cron pipeline (docs/HANDOFF.md §4.2) and its per-user fast path.
+ * The scheduled cron pipeline (docs/HANDOFF.md §4.2) and its per-user fast path.
  *
  *   runTick(now)            games -> snapshot -> evaluate -> badges, each timed and isolated.
  *                           "games" runs first: the League rollover and the Calls settlement

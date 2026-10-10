@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { buildSiwsMessage, siwsInputFromNonce } from "@/lib/auth/siws";
 import {
   ApiClientError,
+  actionForPath,
   apiFetch,
   errorMessage,
   isUserRejection,
@@ -146,10 +147,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // A first sign-in that wrote the starter grant says so (and points to a prediction);
         // otherwise "Signed in" or "Wallet added". `welcome` is read defensively.
         const { title, description, action } = signInToast(signInOutcome(previous, data.session), data.welcome);
+        // /start and /predictions open their own prediction dialog for this sign-in: keep the copy, drop the button there.
+        const shown = actionForPath(action, window.location.pathname);
         toast.success(
           title,
           action
-            ? { description, duration: 12_000, action: { label: action.label, onClick: () => setNavigateTo(action.href) } }
+            ? { description, duration: 12_000, ...(shown ? { action: { label: shown.label, onClick: () => setNavigateTo(shown.href) } } : {}) }
             : { description },
         );
         await refresh(); // fills in `user` (and its points); same identity, so no second refetch

@@ -1,14 +1,13 @@
 "use client";
 
-import { BookOpen, ExternalLink, Globe } from "lucide-react";
+import { ArrowUpRight, BookOpen, Globe } from "lucide-react";
 import { cn } from "cn";
 import type { PartnerDetail } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PartnerLogo } from "@/components/common/PartnerLogo";
 import { chainLabel } from "@/components/common/format";
 import { partnerListingLabel } from "@/components/plays/play-meta";
-import { ListingPill } from "@/components/partners/PartnerCard";
+import { ListingPill, PartnerMark } from "@/components/partners/PartnerCard";
 
 export interface PartnerHeaderProps {
   partner: PartnerDetail["partner"];
@@ -19,10 +18,6 @@ export interface PartnerHeaderProps {
   className?: string;
 }
 
-const HERO = "border-gradient relative flex flex-col gap-6 overflow-hidden rounded-3xl bg-card ember-glow p-6 sm:p-10";
-const LOGO_TILE =
-  "flex shrink-0 items-center justify-center rounded-[1.4rem] border border-white/[0.1] bg-white/[0.04] p-1.5 shadow-[inset_0_1px_0_rgb(255_245_230/0.08),0_16px_40px_-16px_rgb(0_0_0/0.8)]";
-
 /** Simple X wordmark; lucide dropped brand icons. */
 function XMark({ className }: { className?: string }) {
   return (
@@ -32,7 +27,11 @@ function XMark({ className }: { className?: string }) {
   );
 }
 
-/** Partner masthead: logo, name, listing chip, blurb, link buttons. */
+/**
+ * Partner masthead, on the page (no panel): the greyscale logo in its round well, the name as the
+ * serif page title, the honest listing tag and chain, the blurb, the outbound links as quiet
+ * buttons, and the risk note under them. A strong rule closes it, as under every page title.
+ */
 export function PartnerHeader({ partner, livePlays, notice = null, className }: PartnerHeaderProps) {
   const label = partnerListingLabel(livePlays);
   const links: Array<{ key: string; href: string; label: string; icon: React.ReactNode }> = [];
@@ -41,43 +40,34 @@ export function PartnerHeader({ partner, livePlays, notice = null, className }: 
   if (partner.links.docs) links.push({ key: "docs", href: partner.links.docs, label: "Docs", icon: <BookOpen data-icon="inline-start" aria-hidden /> });
 
   return (
-    <header className={cn(HERO, className)}>
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
-        <span className={cn(LOGO_TILE, "w-fit")}>
-          <PartnerLogo name={partner.name} logoUrl={partner.logoUrl} size={64} className="rounded-2xl ring-0" />
-        </span>
+    <header className={cn("flex flex-col gap-5 border-b border-rule-2 pb-6", className)}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <PartnerMark name={partner.name} logoUrl={partner.logoUrl} size={72} />
         <div className="flex min-w-0 flex-col items-start gap-3">
-          <h1 className="font-display text-4xl leading-[1.02] font-normal tracking-[-0.015em] text-foreground sm:text-5xl">{partner.name}</h1>
-          <div className="flex flex-wrap items-center gap-2">
+          <h1 className="font-display text-[2.25rem] leading-none font-normal tracking-[-0.012em] text-balance text-foreground sm:text-5xl lg:text-[3.625rem]">
+            {partner.name}
+          </h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <ListingPill label={label} />
-            {partner.chainIds.length > 0 ? (
-              <span className="inline-flex h-6 items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2 text-xs text-muted-foreground">
-                on {partner.chainIds.map(chainLabel).join(", ")}
-              </span>
-            ) : null}
+            {partner.chainIds.length > 0 ? <span className="text-[0.9375rem] text-muted-foreground">on {partner.chainIds.map(chainLabel).join(", ")}</span> : null}
           </div>
         </div>
       </div>
-      <p className="max-w-2xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">{partner.blurb}</p>
+      <p className="max-w-2xl text-base leading-[1.45] text-pretty text-muted-foreground sm:text-[1.0625rem]">{partner.blurb}</p>
       {links.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {links.map((l) => (
-            <a
-              key={l.key}
-              href={l.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(buttonVariants({ variant: "outline" }), "h-10 rounded-xl px-3.5 backdrop-blur-sm")}
-            >
+            <a key={l.key} href={l.href} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "px-3.5")}>
               {l.icon}
               {l.label}
-              <ExternalLink className="size-3 text-muted-foreground" data-icon="inline-end" aria-hidden />
+              <ArrowUpRight className="size-3.5 text-muted-foreground" data-icon="inline-end" aria-hidden />
+              <span className="sr-only"> (opens in a new tab)</span>
             </a>
           ))}
         </div>
       ) : null}
       {notice ? (
-        <p data-slot="partner-notice" className="max-w-2xl text-xs leading-relaxed text-pretty text-muted-foreground">
+        <p data-slot="partner-notice" className="max-w-2xl text-[0.8125rem] leading-relaxed text-pretty text-muted-foreground">
           {notice}
         </p>
       ) : null}
@@ -87,16 +77,16 @@ export function PartnerHeader({ partner, livePlays, notice = null, className }: 
 
 export function PartnerHeaderSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn(HERO, className)} aria-hidden>
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
-        <Skeleton className="size-[78px] rounded-[1.4rem] bg-white/[0.05]" />
+    <div className={cn("flex flex-col gap-5 border-b border-rule-2 pb-6", className)} aria-hidden>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <Skeleton className="size-[72px] rounded-full" />
         <div className="flex flex-col gap-3">
-          <Skeleton className="h-11 w-48 bg-white/[0.05]" />
-          <Skeleton className="h-6 w-28 rounded-full bg-white/[0.05]" />
+          <Skeleton className="h-12 w-56" />
+          <Skeleton className="h-5 w-28" />
         </div>
       </div>
-      <Skeleton className="h-4 w-full max-w-2xl bg-white/[0.05]" />
-      <Skeleton className="h-4 w-2/3 max-w-2xl bg-white/[0.05]" />
+      <Skeleton className="h-4 w-full max-w-2xl" />
+      <Skeleton className="h-4 w-2/3 max-w-2xl" />
     </div>
   );
 }

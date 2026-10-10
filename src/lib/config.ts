@@ -5,7 +5,7 @@ export const LOCAL_APP_URL = "http://localhost:3000";
 
 export interface AppUrlEnv {
   NEXT_PUBLIC_APP_URL?: string;
-  /** Vercel system env: the production domain without a scheme ("dulo.fun" or "dulo.vercel.app"). */
+  /** Vercel system env: the production domain without a scheme ("projectdulo.com" or "dulo-iota.vercel.app"). */
   VERCEL_PROJECT_PRODUCTION_URL?: string;
 }
 

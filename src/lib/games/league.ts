@@ -46,8 +46,8 @@
  *               half-finished seed heals; own try/catch: a pricing hiccup is logged and the
  *               next tick retries) -> recomputeEquity for every open League -> rollover. So the
  *               League the Friday rollover opens is never an empty board, and a fresh deploy
- *               whose cron runs before the seed gets its bots too. The cron runs every 5
- *               minutes (§3.2 says 60s): GET /api/v1/league also recomputes when the last
+ *               whose cron runs before the seed gets its bots too. The scheduled tick runs
+ *               hours apart (§3.2 says 60s): GET /api/v1/league also recomputes when the last
  *               recompute is older than RECOMPUTE_MIN_INTERVAL_MS (recomputeIfStale), which
  *               is cheap because lib/price caches quotes for 30s.
  * Bots          15 seeded accounts (BOT_HANDLES) so the board is never empty. Deterministic

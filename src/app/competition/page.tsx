@@ -2,39 +2,33 @@
 
 import * as React from "react";
 import { useSession } from "@/hooks/useSession";
-import { useInView } from "@/hooks/useInView";
-import { ArrowLeftRight, Share2, Sprout, Trophy } from "lucide-react";
+import { useInView, useScrolledPast } from "@/hooks/useInView";
+import { ChevronDownIcon, Sprout } from "lucide-react";
 import { cn } from "cn";
-import { api, leagueApi, type LeagueResponse, type PlaysResponse } from "@/lib/api-client";
+import { api, type LeagueLeaderboardRow, type LeagueResponse, type PlaysResponse } from "@/lib/api-client";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/common/PageHeader";
-import { StatStrip, type Stat } from "@/components/common/StatStrip";
-import { SignInBanner } from "@/components/common/SignInBanner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { useApiQuery } from "@/components/common/useApiQuery";
+import { useLeagueQuery } from "@/components/layout/WeekData";
 import { MarketSessionChip } from "@/components/common/MarketSessionChip";
-import { formatPoints, formatUsd } from "@/components/common/format";
+import { PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
+import { preIpoToken } from "@/components/prestocks/tokens";
+import { formatPoints } from "@/components/common/format";
 import { AccountCard } from "@/components/league/AccountCard";
-import { LeagueCountdownValue, countdownTarget } from "@/components/league/LeagueCountdown";
-import { LeagueLeaderboard, LeagueLeaderboardSkeleton } from "@/components/league/LeagueLeaderboard";
+import { LeagueClock, LeagueClockSkeleton } from "@/components/league/LeagueCountdown";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { BotGlyph, LeagueLeaderboard, LeagueLeaderboardSkeleton, houseBotLegend, type OpenSeat } from "@/components/league/LeagueLeaderboard";
+import { LastWeek } from "@/components/league/LastWeek";
 import { PositionsTable, RecentTrades } from "@/components/league/PositionsTable";
 import { ScoutChip } from "@/components/league/ScoutChip";
 import { TradeClosed } from "@/components/league/TradeClosed";
-import { TradeForm } from "@/components/league/TradeForm";
+import { TradeForm, TradeFormSkeleton } from "@/components/league/TradeForm";
 import { YouVsBots } from "@/components/league/YouVsBots";
-import {
-  LEAGUE_MIN_TRADE_USD,
-  LEAGUE_TOP_PRIZE_POINTS,
-  WEEKEND_TRADES_COPY,
-  formatLocalDayTime,
-  formatSignedPct,
-  formatUsdWhole,
-  formatUtcDayMonth,
-  isPreWeek,
-} from "@/components/league/format";
+import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { LEAGUE_MIN_TRADE_USD, LEAGUE_TOP_PRIZE_POINTS, WEEKEND_TRADES_COPY, formatUsdWhole, isPreWeek } from "@/components/league/format";
 import { findScoutPlay, scoutProgress } from "@/components/league/scout";
 import { MIN_TRADES_FOR_WEEKLY_POINTS } from "@/lib/games/ledger-policy";
 import { APP_URL } from "@/lib/config";
@@ -45,61 +39,19 @@ const REFRESH_MS = 60_000;
 const CHAIN_ID = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 /** GET /league returns the top 50; a full page means there may be more players. */
 const BOARD_LIMIT = 50;
+/** The places that earn Season points: the cream rule on the board sits under this rank. */
+const POINTS_PLACES = 10;
 
+/** A serif section name with a muted hint on the right (Broadcast: serif for section names). */
 function SectionTitle({ id, children, hint }: { id: string; children: React.ReactNode; hint?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-      <h2 id={id} className="text-lg font-semibold tracking-tight">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <h2 id={id} className="font-display text-[1.625rem] leading-none font-normal tracking-[-0.01em] sm:text-[1.875rem]">
         {children}
       </h2>
-      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+      {hint ? <span className="text-[0.84375rem] text-muted-foreground">{hint}</span> : null}
     </div>
   );
-}
-
-function buildStats(data: LeagueResponse): Stat[] {
-  const league = data.league;
-  if (!league) return [];
-  const target = countdownTarget(league);
-  const players = data.leaderboard.length;
-  const bots = data.leaderboard.filter((r) => r.isBot).length;
-  const playersLabel = players >= BOARD_LIMIT ? `${BOARD_LIMIT}+` : String(players);
-
-  const clock: Stat = {
-    label: league.open ? "Closes in" : "Next week in",
-    value: <LeagueCountdownValue league={league} serverNow={data.now} />,
-    hint: target ? formatLocalDayTime(target) : undefined,
-    tone: "ember",
-  };
-  const prize: Stat = { label: "Points for 1st", value: `${formatPoints(LEAGUE_TOP_PRIZE_POINTS)} pts`, hint: `Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points` };
-
-  if (!data.signedIn) {
-    return [
-      clock,
-      { label: "Players", value: playersLabel, hint: bots > 0 ? `${bots} of them house bots` : undefined },
-      prize,
-      { label: "Starting cash", value: formatUsdWhole(data.startingCashUsd), hint: "Virtual cash, resets weekly" },
-    ];
-  }
-
-  const me = data.me;
-  const equity = me?.equityUsd ?? data.startingCashUsd;
-  const pnl = me?.pnlPct ?? 0;
-  return [
-    clock,
-    {
-      label: "Your rank",
-      value: me?.rank ? `#${me.rank}` : "—",
-      hint: me?.rank ? `of ${playersLabel} players` : "Paper trade to get ranked",
-    },
-    {
-      label: "Virtual equity",
-      value: formatUsd(equity),
-      hint: `${formatSignedPct(pnl, 2)} this week`,
-      tone: Math.abs(pnl) < 0.005 ? "default" : pnl > 0 ? "positive" : "negative",
-    },
-    prize,
-  ];
 }
 
 const RULES = (
@@ -118,21 +70,37 @@ const RULES = (
   </ul>
 );
 
+/** The rules, folded under the standings (the same disclosure PageHeader draws for its details). */
+function HowItWorks() {
+  return (
+    <details className="group border-b border-rule text-sm text-muted-foreground [&_summary::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 py-2 text-[0.9375rem] font-semibold text-foreground outline-none select-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+        How it works
+        <ChevronDownIcon className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+      </summary>
+      <div className="flex max-w-3xl flex-col gap-2 pt-1 pb-4 leading-relaxed">{RULES}</div>
+    </details>
+  );
+}
+
+/** The caller's own row for the board when it ranks below the top 50 the page holds. */
+function meBeyondBoard(data: LeagueResponse, address: string | null): LeagueLeaderboardRow | null {
+  const me = data.me;
+  if (!me || me.isBot || me.rank === null || data.leaderboard.some((r) => r.isMe)) return null;
+  return { rank: me.rank, userId: `me:${me.id}`, handle: null, address, equityUsd: me.equityUsd, pnlPct: me.pnlPct, isBot: false, delta: me.delta, isMe: true };
+}
+
 export default function LeaguePage() {
-  const { session, refresh: refreshSession } = useSession();
+  const { session, loading: sessionLoading, refresh: refreshSession } = useSession();
   const sessionKey = session?.userId ?? "";
-  const q = useApiQuery((signal) => leagueApi.overview({ signal }), sessionKey);
+  // The shell's shared read (WeekData): the week track under the header reads the same request.
+  const q = useLeagueQuery(sessionKey);
   const { refetch } = q;
   // Scout progress comes from the quests board (PlayProgress); only fetched when signed in.
   const plays = useApiQuery<PlaysResponse | null>(() => (sessionKey ? api.plays() : Promise.resolve(null)), sessionKey, { refetchOnFocus: false });
   const refetchPlays = plays.refetch;
+  const reduced = useReducedMotion();
 
-  const [sheetOpen, setSheetOpen] = React.useState(false);
-  // The floating Trade button never covers the sign-in banner: while the banner is on screen (signed
-  // out, near the top of the page) the button steps out of the way and comes back as the page scrolls.
-  const bannerRef = React.useRef<HTMLDivElement | null>(null);
-  const bannerInView = useInView(bannerRef, !session);
-  const hideFab = !session && bannerInView;
   // Bumped after every successful load so the trade form re-reads held quantities and cash.
   const [refreshKey, setRefreshKey] = React.useState(0);
   React.useEffect(() => {
@@ -150,6 +118,9 @@ export default function LeaguePage() {
   const league = data?.league ?? null;
   const signedIn = data?.signedIn ?? false;
   const startingCash = formatUsdWhole(data?.startingCashUsd ?? 10_000);
+  // A pre-IPO token in a table puts PRE_IPO_COMPLIANCE_LINE under that table (the footer carries COMPLIANCE_LINE).
+  const preIpoInPositions = (data?.me?.positions ?? []).some((p) => preIpoToken(p.symbol) !== null);
+  const preIpoInTrades = (data?.me?.trades ?? []).some((t) => preIpoToken(t.symbol) !== null);
   const scout = signedIn ? scoutProgress(findScoutPlay(plays.data), data?.me?.trades.length ?? 0) : null;
 
   const onPlaced = React.useCallback(() => {
@@ -157,48 +128,84 @@ export default function LeaguePage() {
     refetchPlays();
     // A trade can complete a quest inline: the header balance and Season points come from /auth/me.
     void refreshSession();
-    setSheetOpen(false);
   }, [refetch, refetchPlays, refreshSession]);
 
   const closed = Boolean(league && !league.open);
   const weekend = Boolean(data && league && league.open && isPreWeek(league, data.now));
+
+  // The open seat on the board: signed out it carries Connect (the view's one gold action); signed
+  // in before a first trade it shows where that trade lands. Shown once the session check settles.
+  const seatMode: "connect" | "first-trade" | null =
+    !data || !league ? null : !data.signedIn ? (!session && !sessionLoading ? "connect" : null) : data.me ? null : "first-trade";
+
+  // Phones and tablets: a floating Trade button jumps to the trade panel under the board. It steps
+  // out of the way while the standings are on screen (it would cover their Return column and the open
+  // seat's Connect), while the panel itself is, and once the panel is above the viewport (its arrow
+  // points down, so it shows only between the board and the panel).
+  const boardRef = React.useRef<HTMLElement | null>(null);
+  const panelRef = React.useRef<HTMLElement | null>(null);
+  const loaded = Boolean(data && league);
+  const boardInView = useInView(boardRef, loaded);
+  const panelInView = useInView(panelRef, loaded);
+  const panelPassed = useScrolledPast(panelRef, loaded);
+  const hideFab = boardInView || panelInView || panelPassed;
+  const jumpToPanel = React.useCallback(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    el.focus({ preventScroll: true });
+  }, [reduced]);
+
+  const seat: OpenSeat | null =
+    seatMode === "connect"
+      ? { signedIn: false, action: <ConnectButton size="lg" fullLabel className="h-10 shrink-0" /> }
+      : seatMode === "first-trade"
+        ? {
+            signedIn: true,
+            action: (
+              <Button variant="outline" size="sm" className="lg:hidden" onClick={jumpToPanel}>
+                Paper trade
+              </Button>
+            ),
+          }
+        : null;
+
   const tradePanel =
     data && league && closed ? (
-      <TradeClosed league={league} serverNow={data.now} lastSettled={data.lastSettled} chainId={CHAIN_ID} />
+      <TradeClosed league={league} serverNow={data.now} lastSettled={data.lastSettled} chainId={CHAIN_ID} botWords={false} />
     ) : (
-      <TradeForm league={league} signedIn={signedIn} serverNow={data?.now ?? null} refreshKey={`${sessionKey}:${refreshKey}`} onPlaced={onPlaced} />
+      <TradeForm
+        league={league}
+        signedIn={signedIn}
+        serverNow={data?.now ?? null}
+        refreshKey={`${sessionKey}:${refreshKey}`}
+        onPlaced={onPlaced}
+        connectVariant={seatMode === "connect" ? "secondary" : "default"}
+      />
     );
-  const tradeDescription = closed
-    ? `This week is settling. ${WEEKEND_TRADES_COPY}.`
-    : weekend
-      ? `${WEEKEND_TRADES_COPY}. Virtual fills at the live quote, 0.1% spread.`
-      : "Virtual fills at the live quote, 0.1% spread.";
+
+  const players = data ? (data.leaderboard.length >= BOARD_LIMIT ? `${BOARD_LIMIT}+` : String(data.leaderboard.length)) : "";
+  const legend = data ? houseBotLegend(data.leaderboard, BOARD_LIMIT) : null;
+  const extraMe = data ? meBeyondBoard(data, session?.address ?? null) : null;
+  const pointsNote = (
+    <>
+      Top {POINTS_PLACES} with {MIN_TRADES_FOR_WEEKLY_POINTS}+ paper trades earn Season points
+      <span className="hidden sm:inline">, {formatPoints(LEAGUE_TOP_PRIZE_POINTS)} for 1st</span>
+    </>
+  );
 
   return (
-    // No bottom padding needed for the Trade button: it is sticky in this column, so it rests below the last section.
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col">
       <PageHeader
-        eyebrow="Season 0"
         title="Weekly competition (virtual cash)"
-        suffix={league ? `· Week of ${formatUtcDayMonth(league.weekStart)}` : undefined}
-        description={`Paper trade with ${startingCash} of virtual cash. Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.`}
-        stats={data && league ? <StatStrip stats={buildStats(data)} /> : q.loading ? <Skeleton className="h-[84px] w-full rounded-2xl" /> : undefined}
-        details={RULES}
-        className="mb-0"
-        extrasLastOnMobile
+        description={
+          <>
+            <b>{startingCash} of virtual cash</b> every week. The best return at Friday&apos;s close takes the week.
+          </>
+        }
+        actions={data && league ? <LeagueClock league={league} serverNow={data.now} /> : q.loading ? <LeagueClockSkeleton /> : null}
+        className="mb-6 pt-0 max-sm:[&_h1+p]:hidden md:mb-8"
       />
-
-      {/* The session chip says whether the US market is open; the line says why the board never stops. */}
-      <div className="-mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 max-md:order-last max-md:mt-0">
-        <MarketSessionChip />
-        <p className="max-w-2xl text-sm text-pretty text-muted-foreground">
-          Wall Street is closed outside market hours. Solana is not, so you can trade on paper at any hour and every price carries its source and age.
-        </p>
-      </div>
-
-      <div ref={bannerRef} data-slot="league-sign-in" className="empty:hidden">
-        <SignInBanner title={`Sign in to trade with ${startingCash} of virtual cash.`} />
-      </div>
 
       {q.loading ? (
         <LeagueSkeleton />
@@ -211,52 +218,110 @@ export default function LeaguePage() {
           description="The competition opens as soon as the Season starts. Check back in a moment."
         />
       ) : (
-        <>
-          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="flex min-w-0 flex-col gap-8 animate-in fade-in-0 slide-in-from-bottom-2 duration-500 motion-reduce:animate-none">
-              {signedIn ? (
+        <div className="grid gap-y-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_1fr] lg:gap-x-10 lg:gap-y-0 xl:grid-cols-[minmax(0,1fr)_392px] xl:gap-x-14">
+          {/* 1. The standings: the hero. Signed in, the player's own week follows. */}
+          <div className="flex min-w-0 flex-col gap-8 animate-in fade-in-0 duration-500 motion-reduce:animate-none lg:col-start-1 lg:row-start-1">
+            <section ref={boardRef} className="flex flex-col" aria-labelledby="league-board" data-slot="league-standings">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">
+                <h2 id="league-board" className="text-[1.0625rem] leading-tight font-semibold tracking-[-0.01em] md:text-[1.1875rem]">
+                  {weekend ? "Next week's standings" : "This week's standings"}
+                </h2>
+                {legend ? (
+                  <span className="inline-flex items-center gap-2 text-[0.8125rem] font-medium text-muted-foreground md:text-sm">
+                    <BotGlyph className="text-muted-foreground" />
+                    {legend}
+                  </span>
+                ) : null}
+              </div>
+              {weekend ? <p className="mt-1.5 text-sm text-muted-foreground">{WEEKEND_TRADES_COPY}, with the same virtual cash.</p> : null}
+              {data.leaderboard.length === 0 && !seat ? (
+                <EmptyState
+                  className="mt-3"
+                  title="Nobody has traded this week yet."
+                  description="Place the first trade and you are #1 until someone beats you."
+                />
+              ) : (
                 <>
-                  {scout ? (
-                    <div className="-mb-4 flex lg:hidden">
-                      <ScoutChip progress={scout} />
-                    </div>
-                  ) : null}
-                  <AccountCard me={data.me} startingCashUsd={data.startingCashUsd} />
-                  {data.me && !data.me.isBot && data.me.rank !== null ? (
-                    <a
-                      href={rankShareOnXUrl(data.me.rank, data.me.pnlPct, `${APP_URL}${START_PATH}`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cn(buttonVariants({ variant: "outline" }), "-mt-4 h-10 self-start")}
-                    >
-                      <Share2 data-icon="inline-start" aria-hidden />
-                      Post your rank on X
-                    </a>
-                  ) : null}
-                  {/* Derived from the board above: renders nothing until this account has traded this week. */}
-                  <YouVsBots me={data.me} rows={data.leaderboard} className="-mt-4" />
-                  <section className="flex flex-col gap-3" aria-labelledby="league-positions">
-                    <SectionTitle id="league-positions" hint={data.me?.positions.length ? "Valued at the last price" : undefined}>
-                      Positions
-                    </SectionTitle>
-                    <PositionsTable positions={data.me?.positions ?? []} />
-                  </section>
-                </>
-              ) : null}
-
-              <section className="flex flex-col gap-3" aria-labelledby="league-board">
-                <SectionTitle id="league-board" hint={data.leaderboard.length > 0 ? "Ranked by return this week" : undefined}>
-                  Leaderboard
-                </SectionTitle>
-                {data.leaderboard.length === 0 ? (
-                  <EmptyState
-                    icon={<Trophy aria-hidden />}
-                    title="Nobody has traded this week yet."
-                    description="Place the first trade and you are #1 until someone beats you."
+                  <LeagueLeaderboard
+                    rows={data.leaderboard}
+                    chainId={CHAIN_ID}
+                    startingCashUsd={data.startingCashUsd}
+                    seat={seat}
+                    pointsCut={POINTS_PLACES}
+                    pointsNote={pointsNote}
+                    extraMe={extraMe}
+                    label={weekend ? "Next week's standings" : "This week's standings"}
+                    className="mt-2.5 max-md:mt-3"
                   />
-                ) : (
-                  <LeagueLeaderboard rows={data.leaderboard} chainId={CHAIN_ID} />
-                )}
+                  {data.leaderboard.length === 0 ? (
+                    <p className="pt-3 text-sm text-muted-foreground">Nobody has traded this week yet. Place the first trade and you are #1 until someone beats you.</p>
+                  ) : null}
+                </>
+              )}
+              <HowItWorks />
+            </section>
+
+            {signedIn ? (
+              <div className="flex flex-col gap-4">
+                <AccountCard me={data.me} startingCashUsd={data.startingCashUsd} players={players} />
+                {/* Derived from the board above: renders nothing until this account has traded this week. */}
+                <YouVsBots me={data.me} rows={data.leaderboard} />
+                {data.me && !data.me.isBot && data.me.rank !== null ? (
+                  <a
+                    href={rankShareOnXUrl(data.me.rank, data.me.pnlPct, `${APP_URL}${START_PATH}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(buttonVariants({ variant: "link" }), "self-start text-[0.9375rem]")}
+                  >
+                    Post your rank on X
+                    <span aria-hidden>→</span>
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          {/* 2. The paper-trade slip and last week's final: the right column from lg, under the standings on a phone. */}
+          <div className="flex min-w-0 flex-col gap-10 md:max-lg:grid md:max-lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:max-lg:items-start md:max-lg:gap-8 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+            <section
+              id="league-trade"
+              ref={panelRef}
+              tabIndex={-1}
+              aria-labelledby="league-trade-title"
+              data-slot="league-trade-panel"
+              className="flex flex-col bg-card p-[22px] ring-1 ring-rule outline-none max-md:-mx-[var(--gutter)] max-md:border-y max-md:border-rule-2 max-md:px-[var(--gutter)] max-md:py-5 max-md:ring-0"
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 id="league-trade-title" className="font-display text-[2rem] leading-none font-normal tracking-[-0.01em] lg:text-[2.125rem]">
+                  Paper trade
+                </h2>
+                <span className="text-[0.84375rem] font-medium text-muted-foreground">Virtual cash</span>
+              </div>
+              {scout ? <ScoutChip progress={scout} className="mt-3 self-start" /> : null}
+              <div className="mt-4">{tradePanel}</div>
+              {closed ? null : <p className="mt-3 text-[0.8125rem] leading-[1.45] text-muted-foreground">Virtual fills at the live quote. Not real money, not real trading.</p>}
+            </section>
+
+            {data.lastSettled && data.lastSettled.top.length > 0 ? (
+              <LastWeek
+                settled={data.lastSettled}
+                // Over the weekend the settled week is the one that just closed (the track's "Final"), so it is named by its date.
+                currentWeekStart={weekend ? null : league.weekStart}
+                chainId={CHAIN_ID}
+                pointsNote={`Only real players with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.`}
+              />
+            ) : null}
+          </div>
+
+          {/* 3. Signed in: positions and trades, under the standings. */}
+          {signedIn ? (
+            <div className="flex min-w-0 flex-col gap-10 lg:col-start-1 lg:row-start-2 lg:pt-10">
+              <section className="flex flex-col gap-3" aria-labelledby="league-positions">
+                <SectionTitle id="league-positions" hint={data.me?.positions.length ? "Valued at the last price" : undefined}>
+                  Positions
+                </SectionTitle>
+                <PositionsTable positions={data.me?.positions ?? []} />
+                {preIpoInPositions ? <PreIpoComplianceLine /> : null}
               </section>
 
               {data.me && data.me.trades.length > 0 ? (
@@ -265,90 +330,68 @@ export default function LeaguePage() {
                     Your trades
                   </SectionTitle>
                   <RecentTrades trades={data.me.trades} />
-                </section>
-              ) : null}
-
-              {data.lastSettled && data.lastSettled.top.length > 0 ? (
-                <section className="flex flex-col gap-3" aria-labelledby="league-last">
-                  <SectionTitle id="league-last" hint={`Final top 10. Only real players with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points.`}>
-                    Week of {formatUtcDayMonth(data.lastSettled.weekStart)}
-                  </SectionTitle>
-                  <LeagueLeaderboard rows={data.lastSettled.top} chainId={CHAIN_ID} showDelta={false} />
+                  {preIpoInTrades ? <PreIpoComplianceLine /> : null}
                 </section>
               ) : null}
             </div>
-
-            {/* Sticky lives on the aside: .border-gradient sets position: relative on the panel itself. */}
-            <aside className="sticky top-20 hidden lg:block">
-              <section className="rounded-2xl border-gradient bg-card p-5" aria-labelledby="league-trade">
-                <div className="mb-5 flex flex-col gap-1">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 id="league-trade" className="text-lg font-semibold tracking-tight">
-                      Paper trade
-                    </h2>
-                    <ScoutChip progress={scout} />
-                  </div>
-                  <p className="text-sm text-muted-foreground">{tradeDescription}</p>
-                </div>
-                {tradePanel}
-              </section>
-            </aside>
-          </div>
-
-          {/*
-            Phones and tablets: a floating Trade button opens a bottom sheet. It is sticky, not fixed: it floats
-            1rem above the tab bar while the page scrolls, then comes to rest in its own slot under the last
-            section, so it never covers the final leaderboard row or the footer links. Only as wide as the pill
-            (self-end), so rows beside it stay tappable. Hidden (not unmounted, so its resting slot stays)
-            while the sign-in banner is in view: the banner's Connect is the action there.
-          */}
-          <div data-slot="league-trade-fab" className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] z-40 self-end lg:hidden">
-            <Button
-              size="lg"
-              className={cn(
-                "h-11 rounded-full px-4 text-base font-semibold shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_12px_32px_-8px_rgb(255_106_42/0.6),0_4px_12px_rgb(0_0_0/0.5)] transition-opacity duration-200 md:h-12 md:px-5",
-                hideFab && "pointer-events-none invisible opacity-0",
-              )}
-              onClick={() => setSheetOpen(true)}
-              aria-haspopup="dialog"
-              aria-expanded={sheetOpen}
-            >
-              <ArrowLeftRight data-icon="inline-start" aria-hidden />
-              Paper trade
-            </Button>
-          </div>
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetContent
-              side="bottom"
-              className="max-h-[92dvh] gap-0 overflow-y-auto rounded-t-3xl border-white/[0.08] bg-popover pb-[env(safe-area-inset-bottom,0px)] shadow-[inset_0_1px_0_rgb(255_245_230/0.06),0_-24px_64px_rgb(0_0_0/0.6)] data-[side=bottom]:border-t"
-            >
-              <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-white/15" aria-hidden />
-              <SheetHeader className="px-5 pt-3 pr-12 pb-4">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                  <SheetTitle className="text-lg font-semibold tracking-tight">Paper trade</SheetTitle>
-                  <ScoutChip progress={scout} />
-                </div>
-                <SheetDescription>{tradeDescription}</SheetDescription>
-              </SheetHeader>
-              <div className="h-px shrink-0 bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
-              <div className="px-5 pt-5 pb-4">{sheetOpen ? tradePanel : null}</div>
-            </SheetContent>
-          </Sheet>
-        </>
+          ) : null}
+        </div>
       )}
+
+      {/* The session chip says whether the US market is open; the line says why the board never stops. */}
+      <div className="mt-12 flex flex-col gap-2.5 border-t border-rule pt-6 md:flex-row md:items-center md:gap-6">
+        <MarketSessionChip />
+        <p className="max-w-2xl text-[0.8125rem] leading-snug text-pretty text-muted-foreground">
+          Wall Street is closed outside market hours. Solana is not, so you can trade on paper at any hour and every price carries its source and age.
+        </p>
+      </div>
+
+      {/*
+        Phones and tablets: the floating Trade button. It is sticky, not fixed: it floats 1rem above the
+        tab bar while the page scrolls, then comes to rest in its own slot at the end of the page, so it
+        never covers the last row or the footer links. Only as wide as the button (self-end), so rows
+        beside it stay tappable. Hidden (not unmounted, so its resting slot stays) while the open seat or
+        the trade panel is in view: the seat's Connect and the panel itself are the action there.
+      */}
+      {data && league ? (
+        <div data-slot="league-trade-fab" className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] z-40 mt-6 self-end lg:hidden">
+          <Button
+            variant="secondary"
+            size="lg"
+            className={cn(
+              "h-11 px-4 text-base shadow-[0_12px_32px_-8px_rgb(0_0_0/0.8),0_4px_12px_rgb(0_0_0/0.5)] transition-opacity duration-200 motion-reduce:transition-none",
+              hideFab && "pointer-events-none invisible opacity-0",
+            )}
+            onClick={jumpToPanel}
+            aria-controls="league-trade"
+          >
+            Paper trade
+            <span aria-hidden>↓</span>
+          </Button>
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+function PreIpoComplianceLine() {
+  return (
+    <p data-slot="pre-ipo-compliance" className="text-[0.8125rem] leading-[1.45] text-pretty text-muted-foreground">
+      {PRE_IPO_COMPLIANCE_LINE}
+    </p>
   );
 }
 
 function LeagueSkeleton() {
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]" aria-hidden>
-      <div className="flex min-w-0 flex-col gap-3">
-        <Skeleton className="h-5 w-32" />
+    <div className="grid gap-y-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-10 xl:grid-cols-[minmax(0,1fr)_392px] xl:gap-x-14" aria-hidden>
+      <div className="flex min-w-0 flex-col gap-2.5">
+        <Skeleton className="h-5 w-48" />
         <LeagueLeaderboardSkeleton />
       </div>
-      <div className="hidden lg:block">
-        <Skeleton className="h-96 w-full rounded-2xl" />
+      <div className="bg-card p-[22px] ring-1 ring-rule max-md:-mx-[var(--gutter)] max-md:px-[var(--gutter)] max-md:ring-0">
+        <Skeleton className="mb-5 h-8 w-40" />
+        <TradeFormSkeleton />
       </div>
     </div>
   );

@@ -33,7 +33,7 @@ describe("focus token", () => {
   const css = read("src/app/globals.css");
 
   it("defines a solid --focus colour and points --ring at it", () => {
-    expect(css).toMatch(/--focus:\s*#f0d9a4;/);
+    expect(css).toMatch(/--focus:\s*#8cc8ff;/);
     expect(css).toMatch(/\.dark\s*\{[^}]*--ring:\s*var\(--focus\);/);
   });
 
@@ -52,16 +52,22 @@ describe("focus token", () => {
       const [r, g, b] = [1, 3, 5].map((i) => lin(parseInt(hex.slice(i, i + 2), 16)));
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
-    const ratio = (lum("#f0d9a4") + 0.05) / (lum("#0a0908") + 0.05);
-    expect(ratio).toBeGreaterThan(14);
+    // Broadcast: a light blue on the ink ground (11:1), well over the 3:1 non-text minimum, and a hue
+    // that cannot be read as the gold primary, a Yes or a No.
+    const ratio = (lum("#8cc8ff") + 0.05) / (lum("#0b0b0c") + 0.05);
+    expect(ratio).toBeGreaterThan(7);
+    for (const taken of ["#ffd23c", "#3ad08a", "#ff5d6c", "#f3f0e8"]) expect(css).not.toMatch(new RegExp(`--focus:\\s*${taken};`));
   });
 });
 
 describe("ui primitives focus ring", () => {
-  it("no primitive keeps the translucent ring-ring/50", () => {
-    const dir = path.join(ROOT, "src/components/ui");
-    for (const file of readdirSync(dir)) {
-      expect(readFileSync(path.join(dir, file), "utf8"), file).not.toMatch(/ring-ring\/50/);
+  it("no component anywhere in src keeps the translucent ring-ring/50 (well under 3:1 on the ink)", () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : /\.(tsx?|css)$/.test(e.name) ? [path.join(dir, e.name)] : []));
+    const files = walk(path.join(ROOT, "src"));
+    expect(files.length).toBeGreaterThan(50);
+    for (const file of files) {
+      expect(readFileSync(file, "utf8"), path.relative(ROOT, file)).not.toMatch(/ring-ring\/50/);
     }
   });
 
@@ -171,6 +177,14 @@ describe("header layout", () => {
 
   it("clears the tab bar under the footer until lg", () => {
     expect(shell).toContain("pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-0");
+  });
+
+  it("keeps the header's Connect outline, so each page's own primary is its one white action, and rings the logo solid", () => {
+    expect(shell).toContain('<ConnectButton variant="outline" />');
+    expect(shell).not.toMatch(/<ConnectButton\s*\/>/);
+    const logo = shell.match(/<Link\s+href="\/"\s+className="([^"]+)"/);
+    expect(logo).not.toBeNull();
+    for (const cls of SOLID_RING) expect(logo![1].split(" ")).toContain(cls);
   });
 });
 

@@ -11,6 +11,11 @@
 export const BADGE_KEYS = ["first_position", "diamond_hands", "earnings_holder", "mirror", "league_top3"] as const;
 export type BadgeKey = (typeof BADGE_KEYS)[number];
 
+/**
+ * The design (motif) of a Badge. The names are stable identifiers (they appear in the API's
+ * BadgeView.accent and the metadata "Accent" trait), not colours: since Mono (9 Oct 2026) the
+ * colours are neutral metals plus the one blue accent, set in `color` below.
+ */
 export type BadgeAccent = "ember" | "ice" | "gold" | "violet" | "laurel";
 
 export interface BadgeInfo {
@@ -21,7 +26,7 @@ export interface BadgeInfo {
   title: string;
   description: string;
   accent: BadgeAccent;
-  /** Accent colour (hex) shared by the SVG and the UI chip. */
+  /** Metal tone (hex) shared by the SVG and the UI: blue-400 or a zinc/slate neutral, each at least 7:1 on #09090b. */
   color: string;
 }
 
@@ -36,7 +41,8 @@ export const BADGES: Readonly<Record<BadgeKey, BadgeInfo>> = Object.freeze({
     title: "First Position",
     description: "Held an xStock worth $5 or more in a connected wallet. The first on-chain quest of Stocks Season, read from Solana.",
     accent: "ember",
-    color: "#ff6b1a",
+    // The one accent (blue-400): the first on-chain quest.
+    color: "#60a5fa",
   },
   diamond_hands: {
     key: "diamond_hands",
@@ -44,7 +50,8 @@ export const BADGES: Readonly<Record<BadgeKey, BadgeInfo>> = Object.freeze({
     title: "Diamond Hands",
     description: "Kept the same xStock through seven consecutive daily snapshots without selling.",
     accent: "ice",
-    color: "#7dd3fc",
+    // Cold steel (slate-300).
+    color: "#cbd5e1",
   },
   earnings_holder: {
     key: "earnings_holder",
@@ -52,7 +59,8 @@ export const BADGES: Readonly<Record<BadgeKey, BadgeInfo>> = Object.freeze({
     title: "Earnings Holder",
     description: "Held an xStock through its company's earnings date: snapshot before, snapshot after, still there.",
     accent: "gold",
-    color: "#f5c451",
+    // Pewter (zinc-400).
+    color: "#a1a1aa",
   },
   mirror: {
     key: "mirror",
@@ -60,7 +68,8 @@ export const BADGES: Readonly<Record<BadgeKey, BadgeInfo>> = Object.freeze({
     title: "Portfolio Match",
     description: "Copied another wallet's portfolio through prefilled Jupiter swaps from your own wallet and landed within 20% of it, verified by the next snapshot.",
     accent: "violet",
-    color: "#a78bfa",
+    // Chrome (zinc-200).
+    color: "#e4e4e7",
   },
   league_top3: {
     key: "league_top3",
@@ -68,7 +77,8 @@ export const BADGES: Readonly<Record<BadgeKey, BadgeInfo>> = Object.freeze({
     title: "Podium Finish",
     description: "Finished a weekly competition (virtual cash) in the top three.",
     accent: "laurel",
-    color: "#8fd694",
+    // Platinum (zinc-50): rank 1 is white on every board.
+    color: "#fafafa",
   },
 });
 

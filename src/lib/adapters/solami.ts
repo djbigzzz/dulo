@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 /**
  * Solami webhooks (https://solami.dev/docs/webhooks): Solami watches the real players' linked
  * wallets for xStocks and PreStocks transfers and POSTs a signed event to /api/hooks/solami the
- * moment one lands, instead of Dulo waiting for the next 5-minute snapshot.
+ * moment one lands, instead of Dulo waiting for the next scheduled snapshot. Built, not configured in production.
  *
  * A delivery is a trigger only. Nothing in its payload is scored: the route maps it to the
  * affected players and runs lib/cron/tick runForUser, which re-reads every holding through the

@@ -38,7 +38,7 @@ const Body = z.object({
  *
  * After the points-in row commits, the caller's call_placed / game_action quests (First
  * Prediction, ...) are evaluated inline with a short deadline (./inline-evaluate), so a first
- * prediction completes its quest in this response instead of on the next 5-minute tick.
+ * prediction completes its quest in this response instead of on the next scheduled tick.
  * `newlyCompleted` lists only the quests whose points this request awarded; a slow or failed
  * evaluation finishes in after() and never fails the prediction.
  */

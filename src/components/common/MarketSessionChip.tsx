@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { cn } from "cn";
-import { Badge } from "@/components/ui/badge";
 import {
   EARLY_CLOSE_MINUTES,
   isEarlyClose,
@@ -126,10 +125,16 @@ export interface MarketSessionChipProps {
    * stable placeholder until it mounts, so server and first client render always agree.
    */
   nowIso?: string;
+  /**
+   * The short form below md ("Closed · 2d 12h"), for the header's tight row only. Every page mount
+   * keeps the full sentence ("US market closed · opens in 2d 12h") at every width: on a phone a bare
+   * "Closed" under the prediction cards would read as if the prediction were closed.
+   */
+  compact?: boolean;
   className?: string;
 }
 
-export function MarketSessionChip({ nowIso, className }: MarketSessionChipProps) {
+export function MarketSessionChip({ nowIso, compact = false, className }: MarketSessionChipProps) {
   const [nowMs, setNowMs] = React.useState<number | null>(() => {
     if (!nowIso) return null;
     const t = Date.parse(nowIso);
@@ -145,41 +150,44 @@ export function MarketSessionChip({ nowIso, className }: MarketSessionChipProps)
 
   const session = nowMs === null ? null : readSession(nowMs);
 
+  // Broadcast status line, not a pill: a still dot (green while the US session is open, dim when
+  // it is closed), the state and the countdown in cream, the rest in the muted grey.
   return (
-    <Badge
-      variant="outline"
+    <span
+      data-slot="market-session"
       // aria-live off: a screen reader should not hear the countdown tick over on its own.
       aria-live="off"
       title={session ? sessionTitle(session) : undefined}
       className={cn(
-        "h-6 gap-1.5 rounded-full px-2.5 text-xs font-medium tracking-wide tabular-nums text-muted-foreground",
+        "inline-flex h-6 items-center gap-2 text-[0.84375rem] leading-none font-medium whitespace-nowrap tabular-nums text-muted-foreground",
         className,
       )}
     >
       <span
         className={cn(
-          "size-1.5 shrink-0 rounded-full transition-colors duration-300 motion-reduce:transition-none",
-          session?.open ? "bg-foreground/80 shadow-[0_0_6px_rgb(244_241_234/0.45)]" : "bg-muted-foreground/40",
+          "size-[7px] shrink-0 rounded-full transition-colors duration-300 motion-reduce:transition-none",
+          session?.open ? "bg-yes" : "bg-dim",
         )}
         aria-hidden
       />
       {session === null ? (
         <span>{SESSION_PLACEHOLDER}</span>
       ) : (
-        <>
+        <span>
           {/*
-            The long sentence needs 276px and the short form 147px, so the sentence only appears
-            from md, where every surface that mounts this chip has the room for it.
+            The long sentence needs about 240px and the short form 147px. Every page mount has the
+            room for the sentence (measured 10 Oct: 288px at 320); the header's compact chip keeps
+            the short form below md.
           */}
-          <span className="hidden md:inline">US&nbsp;market&nbsp;</span>
+          <span className={compact ? "hidden md:inline" : undefined}>US&nbsp;market&nbsp;</span>
           {/* One text run, so a screen reader never hears both the short and the long form. */}
-          <span className="capitalize md:normal-case">{session.open ? "open" : "closed"}</span>
+          <span className={cn("font-semibold text-foreground", compact && "capitalize md:normal-case")}>{session.open ? "open" : "closed"}</span>
           <span>&nbsp;·&nbsp;</span>
-          <span className="hidden md:inline">{sessionVerb(session)}&nbsp;</span>
-          <span className="text-foreground">{formatSessionCountdown(session.msUntil)}</span>
-        </>
+          <span className={compact ? "hidden md:inline" : undefined}>{sessionVerb(session)}&nbsp;</span>
+          <span className="font-semibold text-foreground">{formatSessionCountdown(session.msUntil)}</span>
+        </span>
       )}
-    </Badge>
+    </span>
   );
 }
 

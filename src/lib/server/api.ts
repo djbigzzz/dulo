@@ -129,7 +129,7 @@ export function requestHost(req: Request): string | null {
 }
 
 /**
- * The origin the browser used for this request, e.g. "https://dulo.fun" or "http://localhost:3000".
+ * The origin the browser used for this request, e.g. "https://projectdulo.com" or "http://localhost:3000".
  * Scheme from `x-forwarded-proto` (default https in production, http elsewhere), host from
  * requestHost(). Falls back to `fallbackUrl` (env().NEXT_PUBLIC_APP_URL) only when no host header exists.
  */

@@ -47,7 +47,7 @@ describe("points UI — the policy numbers the copy quotes", () => {
     expect(MIN_TRADES_FOR_WEEKLY_POINTS).toBe(3);
     expect(STARTER_HINT).toBe(`Includes ${STARTER_POINTS.toLocaleString("en-US")} starter points`);
     expect(starterPointsHint(STARTER_POINTS)).toBe(STARTER_HINT);
-    expect(SEASON_POINTS_HINT).toBe("Starter grant not ranked; settled predictions are");
+    expect(SEASON_POINTS_HINT).toBe("Starter points don't rank; settled predictions do.");
     expect(PREDICTION_LOSS_COPY).toBe("If it doesn't settle your way, the points you put in count against your Season points.");
   });
 
@@ -150,7 +150,7 @@ describe("points UI — /predictions", () => {
   const src = read("src/app/predictions/page.tsx");
 
   it("labels the balance and says when it includes starter points", () => {
-    expect(src).toContain('label: "Your points balance"');
+    expect(src).toContain('label: "Points balance"');
     expect(src).not.toContain("Your spendable points");
     expect(src).toContain("starterPointsHint(starterPoints, me.spendablePoints)");
     expect(src).toMatch(/user\?\.points\?\.starterPoints/);
@@ -169,8 +169,11 @@ describe("points UI — /predictions", () => {
 describe("points UI — /competition", () => {
   const src = read("src/app/competition/page.tsx");
 
-  it("states the 3-trade minimum in the prize hint and the rules", () => {
-    expect(src).toContain("hint: `Top 10 with ${MIN_TRADES_FOR_WEEKLY_POINTS}+ trades earn points`");
+  it("states the 3-trade minimum on the board's points line and in the rules", () => {
+    // Broadcast (9 Oct): the prize hint moved onto the standings, as the "In the points" line under 10th.
+    expect(src).toContain("Top {POINTS_PLACES} with {MIN_TRADES_FOR_WEEKLY_POINTS}+ paper trades earn Season points");
+    expect(src).toContain("const POINTS_PLACES = 10;");
+    expect(src).toContain("pointsCut={POINTS_PLACES}");
     expect(src).toContain("The top 10 by virtual portfolio value on Friday earn points (1,000 for first, down to 100 for tenth) if they made at least");
     expect(src).toMatch(/\{MIN_TRADES_FOR_WEEKLY_POINTS\} trades that week\./);
     expect(src).not.toContain("Top 10 score points");
@@ -194,7 +197,7 @@ describe("points UI — /competition", () => {
   it("re-reads the session after a trade", () => {
     const onPlaced = src.slice(src.indexOf("const onPlaced = React.useCallback"), src.indexOf("const closed ="));
     expect(onPlaced).toContain("void refreshSession();");
-    expect(src).toContain("const { session, refresh: refreshSession } = useSession();");
+    expect(src).toMatch(/const \{ session, (?:loading: sessionLoading, )?refresh: refreshSession \} = useSession\(\);/);
   });
 });
 
@@ -218,7 +221,8 @@ describe("points UI — /profile", () => {
     expect(src).toContain("historyRows(profile.history)");
     expect(src).toContain("{history ? (");
     expect(src).toContain("signedPoints(row.delta)");
-    expect(src).toContain('row.delta > 0 ? "text-emerald-400" : "text-muted-foreground"');
+    // A gain is the Broadcast green; nothing else in the list wears a hue.
+    expect(src).toContain('row.delta > 0 ? "text-yes" : "text-muted-foreground"');
     expect(src).toContain("formatAge(ageSeconds(row.ts))");
     expect(src).toContain("HISTORY_LIMIT = 20");
   });
@@ -252,7 +256,8 @@ describe("points UI — /leaderboard", () => {
   });
 
   it("describes where Season points come from, and that the starter grant itself doesn't count", () => {
-    expect(src).toContain('description="Season points from quests, competition finishes and settled predictions."');
+    // Predictions lead, and the competition carries "virtual cash" beside it.
+    expect(src).toContain('description="Season points from settled predictions, weekly competition (virtual cash) finishes and quests."');
   });
 });
 
@@ -263,6 +268,8 @@ describe("points UI — SessionProvider", () => {
     expect(src).toContain("signInToast(signInOutcome(previous, data.session), data.welcome)");
     expect(src).toContain("apiFetch<VerifyResult>(\"/api/v1/auth/verify\"");
     expect(src).not.toContain('toast.success("Signed in"');
+    // /start and /predictions open their own prediction dialog: the welcome keeps its copy and drops its button there.
+    expect(src).toContain("actionForPath(action, window.location.pathname)");
   });
 
   it("navigates with next/navigation's router, mounted only when the action is pressed", () => {

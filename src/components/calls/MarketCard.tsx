@@ -1,340 +1,316 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDownRight, ArrowUpRight, Ban, Check, CheckCircle2, Clock, Lock, Minus, XCircle } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "cn";
 import type { CallMarketView, CallPositionView, CallSide } from "@/lib/api-client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PriceChip, priceSourceLabel } from "@/components/common/PriceChip";
-import { formatDateTime, formatPoints, formatUsd } from "@/components/common/format";
+import { formatPoints, formatUsd } from "@/components/common/format";
+import { formatTrackClock, spokenTrackClock } from "@/components/layout/week-track";
 import { PoolBar } from "@/components/calls/PoolBar";
+import { PriceTrack } from "@/components/calls/PriceTrack";
+import { XStockLogo } from "@/components/common/XStockLogo";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import {
-  formatPct,
+  crowdLead,
+  formatSettleDay,
   liveStatus,
-  lockLabel,
-  marketQuestion,
-  outcomeLabel,
   resultLabel,
   sideButtonLabel,
   sideLabel,
-  strikeDistance,
+  utcStamp,
 } from "@/components/calls/calls-format";
 
 export interface MarketCardProps {
   market: CallMarketView;
-  /** The viewer's stakes on this market (0, 1 or 2 entries — one per side). */
+  /** The viewer's points on this market (0, 1 or 2 entries — one per side). */
   positions: CallPositionView[];
   /** Client clock, ms. Drives the lock countdown and the open -> locked flip. */
   nowMs: number;
   signedIn: boolean;
   /**
-   * A side button was pressed. The page decides what happens: the stake dialog when signed
+   * A side button was pressed. The page decides what happens: the points dialog when signed
    * in, the wallet / sign-in flow when not. Buttons are never rendered disabled.
    */
   onPlace?: (market: CallMarketView, side: CallSide) => void;
+  /**
+   * Show this segment's own "Locks in 6:01:45" (default true). /predictions turns it off when its
+   * page clock already counts down to the same lock: each clock appears once a page.
+   */
+  showClock?: boolean;
+  /** "1 of 3" in the kicker, when the segment is one of a set. */
+  index?: number;
+  total?: number;
   className?: string;
 }
 
-const XSTOCK_LOGO = (symbol: string) => `https://xstocks-metadata.backed.fi/logos/tokens/${encodeURIComponent(symbol)}.png`;
+/** A small ruled tag beside the kicker: cream text on a 1px rule, no fill, no hue. */
+const TAG = "inline-flex h-[1.375rem] items-center border border-rule-2 px-1.5 text-xs leading-none font-semibold whitespace-nowrap text-foreground";
 
-/** Inset well: pool bars, position rows, the settled result. */
-const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]";
-const DIVIDER = "h-px bg-gradient-to-r from-transparent via-white/10 to-transparent";
-const PILL = "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium whitespace-nowrap";
-
-function XStockLogo({ symbol, ticker }: { symbol: string; ticker: string }) {
-  const [failed, setFailed] = React.useState(false);
-  React.useEffect(() => setFailed(false), [symbol]);
+function Kicker({ market, status, nowMs, index, total }: { market: CallMarketView; status: ReturnType<typeof liveStatus>; nowMs: number; index?: number; total?: number }) {
+  const settling = status === "locked" && nowMs >= Date.parse(market.settleAt);
   return (
-    <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.03] font-mono text-xs font-semibold text-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]">
-      {failed ? (
-        ticker.slice(0, 4)
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element -- xStocks metadata CDN, no next/image remotePatterns to maintain
-        <img
-          src={XSTOCK_LOGO(symbol)}
-          alt={`${symbol} logo`}
-          width={44}
-          height={44}
-          loading="lazy"
-          decoding="async"
-          className="size-full object-cover"
-          onError={() => setFailed(true)}
-        />
-      )}
-    </span>
+    <div className="flex min-h-7 flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.84375rem] font-medium text-muted-foreground @3xl/seg:text-sm">
+      <XStockLogo symbol={market.symbol} ticker={market.ticker} className="size-[22px] @3xl/seg:size-7" />
+      <b className="font-semibold whitespace-nowrap text-foreground">{market.symbol}</b>
+      {index !== undefined && total !== undefined && total > 1 ? (
+        <>
+          <span aria-hidden className="h-3.5 w-px shrink-0 bg-rule-2" />
+          <span className="whitespace-nowrap">
+            {index + 1} of {total}
+          </span>
+        </>
+      ) : null}
+      {status === "settled" ? <span className="stamp">Final</span> : null}
+      {status === "void" ? <span className={TAG}>Void</span> : null}
+      {status === "locked" ? <span className={TAG}>{settling ? "Settling" : "Entries closed"}</span> : null}
+    </div>
   );
 }
 
-function StatusChip({ market, nowMs }: { market: CallMarketView; nowMs: number }) {
-  const status = liveStatus(market, nowMs);
-  if (status === "settled") {
-    const yes = market.outcome === "yes";
-    return (
-      <span className={cn(PILL, yes ? "border-emerald-400/25 bg-emerald-400/[0.07] text-emerald-300" : "border-rose-400/25 bg-rose-400/[0.07] text-rose-300")}>
-        {yes ? <CheckCircle2 className="size-3.5" aria-hidden /> : <XCircle className="size-3.5" aria-hidden />}
-        {yes ? "Yes won" : "No won"}
-      </span>
-    );
-  }
-  if (status === "void") {
-    return (
-      <span className={cn(PILL, "border-dashed border-white/15 bg-white/[0.02] text-muted-foreground")}>
-        <Ban className="size-3.5" aria-hidden />
-        Void
-      </span>
-    );
-  }
-  if (status === "locked") {
-    return (
-      <span className={cn(PILL, "border-white/10 bg-white/[0.03] text-muted-foreground")}>
-        <Lock className="size-3.5" aria-hidden />
-        Locked
-      </span>
-    );
-  }
+/** "Locks in 6:01:45" over its UTC stamp: the segment's own clock (the /start tour, a lock the page clock does not show). */
+function LockClock({ market, nowMs }: { market: CallMarketView; nowMs: number }) {
+  const reduced = useReducedMotion();
+  const ms = Date.parse(market.locksAt) - nowMs;
+  // The multi-day form ("5d 20:07:38", next week's lock seen from the weekend) is four characters
+  // longer: it steps down a size in a phone-width segment and never wraps onto two lines.
+  const days = ms >= 48 * 3_600_000;
   return (
-    <span className={cn(PILL, "border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-300 shadow-[inset_0_1px_0_rgb(255_245_230/0.05)]")}>
-      <span className="relative flex size-1.5" aria-hidden>
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60 motion-reduce:animate-none" />
-        <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
-      </span>
-      Open
-    </span>
+    <div className="flex items-end justify-between gap-4 @3xl/seg:flex-col @3xl/seg:items-start @3xl/seg:justify-start @3xl/seg:gap-0">
+      {/* min-w-0, and the stamp wraps in a segment under 20rem (a 320px phone): the figure keeps its line. */}
+      <div className="min-w-0 @3xl/seg:contents">
+        <p className="text-[0.84375rem] leading-none font-medium text-muted-foreground @3xl/seg:text-sm">Locks in</p>
+        <p className="mono-meta mt-2 @max-[20rem]/seg:whitespace-normal @3xl/seg:order-last @3xl/seg:mt-3.5">
+          <time dateTime={market.locksAt}>{utcStamp(market.locksAt)}</time>
+        </p>
+      </div>
+      <p
+        role="timer"
+        aria-label={`Locks in ${spokenTrackClock(ms, !reduced)}`}
+        className={cn(
+          "figure shrink-0 leading-[0.8] whitespace-nowrap @3xl/seg:mt-3",
+          days
+            ? "text-[1.75rem] @min-[20rem]/seg:text-[2rem] @md/seg:text-[2.5rem] @3xl/seg:text-[3.5rem] @5xl/seg:text-[4rem]"
+            : "text-[2.75rem] @3xl/seg:text-[4.5rem] @5xl/seg:text-[5rem]",
+        )}
+      >
+        {formatTrackClock(ms, !reduced)}
+      </p>
+    </div>
   );
 }
 
-const SIDE_STYLE: Record<CallSide, { idle: string; held: string; label: string }> = {
+/** The settled result: "Result · Yes" in the side's colour, the close, its source and time. */
+function Result({ market, status }: { market: CallMarketView; status: ReturnType<typeof liveStatus> }) {
+  const word = status === "void" ? "Void" : market.outcome === "yes" ? "Yes" : market.outcome === "no" ? "No" : "Pending";
+  const tone = word === "Yes" ? "text-yes" : word === "No" ? "text-no" : "text-muted-foreground";
+  return (
+    <div className="flex items-end justify-between gap-4 @3xl/seg:flex-col @3xl/seg:items-start @3xl/seg:justify-start @3xl/seg:gap-0">
+      <div className="@3xl/seg:contents">
+        <p className="text-[0.84375rem] leading-none font-medium text-muted-foreground @3xl/seg:text-sm">Result</p>
+        <p className="mono-meta mt-2 whitespace-normal @3xl/seg:order-last @3xl/seg:mt-3.5">
+          {status === "void" ? (
+            "Refunded: no price within 24 hours of the close"
+          ) : (
+            <time dateTime={market.settleAt}>Settled {utcStamp(market.settleAt)}</time>
+          )}
+        </p>
+      </div>
+      <p className={cn("figure text-[2.75rem] leading-[0.8] font-medium font-stretch-[85%] @3xl/seg:mt-3 @3xl/seg:text-[4.5rem] @5xl/seg:text-[5rem]", tone)}>{word}</p>
+    </div>
+  );
+}
+
+/** "57% say No", the split, and the points in (house bots seed every pool, so it says so). */
+function Crowd({ market, done }: { market: CallMarketView; done: boolean }) {
+  const lead = crowdLead(market.odds);
+  const empty = !(market.odds.total > 0);
+  return (
+    <div>
+      <div className="mb-2.5 flex items-baseline justify-between gap-3 @3xl/seg:mb-3.5 @3xl/seg:block">
+      <p className="font-display text-[1.375rem] leading-none @3xl/seg:text-[1.875rem]">
+        {lead ? (
+          <>
+            <b className={cn("mr-1 font-sans text-[1.375rem] font-semibold tracking-[-0.01em] tabular-nums font-stretch-[88%] @3xl/seg:mr-1.5 @3xl/seg:text-[1.875rem]", lead.side === "yes" ? "text-yes" : "text-no")}>
+              {lead.pct}
+            </b>
+            {done ? "said" : "say"} {sideLabel(lead.side)}
+          </>
+        ) : empty ? (
+          "No points in yet"
+        ) : (
+          "An even split"
+        )}
+      </p>
+        {/* Narrow: the points in sit on the crowd's line, so the Yes / No buttons come up a row. */}
+        {empty ? null : (
+          <p className="text-right text-[0.8125rem] leading-tight text-muted-foreground tabular-nums @3xl/seg:hidden">{formatPoints(market.odds.total)} points in, incl. bot seed</p>
+        )}
+      </div>
+      <PoolBar odds={market.odds} labels={false} />
+      <p className={cn("mt-3 text-[0.84375rem] leading-snug text-pretty text-muted-foreground", !empty && "hidden @3xl/seg:block")}>
+        {empty ? "Points only, no cash value." : `${formatPoints(market.odds.total)} points in, incl. bot seed. Points only.`}
+      </p>
+    </div>
+  );
+}
+
+function Positions({ positions, done }: { positions: CallPositionView[]; done: boolean }) {
+  if (positions.length === 0) return null;
+  return (
+    <ul className="flex flex-col border-t border-rule">
+      {positions.map((p) => (
+        <li key={p.side} className="flex min-h-10 items-center justify-between gap-3 border-b border-rule text-sm">
+          <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
+            <span className={cn("size-[7px] shrink-0 rounded-full", p.side === "yes" ? "bg-yes" : "bg-no")} aria-hidden />
+            <span className="truncate">
+              You · <span className="font-semibold text-foreground">{sideLabel(p.side)}</span> · <span className="tabular-nums">{formatPoints(p.points)}</span> pts
+            </span>
+          </span>
+          {done ? (
+            <span
+              className={cn(
+                "shrink-0 font-semibold tabular-nums",
+                p.result === "won" ? "text-yes" : p.result === "lost" ? "text-no" : "text-muted-foreground",
+              )}
+            >
+              {resultLabel(p)}
+            </span>
+          ) : (
+            <span className="shrink-0 text-muted-foreground tabular-nums">
+              <span className="font-semibold text-foreground">{formatPoints(p.potentialPayout)}</span> points back
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Yes and No: the side's colour on a rule (green and red mean Yes and No here, and nothing else). */
+const SIDE: Record<CallSide, { idle: string; held: string; word: string; hint: string }> = {
   yes: {
-    idle: "border-emerald-400/25 bg-emerald-400/[0.05] hover:border-emerald-400/45 hover:bg-emerald-400/[0.10]",
-    held: "border-emerald-400/60 bg-emerald-400/[0.12] hover:bg-emerald-400/[0.16]",
-    label: "text-emerald-300",
+    idle: "border-[rgb(58_208_138/0.45)] hover:bg-[rgb(58_208_138/0.08)]",
+    held: "border-yes bg-[rgb(58_208_138/0.13)] hover:bg-[rgb(58_208_138/0.18)]",
+    word: "text-yes",
+    hint: "closes above",
   },
   no: {
-    idle: "border-rose-400/25 bg-rose-400/[0.05] hover:border-rose-400/45 hover:bg-rose-400/[0.10]",
-    held: "border-rose-400/60 bg-rose-400/[0.12] hover:bg-rose-400/[0.16]",
-    label: "text-rose-300",
+    idle: "border-[rgb(255_93_108/0.45)] hover:bg-[rgb(255_93_108/0.08)]",
+    held: "border-no bg-[rgb(255_93_108/0.13)] hover:bg-[rgb(255_93_108/0.18)]",
+    word: "text-no",
+    hint: "closes below",
   },
 };
 
-function PriceVsStrike({ price, strike }: { price: number | null; strike: number }) {
-  const distance = strikeDistance(price, strike);
-  if (price === null) {
-    return <p className="text-sm text-muted-foreground">No live price</p>;
-  }
-  const diff = price - strike;
-  const at = Math.abs(diff) < 0.005;
-  const Glyph = at ? Minus : diff > 0 ? ArrowUpRight : ArrowDownRight;
-  const tone = at ? "text-muted-foreground" : diff > 0 ? "text-emerald-400" : "text-rose-400";
-  return (
-    <p className="flex min-w-0 items-center gap-2 text-sm">
-      <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md bg-white/[0.04]", tone)} aria-hidden>
-        <Glyph className="size-3.5" />
-      </span>
-      <span className="font-semibold tracking-tight text-foreground tabular-nums">{formatUsd(price)}</span>
-      <span className="text-muted-foreground">now</span>
-      {distance ? <span className={cn("truncate", tone)}>{distance}</span> : null}
-    </p>
-  );
-}
-
-function YourPosition({ p, children }: { p: CallPositionView; children: React.ReactNode }) {
-  return (
-    <li className="flex items-center justify-between gap-2 text-sm">
-      <span className="flex min-w-0 items-center gap-2">
-        <span className={cn("size-1.5 shrink-0 rounded-full", p.side === "yes" ? "bg-emerald-400" : "bg-rose-400")} aria-hidden />
-        <span className="truncate text-muted-foreground">
-          You · <span className="font-medium text-foreground">{sideLabel(p.side)}</span> · <span className="tabular-nums">{formatPoints(p.points)}</span> pts
-        </span>
-      </span>
-      {children}
-    </li>
-  );
-}
-
-export function MarketCard({ market, positions, nowMs, signedIn, onPlace, className }: MarketCardProps) {
+/**
+ * One prediction as a Broadcast segment: the kicker (logo, symbol, "1 of 3", the FINAL stamp), the
+ * question in the serif, the price track against the line, and beside it (under it on a narrow
+ * container) the crowd's split, the viewer's points and the Yes / No buttons. Sized by its own
+ * width (`@container/seg`), so it reads the same in the /predictions list and in a /start step.
+ */
+export function MarketCard({ market, positions, nowMs, signedIn, onPlace, showClock = true, index, total, className }: MarketCardProps) {
   const status = liveStatus(market, nowMs);
   const open = status === "open";
   const done = status === "settled" || status === "void";
-  const highlight = positions.length === 1 ? positions[0].side : null;
-  const price = market.quote?.price ?? null;
-  const settleSource = market.source === "pyth" || market.source === "jupiter" ? priceSourceLabel(market.source) : market.source;
+  const settling = status === "locked" && nowMs >= Date.parse(market.settleAt);
+  const questionId = React.useId();
 
   return (
-    <Card
-      data-market-id={market.id}
-      data-status={status}
-      className={cn(
-        "h-full gap-5 [--card-spacing:--spacing(5)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.04] hover:ring-white/[0.12] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-        status === "void" && "ring-white/[0.05]",
-        className,
-      )}
-    >
-      <CardHeader className="gap-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <XStockLogo symbol={market.symbol} ticker={market.ticker} />
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate font-mono text-sm font-medium text-foreground">{market.symbol}</span>
-              <span className="text-xs text-muted-foreground">Friday close</span>
+    <article data-market-id={market.id} data-status={status} aria-labelledby={questionId} className={cn("@container/seg", className)}>
+      <div className="grid @3xl/seg:grid-cols-[minmax(0,1fr)_minmax(17rem,20rem)] @5xl/seg:grid-cols-[minmax(0,1fr)_23rem]">
+        <div className="min-w-0 pt-4 pb-5 @3xl/seg:pt-6 @3xl/seg:pr-10 @3xl/seg:pb-6 @5xl/seg:pr-14">
+          <Kicker market={market} status={status} nowMs={nowMs} index={index} total={total} />
+          <h3
+            id={questionId}
+            className="mt-2.5 font-display text-[2rem] leading-[0.98] font-normal tracking-[-0.012em] @[22rem]/seg:text-[2.1875rem] @md/seg:text-[2.375rem] @3xl/seg:mt-4 @3xl/seg:text-[2.875rem] @5xl/seg:text-[3.25rem]"
+          >
+            Will {market.ticker} close above{" "}
+            {/* Narrow: the line and the day on a line of their own, never split. */}
+            <span className="block whitespace-nowrap @3xl/seg:inline">
+              {formatUsd(market.strike)} on {formatSettleDay(market.settleAt)}?
             </span>
-          </div>
-          <StatusChip market={market} nowMs={nowMs} />
+          </h3>
+          <PriceTrack market={market} settled={status === "settled" && market.settledPrice !== null} />
         </div>
 
-        <CardTitle className="text-xl leading-snug font-semibold tracking-tight text-balance">{marketQuestion(market)}</CardTitle>
+        <div className="flex min-w-0 flex-col gap-4 border-t border-rule pt-4 pb-5 @3xl/seg:gap-5 @3xl/seg:border-t-0 @3xl/seg:border-l @3xl/seg:pt-6 @3xl/seg:pb-6 @3xl/seg:pl-10">
+          {done ? <Result market={market} status={status} /> : open && showClock ? <LockClock market={market} nowMs={nowMs} /> : null}
+          {done || (open && showClock) ? <span aria-hidden className="-mb-1 h-px bg-rule @3xl/seg:-mb-0.5" /> : null}
+          <Crowd market={market} done={done} />
+          <Positions positions={positions} done={done} />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-gold/20 bg-gold/[0.06] px-3 text-xs shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]">
-            <span className="font-medium tracking-[0.08em] text-gold uppercase">Strike</span>
-            <span className="font-semibold text-foreground tabular-nums">{formatUsd(market.strike)}</span>
-          </span>
-          {!done && market.quote ? <PriceChip quote={market.quote} symbol={market.symbol} className="max-w-full" /> : null}
-        </div>
-
-        {done ? null : <PriceVsStrike price={price} strike={market.strike} />}
-      </CardHeader>
-
-      <CardContent className="mt-auto flex flex-col gap-4">
-        <PoolBar odds={market.odds} highlight={highlight} labels={done || !open} />
-
-        {done ? (
-          <div className={cn(WELL, "flex flex-col gap-3 p-4")}>
-            <div className="flex items-end justify-between gap-3">
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">Result</span>
-                <span
-                  className={cn(
-                    "text-3xl leading-none font-semibold tracking-tight",
-                    market.outcome === "yes" ? "text-emerald-400" : market.outcome === "no" ? "text-rose-400" : "text-muted-foreground",
-                  )}
-                >
-                  {market.outcome === "yes" ? "Yes" : market.outcome === "no" ? "No" : status === "void" ? "Void" : "Pending"}
-                </span>
-              </div>
-              {market.settledPrice !== null ? (
-                <div className="flex flex-col items-end gap-0.5">
-                  <span className="text-xs text-muted-foreground">Settled at</span>
-                  <span className="text-xl leading-none font-semibold tracking-tight tabular-nums">{formatUsd(market.settledPrice)}</span>
-                </div>
-              ) : null}
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              <span className="text-foreground/80">{outcomeLabel(market.outcome)}</span>
-              {" · "}
-              {settleSource ? `Friday close from ${settleSource}` : "No price within 24h of the close"} · {formatDateTime(market.settleAt)}
-            </p>
-            {positions.length > 0 ? (
-              <>
-                <div className={DIVIDER} aria-hidden />
-                <ul className="flex flex-col gap-1.5">
-                  {positions.map((p) => (
-                    <YourPosition key={p.side} p={p}>
-                      <span
-                        className={cn(
-                          "shrink-0 text-sm font-semibold tabular-nums",
-                          p.result === "won" && "text-emerald-400",
-                          p.result === "lost" && "text-rose-400",
-                          (p.result === "refunded" || p.result === "pending") && "text-muted-foreground",
-                        )}
-                      >
-                        {resultLabel(p)}
-                      </span>
-                    </YourPosition>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-          </div>
-        ) : (
-          <>
-            {positions.length > 0 ? (
-              <ul className={cn(WELL, "flex flex-col gap-1.5 px-3.5 py-2.5")}>
-                {positions.map((p) => (
-                  <YourPosition key={p.side} p={p}>
-                    <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-                      <span className="font-semibold text-foreground">{formatPoints(p.potentialPayout)}</span> points back
+          {open ? (
+            <div className="grid grid-cols-2 gap-2">
+              {(["yes", "no"] as const).map((side) => {
+                const held = positions.some((p) => p.side === side);
+                return (
+                  <button
+                    key={side}
+                    type="button"
+                    onClick={() => onPlace?.(market, side)}
+                    aria-label={`${sideButtonLabel(market.odds, side)}. ${signedIn ? (held ? "Add to your prediction" : "Make a prediction") : "Sign in to make a prediction"}`}
+                    className={cn(
+                      "flex h-12 min-w-0 items-center justify-between gap-2 border px-3.5 whitespace-nowrap transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px motion-reduce:transition-none",
+                      held ? SIDE[side].held : SIDE[side].idle,
+                    )}
+                  >
+                    <span className={cn("flex items-center gap-1.5 text-base font-semibold", SIDE[side].word)}>
+                      {held ? <Check className="size-4" aria-hidden /> : null}
+                      {sideLabel(side)}
                     </span>
-                  </YourPosition>
-                ))}
-              </ul>
-            ) : null}
-
-            {open ? (
-              <div className="grid grid-cols-2 gap-2.5">
-                {(["yes", "no"] as const).map((side) => {
-                  const held = positions.some((p) => p.side === side);
-                  const pct = formatPct(side === "yes" ? market.odds.yesProb : market.odds.noProb);
-                  return (
-                    <button
-                      key={side}
-                      type="button"
-                      onClick={() => onPlace?.(market, side)}
-                      aria-label={`${sideButtonLabel(market.odds, side)}. ${signedIn ? (held ? "Add to your prediction" : "Make a prediction") : "Sign in to make a prediction"}`}
-                      className={cn(
-                        "flex h-12 min-w-0 items-center justify-between gap-2 rounded-xl border px-3.5 whitespace-nowrap shadow-[inset_0_1px_0_rgb(255_245_230/0.08),0_1px_2px_rgb(0_0_0/0.3)] transition-all duration-200 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px",
-                        held ? SIDE_STYLE[side].held : SIDE_STYLE[side].idle,
-                      )}
-                    >
-                      <span className={cn("flex items-center gap-1.5 text-sm font-semibold", SIDE_STYLE[side].label)}>
-                        {held ? <Check className="size-3.5" aria-hidden /> : null}
-                        {sideLabel(side)}
-                      </span>
-                      {/* The share only; the points back for one point live in the dialog, never on the button. */}
-                      <span className="text-lg leading-none font-semibold tracking-tight text-foreground tabular-nums">{pct}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-
-            <div className="flex flex-col gap-3">
-              <div className={DIVIDER} aria-hidden />
-              <p className="flex items-center gap-2 text-xs text-muted-foreground" title={`Settles ${formatDateTime(market.settleAt)}`}>
-                <span className="inline-flex items-center gap-1.5">
-                  {open ? <Clock className="size-3.5" aria-hidden /> : <Lock className="size-3.5" aria-hidden />}
-                  <span className="tabular-nums">{lockLabel(market, nowMs)}</span>
-                </span>
-              </p>
+                    <span className="truncate text-[0.8125rem] text-muted-foreground">{held ? "yours" : SIDE[side].hint}</span>
+                  </button>
+                );
+              })}
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          ) : null}
+
+          {open && !showClock ? (
+            <p className="mono-meta -mt-1">
+              <time dateTime={market.locksAt}>Locks {utcStamp(market.locksAt)}</time>
+            </p>
+          ) : status === "locked" && !settling ? (
+            // The kicker already says "Entries closed" (or "Settling"): this line says when it settles.
+            <p className="mono-meta">
+              <time dateTime={market.settleAt}>Settles {utcStamp(market.settleAt)}</time>
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </article>
   );
 }
 
 export function MarketCardSkeleton({ className }: { className?: string }) {
   return (
-    <Card className={cn("h-full gap-5 [--card-spacing:--spacing(5)]", className)} aria-hidden>
-      <CardHeader className="gap-4">
-        <div className="flex items-center justify-between gap-2">
+    <div className={cn("@container/seg", className)} aria-hidden>
+      <div className="grid @3xl/seg:grid-cols-[minmax(0,1fr)_minmax(17rem,20rem)] @5xl/seg:grid-cols-[minmax(0,1fr)_23rem]">
+        <div className="min-w-0 pt-4 pb-5 @3xl/seg:pt-6 @3xl/seg:pr-10 @3xl/seg:pb-6 @5xl/seg:pr-14">
           <div className="flex items-center gap-3">
-            <Skeleton className="size-11 rounded-xl" />
-            <div className="flex flex-col gap-1.5">
-              <Skeleton className="h-4 w-14" />
-              <Skeleton className="h-3 w-20" />
-            </div>
+            <Skeleton className="size-[22px] rounded-full @3xl/seg:size-7" />
+            <Skeleton className="h-4 w-16" />
           </div>
-          <Skeleton className="h-6 w-16 rounded-full" />
+          <Skeleton className="mt-3 h-[1.9rem] w-11/12 @3xl/seg:mt-5 @3xl/seg:h-[2.6rem] @3xl/seg:w-4/5" />
+          <Skeleton className="mt-2 h-[1.9rem] w-2/3 @3xl/seg:h-[2.6rem] @3xl/seg:w-1/2" />
+          <div className="relative mt-4 h-[84px] @3xl/seg:mt-7 @3xl/seg:h-[108px]">
+            <Skeleton className="absolute inset-x-0 top-10 h-2 @3xl/seg:top-[52px] @3xl/seg:h-2.5" />
+            <Skeleton className="absolute top-[60px] left-1/3 h-3.5 w-48 @3xl/seg:top-[78px]" />
+          </div>
         </div>
-        <Skeleton className="h-7 w-5/6" />
-        <div className="flex gap-2">
-          <Skeleton className="h-7 w-32 rounded-full" />
-          <Skeleton className="h-7 w-40 rounded-full" />
+        <div className="flex min-w-0 flex-col gap-4 border-t border-rule pt-4 pb-5 @3xl/seg:gap-5 @3xl/seg:border-t-0 @3xl/seg:border-l @3xl/seg:pt-6 @3xl/seg:pb-6 @3xl/seg:pl-10">
+          <div>
+            <Skeleton className="mb-3 h-6 w-36 @3xl/seg:h-7" />
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="mt-3 h-3.5 w-3/4" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Skeleton className="h-12" />
+            <Skeleton className="h-12" />
+          </div>
         </div>
-        <Skeleton className="h-5 w-48" />
-      </CardHeader>
-      <CardContent className="mt-auto flex flex-col gap-4">
-        <Skeleton className="h-2.5 w-full rounded-full" />
-        <Skeleton className="h-3 w-full" />
-        <div className="grid grid-cols-2 gap-2.5">
-          <Skeleton className="h-12 rounded-xl" />
-          <Skeleton className="h-12 rounded-xl" />
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 

@@ -2,51 +2,79 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRightIcon, BotIcon, TargetIcon, TrophyIcon, ZapIcon, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import {
-  api,
   apiGet,
   ApiClientError,
-  leagueApi,
   type CallMarketView,
   type CallsResponse,
   type LeaderboardResponse,
-  type LeaderboardRow,
   type LeagueResponse,
   type PlaysResponse,
 } from "@/lib/api-client";
+import type { PriceSourceName } from "@/lib/core";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PriceChip } from "@/components/common/PriceChip";
+import type { ApiQueryResult } from "@/components/common/useApiQuery";
+import { useCallsQuery, useLeagueQuery } from "@/components/layout/WeekData";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useOptionalSession } from "@/hooks/useSession";
+import { PriceChip, type PriceChipQuote } from "@/components/common/PriceChip";
+import { XStockLogo } from "@/components/common/XStockLogo";
 import { displayName, formatPoints, formatUsd } from "@/components/common/format";
-import { NEXT_WEEK_MARKETS_COPY, formatCountdown, formatPct, liveStatus, lockLabel, marketQuestion } from "@/components/calls/calls-format";
-import { formatSignedPct } from "@/components/league/format";
-import { PRACTICE_LEAGUE_TITLE, seasonTopRows } from "@/components/landing/scoreboard-mode";
+import { NEXT_WEEK_MARKETS_COPY, formatSettleDay, liveStatus } from "@/components/calls/calls-format";
+import {
+  DAY_MS,
+  TRACK_DAYS,
+  WEEKDAYS_SHARE,
+  formatTrackClock,
+  spokenTrackClock,
+  spokenUtcDayTime,
+  trackX,
+  utcDayMonth,
+  utcDayTime,
+  weekTrackModel,
+  type WeekTrackModel,
+} from "@/components/layout/week-track";
 import {
   GAME_TILE_ORDER,
+  STRIKE_NOTE,
   TILE_COPY,
   TILE_PLACEHOLDER,
-  competitionTileStat,
+  competitionLaneFigure,
   createSharedReads,
+  crowdLead,
+  gapLabel,
+  gaugePosition,
+  nextQuestCheck,
   onChainQuestTileStat,
-  pickLiveMarkets,
-  predictionsTileStat,
-  questTileNote,
+  pickHeroMarkets,
+  predictionsLaneFigure,
+  questTileFigure,
+  utcStamp,
   type GameTileKey,
+  type TileFigure,
 } from "@/components/landing/game-tiles";
+import { openSeatCopy, seasonSeats } from "@/components/landing/scoreboard-mode";
+import { WALLET_CHECK_TIMING } from "@/components/plays/play-meta";
 
 /**
- * The live landing, all read from /api/v1 (approved wireframe, 16 Sep 2026):
- *   - ScoreboardPreview: the hero's right column, a "Live right now" frame around
- *   - LivePredictions: this week's predictions as stacked cards, the hero visual at every width
- *     (all three from lg, the first one plus "See all N predictions" below lg), then
- *   - RankCard: the Season top 3 once three real players exist, until then the weekly
- *     competition (virtual cash) against labelled house bots;
- *   - GameTiles: the row under the hero, one live number and one button per game.
+ * The live landing, Broadcast (9 Oct 2026), all read from /api/v1:
+ *   - LivePredictions: the hero's stage. This week's prediction as a plain question, the live price
+ *     drawn against the line it has to beat, the lock countdown, the split and one action; the
+ *     week's other questions as tabs under it. From Friday's close it replays the week as final.
+ *   - GameTiles: the three games, each a lane on the same Monday-to-Friday axis as the week track,
+ *     with one live figure, one line and one button.
+ *   - SeasonTop: the Season seats in the closing band (real players only, the rest open).
  *
- * Four endpoints, one request each per page load: the components share them through SHARED_READS.
+ * Four endpoints, one request each per page load. /calls and /league are the shell's shared reads
+ * (src/components/layout/WeekData.tsx), which the week track under the header also draws from;
+ * /plays and the Season seats are shared between this file's components through SHARED_READS.
  * Each component loads on its own, so one slow endpoint never blanks the rest.
+ *
+ * The hero is laid out by the page's grid (src/app/page.tsx): LivePredictions renders its stage and
+ * its tabs as two grid items (a `contents` wrapper), so the welcome line can sit between them on a
+ * phone and above them on a desktop.
  */
 
 /** A settled read is reused this long; a remount after that (a later visit) reads fresh numbers. */
@@ -87,537 +115,832 @@ function useShared<T>(key: string, fetcher: () => Promise<T>): Loaded<T> {
   return state;
 }
 
-const useCalls = () => useShared<CallsResponse>("calls", () => api.calls());
-const useLeague = () => useShared<LeagueResponse>("league", () => leagueApi.overview());
+/** A shared query in this file's Loaded shape: an error only counts while there is nothing to show. */
+function fromQuery<T>(q: ApiQueryResult<T>): Loaded<T> {
+  return { data: q.data, error: q.data === null && q.error !== null, loading: q.loading };
+}
+
+const useCalls = (): Loaded<CallsResponse> => fromQuery(useCallsQuery("landing:calls"));
+const useLeague = (): Loaded<LeagueResponse> => fromQuery(useLeagueQuery("landing:league"));
 const usePlays = () => useShared<PlaysResponse>("plays", () => apiGet<PlaysResponse>("/api/v1/plays"));
-// Three rows are enough to decide: the board only lists real players with positive Season points.
+// Three rows fill the three seats: the board only lists real players with positive Season points.
 const useBoard = () => useShared<LeaderboardResponse>("board", () => apiGet<LeaderboardResponse>("/api/v1/leaderboard?limit=3"));
 
 /** Client clock corrected by the server's `now`, ticking every `ms`. */
-function useServerNow(serverNow: string | undefined, ms = 30_000): number {
+function useServerNow(serverNow: string | undefined, ms: number): number {
   const offset = React.useMemo(() => {
     const t = serverNow ? Date.parse(serverNow) : NaN;
     return Number.isFinite(t) ? t - Date.now() : 0;
   }, [serverNow]);
   const [now, setNow] = React.useState(() => Date.now());
   React.useEffect(() => {
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), ms);
     return () => clearInterval(id);
   }, [ms]);
   return now + offset;
 }
 
-/** Glass for the preview stack: near-opaque so overlapping cards read as layers, lit top edge, deep shadow. */
-const GLASS =
-  "rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgb(34_30_26/0.94)_0%,rgb(19_17_15/0.96)_100%)] shadow-[inset_0_1px_0_rgb(255_245_230/0.07),0_1px_2px_rgb(0_0_0/0.4),0_24px_48px_-20px_rgb(0_0_0/0.85)] backdrop-blur-xl";
 
-const ICON_TILE =
-  "flex shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]";
-
-/** A quiet in-card link: 40px tall on phones (touch), 32px from sm. */
-const CARD_LINK =
-  "group -my-1 flex min-h-10 items-center gap-1.5 rounded-md text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)] sm:min-h-8";
-
-/** Skeleton tuned to the glass surface (the default bg-muted reads too flat here). */
-function Bar({ className }: { className?: string }) {
-  return <Skeleton className={cn("rounded-md bg-white/[0.06] motion-reduce:animate-none", className)} />;
+/** The week the week track draws (the same model and the same two reads), or null before either read lands. */
+function landingWeek(calls: CallsResponse | null, league: LeagueResponse | null, nowMs: number): WeekTrackModel | null {
+  if (!calls && !league) return null;
+  return weekTrackModel({
+    nowMs,
+    league: league?.league ?? null,
+    leagueNow: league?.now ?? null,
+    calls: calls ? { markets: calls.markets, season: calls.season } : null,
+  });
 }
+
+const pct = (x: number) => `${(x * 100).toFixed(2)}%`;
+
+/** Skeleton on the ink ground; still under reduced motion. */
+function Bar({ className }: { className?: string }) {
+  return <Skeleton className={cn("rounded-sm bg-ink-3 motion-reduce:animate-none", className)} />;
+}
+
+/** A text link on a 1px rule with its arrow ("Make a prediction →"). */
+const RULED_LINK = cn(buttonVariants({ variant: "link" }), "text-base");
 
 function Arrow() {
   return (
-    <ArrowRightIcon
-      className="size-4 transition-transform duration-300 group-hover:translate-x-0.5 motion-reduce:transition-none"
-      aria-hidden
-    />
+    <span aria-hidden className="ml-2 font-medium">
+      →
+    </span>
   );
 }
 
-/** Bot marker copy, shared with the competition page's BotMarker. */
-const BOT_LABEL = "House bot, never earns points";
-
-/**
- * Phones get "Virtual competition" as the title and the rest of PRACTICE_LEAGUE_TITLE as a muted
- * sub-line, so the header stays short at 375 px; sm and up keep the full sentence.
- */
-const [PRACTICE_SHORT, PRACTICE_REST = ""] = PRACTICE_LEAGUE_TITLE.split(": ");
-const PRACTICE_SUB = PRACTICE_REST ? PRACTICE_REST.charAt(0).toUpperCase() + PRACTICE_REST.slice(1) : undefined;
-
-function PreviewCard({
-  icon: Icon,
-  label,
-  shortLabel,
-  subLabel,
-  meta,
-  href,
-  cta,
-  children,
-  className,
-}: {
-  icon: LucideIcon;
-  label: string;
-  /** Title shown below `sm` instead of `label`. */
-  shortLabel?: string;
-  /** Muted line under the title, below `sm` only. */
-  subLabel?: string;
-  meta?: React.ReactNode;
-  href: string;
-  cta: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={cn(GLASS, "relative flex flex-col gap-4 p-4 sm:p-5 lg:gap-3 lg:p-4", className)}>
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="flex min-w-0 items-center gap-2.5 text-sm font-semibold tracking-tight text-foreground">
-            <span className={cn(ICON_TILE, "size-7")} aria-hidden>
-              <Icon className="size-3.5 text-gold" />
-            </span>
-            {/* Wraps rather than truncates: the practice title is a full sentence (phones show the short form). */}
-            <span className="min-w-0 leading-snug text-pretty">
-              {shortLabel ? (
-                <>
-                  <span className="sm:hidden">{shortLabel}</span>
-                  <span className="hidden sm:inline">{label}</span>
-                </>
-              ) : (
-                label
-              )}
-            </span>
-          </h3>
-          {meta ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{meta}</span> : null}
-        </div>
-        {/* Full card width under the header row (indented to the title: size-7 tile + gap-2.5), so it stays one line next to the meta. */}
-        {subLabel ? <p className="pl-[2.375rem] text-xs leading-snug text-pretty text-muted-foreground sm:hidden">{subLabel}</p> : null}
-      </div>
-      {children}
-      <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
-      <Link href={href} className={cn(CARD_LINK, "justify-between")}>
-        {cta}
-        <Arrow />
-      </Link>
-    </section>
-  );
-}
-
-function Unavailable({ what }: { what: string }) {
-  return <p className="py-2 text-sm text-muted-foreground">{what} is not available right now.</p>;
-}
-
 /* ------------------------------------------------------------------------------------------ */
-/* Hero frame                                                                                  */
+/* The hero's stage                                                                            */
 /* ------------------------------------------------------------------------------------------ */
 
-/**
- * The hero's right column: the "Live right now" chip over the live cards (passed as children).
- * Phones stack; md puts the first prediction and the ranking side by side; lg stacks again.
- */
-export function ScoreboardPreview({ className, children }: { className?: string; children?: React.ReactNode }) {
+/** The stage: the question and its price track on the left, the clock and the crowd on the right (a ruled column). */
+const STAGE = "[grid-area:stage] mt-5 grid grid-cols-2 border-t border-rule-2 lg:mt-[30px] lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24.5rem]";
+const MAIN = "col-span-2 min-w-0 pt-4 lg:col-span-1 lg:pt-6 lg:pr-10 lg:pb-[26px] xl:pr-14";
+/** The side column from lg; on a phone its two blocks sit side by side under the track. */
+const SIDE = "contents lg:flex lg:min-w-0 lg:flex-col lg:border-l lg:border-rule lg:pt-6 lg:pb-[26px] lg:pl-8 xl:pl-10";
+const CLOCK = "mt-3 min-w-0 border-t border-rule pt-2.5 pr-3.5 lg:mt-0 lg:border-t-0 lg:p-0";
+const CROWD = "mt-3 min-w-0 border-t border-l border-rule pt-2.5 pl-3.5 lg:mt-6 lg:mb-5 lg:border-l-0 lg:pt-5 lg:pl-0";
+const CLOCK_LABEL = "text-[0.78125rem] leading-none font-medium text-muted-foreground lg:text-sm";
+const KICK = "flex min-w-0 items-center gap-[9px] text-[0.8125rem] leading-none font-medium text-muted-foreground lg:gap-3 lg:text-sm";
+const STAGE_ACTION = cn(buttonVariants({ variant: "secondary" }), "h-12 px-[22px] text-base");
+
+/** The split, both sides always named: "43 Yes ▬▬▬|▬▬▬▬ No 57". An empty pool draws a neutral track. */
+function SplitBar({ odds, className }: { odds: CallMarketView["odds"]; className?: string }) {
+  const empty = !(odds.total > 0);
+  const yes = Math.round(odds.yesProb * 100);
   return (
     <div
       className={cn(
-        "relative isolate flex flex-col gap-3 lg:gap-2.5 animate-in fade-in-0 slide-in-from-bottom-2 delay-150 duration-700 fill-mode-both motion-reduce:animate-none md:grid md:grid-cols-2 md:items-start lg:flex lg:items-stretch",
+        "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 text-[0.78125rem] leading-none font-semibold tabular-nums font-stretch-[88%] lg:gap-2.5 lg:text-[0.9375rem]",
         className,
       )}
-      aria-label="Live from Dulo"
     >
-      {/* Ember bloom behind the stack gives the cards something to sit on. */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-1/4 bottom-0 -z-10 rounded-full bg-[radial-gradient(closest-side,rgb(255_106_42/0.18),transparent)] blur-2xl"
+      <span className="sr-only">Current split: </span>
+      <span className={empty ? "text-muted-foreground" : "text-yes"}>{empty ? "Yes" : `${yes} Yes`}</span>
+      <span
         aria-hidden
-      />
-      <div className="flex items-center justify-between gap-3 md:col-span-2">
-        <span className="inline-flex h-6 items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-2.5 text-xs font-medium text-emerald-300">
-          <span className="relative flex size-1.5" aria-hidden>
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/70 motion-reduce:animate-none" />
-            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
-          </span>
-          Live right now
-        </span>
-        <span className="text-xs text-muted-foreground">Points only, no cash value</span>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------------------------------ */
-/* Predictions                                                                                 */
-/* ------------------------------------------------------------------------------------------ */
-
-/** "Yes 64%" [bar] "36% No": the current split of the points in. An empty pool reads as a neutral 50/50. */
-function SplitRow({ market }: { market: CallMarketView }) {
-  const { odds: split } = market;
-  const empty = split.total === 0;
-  const yes = formatPct(split.yesProb);
-  const no = formatPct(split.noProb);
-  return (
-    <div className="flex items-center gap-2.5 text-xs leading-4 tabular-nums">
-      <span className="shrink-0 text-muted-foreground">
-        Yes <span className={cn("font-semibold", empty ? "text-muted-foreground" : "text-emerald-400")}>{yes}</span>
-      </span>
-      <div
-        role="img"
-        aria-label={empty ? "Current split: no points in yet" : `Current split: Yes ${yes}, No ${no}`}
-        className="flex h-2 min-w-0 flex-1 gap-0.5 overflow-hidden rounded-full border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]"
+        className="relative flex h-1.5 gap-[3px] after:absolute after:-inset-y-1 after:left-1/2 after:w-px after:bg-rule-2"
       >
-        <div
-          className={cn("rounded-full", empty ? "bg-white/[0.08]" : "bg-gradient-to-r from-emerald-500 to-emerald-400")}
-          style={{ width: `${Math.round((empty ? 0.5 : split.yesProb) * 100)}%` }}
-        />
-        <div className={cn("flex-1 rounded-full", empty ? "bg-white/[0.05]" : "bg-gradient-to-r from-rose-400/80 to-rose-500/80")} />
-      </div>
-      <span className="shrink-0 text-muted-foreground">
-        <span className={cn("font-semibold", empty ? "text-muted-foreground" : "text-rose-400")}>{no}</span> No
+        <i className={cn("block h-full", empty ? "bg-ink-4" : "bg-yes")} style={{ width: `calc(${empty ? 50 : yes}% - 1.5px)` }} />
+        <i className={cn("block h-full flex-1", empty ? "bg-ink-4" : "bg-no")} />
       </span>
+      <span className={empty ? "text-muted-foreground" : "text-no"}>{empty ? "No" : `No ${100 - yes}`}</span>
     </div>
   );
 }
 
-/** One prediction: question, price with source and age, current split, points in, and the way in. */
-function PredictionCard({ market, now, className }: { market: CallMarketView; now: number; className?: string }) {
-  const question = marketQuestion(market);
-  // A locked card offers the board, not an action nobody can take until next week.
-  const open = liveStatus(market, now) === "open";
-  return (
-    <article className={cn(GLASS, "flex flex-col gap-3 p-4 sm:p-5 lg:gap-2 lg:px-4 lg:py-3", className)} aria-label={question}>
-      <div className="flex items-start gap-2.5">
-        <span className={cn(ICON_TILE, "mt-px size-6 lg:hidden")} aria-hidden>
-          <TargetIcon className="size-3 text-gold" />
-        </span>
-        <p className="min-w-0 text-base leading-snug font-medium text-pretty text-foreground lg:text-sm">{question}</p>
-      </div>
-      {market.quote ? (
-        <PriceChip
-          quote={market.quote}
-          symbol={market.symbol}
-          className="self-start rounded-lg border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]"
-        />
-      ) : (
-        <span className="text-xs text-muted-foreground">No live price right now</span>
-      )}
-      <SplitRow market={market} />
-      <div className="flex flex-wrap items-center justify-between gap-x-3">
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {market.odds.total === 0 ? "No points in yet" : `${formatPoints(market.odds.total)} pts in, incl. bot seed`}
-          <span aria-hidden> · </span>
-          <span className="sr-only">, </span>
-          {lockLabel(market, now)}
-        </span>
-        <Link href="/predictions" className={cn(CARD_LINK, "text-foreground/90 lg:my-0 lg:min-h-5")}>
-          {open ? "Make a prediction" : "See predictions"}
-          <Arrow />
-        </Link>
-      </div>
-    </article>
-  );
-}
-
-function PredictionSkeleton({ className }: { className?: string }) {
-  return (
-    <div className={cn(GLASS, "flex flex-col gap-3 p-4 sm:p-5 lg:gap-2 lg:px-4 lg:py-3", className)} aria-hidden>
-      <Bar className="h-5 w-4/5" />
-      <Bar className="h-5 w-48 rounded-lg" />
-      <Bar className="my-1 h-2 w-full rounded-full" />
-      <div className="flex items-center justify-between">
-        <Bar className="h-3 w-36" />
-        <Bar className="h-4 w-28" />
-      </div>
-    </div>
-  );
-}
-
-/** A single glass card for the states with no market to show. */
-function PredictionNotice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className={cn(GLASS, "flex flex-col gap-3 p-4 sm:p-5")}>
-      <p className="flex items-center gap-2.5 text-sm font-semibold tracking-tight text-foreground">
-        <span className={cn(ICON_TILE, "size-7")} aria-hidden>
-          <TargetIcon className="size-3.5 text-gold" />
-        </span>
-        Friday predictions
-      </p>
-      {children}
-      <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
-      <Link href="/predictions" className={cn(CARD_LINK, "justify-between")}>
-        See predictions
-        <Arrow />
-      </Link>
-    </div>
-  );
-}
+const SOURCES: readonly PriceSourceName[] = ["pyth", "jupiter", "cache", "none"];
+const asSource = (s: string | null): PriceSourceName => (SOURCES.includes(s as PriceSourceName) ? (s as PriceSourceName) : "none");
 
 /**
- * This week's predictions (open or locked), up to three, as stacked cards. The hero visual at
- * every width: lg shows all of them, below lg the first one plus a link to the rest.
+ * The price track: No on the left, Yes on the right, the line (the strike) in the middle, the price
+ * as a dot with its gap to the line bracketed above it and its source and age under it. Final: the
+ * settled close instead of the live price.
  */
-export function LivePredictions({ className }: { className?: string }) {
-  const q = useCalls();
-  const now = useServerNow(q.data?.now);
-  const { shown, count } = pickLiveMarkets(q.data?.markets, now);
+function Gauge({ market, settled }: { market: CallMarketView; settled: boolean }) {
+  const price = settled ? market.settledPrice : (market.quote?.price ?? null);
+  const pos = gaugePosition(price, market.strike);
+  const below = pos !== null && pos.gap < 0;
+  const at = pos ? `${pos.p.toFixed(2)}%` : "50%";
+  const quote: PriceChipQuote | null = settled
+    ? { price: market.settledPrice, source: asSource(market.source), publishedAt: market.settleAt, stale: false }
+    : market.quote;
+  return (
+    <div className="relative mt-3.5 h-[84px] lg:mt-[30px] lg:h-[108px]" style={{ "--p": at } as React.CSSProperties}>
+      <span className="sr-only">{settled ? "The settled close against the line:" : "The live price against the line:"}</span>
+      {/* No below the line, Yes above it. */}
+      <div aria-hidden className="absolute inset-x-0 top-10 flex h-2 lg:top-[52px] lg:h-2.5">
+        <i className="block h-full w-1/2 bg-no/[0.13] shadow-[inset_0_-2px_0_rgb(255_93_108/0.75)]" />
+        <i className="block h-full flex-1 bg-yes/[0.13] shadow-[inset_0_-2px_0_rgb(58_208_138/0.75)]" />
+      </div>
+      <p className="absolute top-3.5 left-0 text-sm leading-[1.15] font-semibold text-no lg:top-1 lg:text-base">
+        No
+        <span className="hidden text-[0.8125rem] leading-[1.3] font-normal text-muted-foreground lg:block">closes below</span>
+      </p>
+      <p className="absolute top-3.5 right-0 text-right text-sm leading-[1.15] font-semibold text-yes lg:top-1 lg:text-base">
+        Yes
+        <span className="hidden text-[0.8125rem] leading-[1.3] font-normal text-muted-foreground lg:block">closes above</span>
+      </p>
+      {/* The line it has to beat, labelled on the side away from the price. */}
+      <span aria-hidden className="absolute top-1 left-1/2 h-[52px] w-0.5 -translate-x-px bg-paper lg:top-0 lg:h-[74px]" />
+      <p
+        className={cn(
+          "absolute -top-0.5 left-1/2 hidden whitespace-nowrap lg:block",
+          below ? "pl-3" : "-translate-x-full pr-3 text-right",
+        )}
+      >
+        <span className="block text-xl leading-none font-semibold tabular-nums font-stretch-[92%]">{formatUsd(market.strike)}</span>
+        <span className="mt-[5px] block text-[0.8125rem] leading-none text-muted-foreground">{STRIKE_NOTE}</span>
+      </p>
+      {pos ? (
+        <>
+          {Math.abs(pos.gap) >= 0.005 ? (
+            <div
+              className="absolute top-[22px] h-2.5 border border-b-0 border-mute lg:top-[30px] lg:h-3"
+              style={below ? { left: "var(--p)", width: "calc(50% - var(--p))" } : { left: "50%", width: "calc(var(--p) - 50%)" }}
+            >
+              <span
+                className={cn(
+                  "absolute bottom-[13px] text-[0.78125rem] leading-none font-semibold whitespace-nowrap text-foreground lg:bottom-4 lg:text-sm",
+                  // Centred over a wide bracket; over a narrow one it keeps clear of the line, on the price's side.
+                  below ? "right-2" : "left-2",
+                  Math.abs(pos.p - 50) >= 18 && (below ? "lg:right-auto lg:left-1/2 lg:-translate-x-1/2" : "lg:left-1/2 lg:-translate-x-1/2"),
+                )}
+              >
+                {gapLabel(pos.gap)}
+              </span>
+            </div>
+          ) : (
+            <span className="absolute top-[22px] left-1/2 ml-2 text-[0.78125rem] leading-none font-semibold text-foreground lg:top-[30px] lg:text-sm">
+              {gapLabel(pos.gap)}
+            </span>
+          )}
+          <span
+            aria-hidden
+            className="absolute top-11 size-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper shadow-[0_0_0_4px_rgb(243_240_232/0.14)] lg:top-[57px] lg:size-[22px] lg:shadow-[0_0_0_5px_rgb(243_240_232/0.14),inset_0_0_0_1px_var(--ink)]"
+            style={{ left: "var(--p)" }}
+          />
+        </>
+      ) : null}
+      {/* Its source and age: the anchor slides along the line with the dot, so it never leaves the track. */}
+      <div className="absolute top-[60px] whitespace-nowrap lg:top-[78px]" style={{ left: "var(--p)", transform: "translateX(calc(-1 * var(--p)))" }}>
+        {quote ? (
+          <PriceChip quote={quote} symbol={settled ? "Settled" : market.symbol} className="flex-nowrap" tickMs={settled ? 60_000 : 15_000} />
+        ) : (
+          <span className="text-[0.8125rem] text-muted-foreground">No live price right now</span>
+        )}
+      </div>
+    </div>
+  );
+}
 
-  let body: React.ReactNode;
-  if (q.loading) {
-    body = (
-      <>
-        <PredictionSkeleton />
-        <PredictionSkeleton className="hidden lg:flex" />
-        <PredictionSkeleton className="hidden lg:flex" />
-      </>
+/** "Locks in 6:01:45" while open; "Locked" until the settle; then the result. */
+function Clock({ market, now, final, reduced }: { market: CallMarketView; now: number; final: boolean; reduced: boolean }) {
+  const status = liveStatus(market, now);
+  if (status === "open" && !final) {
+    const ms = Date.parse(market.locksAt) - now;
+    const text = formatTrackClock(ms, !reduced);
+    return (
+      <div className={CLOCK}>
+        <p className={CLOCK_LABEL}>Locks in</p>
+        <p
+          role="timer"
+          aria-label={`Locks in ${spokenTrackClock(ms, !reduced)}`}
+          className={cn(
+            "figure mt-1.5 tabular-nums lg:mt-3",
+            text.length > 8 ? "text-[2.125rem] sm:text-[2.75rem] lg:text-[3.75rem] xl:text-[4.5rem]" : "text-[2.75rem] sm:text-[3.5rem] lg:text-[5rem] xl:text-[6.25rem]",
+            // After the size: tailwind-merge drops a line height that comes before a font size.
+            "leading-[0.8]",
+          )}
+        >
+          {text}
+        </p>
+        <p className="mono-meta mt-3.5 hidden lg:block">
+          <time dateTime={market.locksAt}>{utcStamp(market.locksAt)}</time>
+        </p>
+      </div>
     );
-  } else if (q.error || !q.data) {
-    body = (
-      <PredictionNotice>
-        <Unavailable what="This week's board" />
-      </PredictionNotice>
-    );
-  } else if (shown.length === 0) {
-    body = (
-      <PredictionNotice>
-        <p className="py-2 text-sm text-muted-foreground">{NEXT_WEEK_MARKETS_COPY}</p>
-      </PredictionNotice>
-    );
-  } else {
-    body = (
-      <>
-        {shown.map((m, i) => (
-          <PredictionCard key={m.id} market={m} now={now} className={cn(i > 0 && "hidden lg:flex")} />
-        ))}
-        {count > 1 ? (
-          <Link href="/predictions" className={cn(CARD_LINK, "self-start px-1 lg:hidden")}>
+  }
+  const settling = Date.parse(market.settleAt) <= now;
+  const word =
+    status === "settled" ? (market.outcome === "yes" ? "Yes" : market.outcome === "no" ? "No" : "Void") : status === "void" ? "Void" : settling ? "Settling" : "Locked";
+  const tone = word === "Yes" ? "text-yes" : word === "No" ? "text-no" : "text-foreground";
+  const label = status === "settled" || status === "void" ? "Result" : "Entries closed";
+  const meta =
+    status === "settled" ? `Settled ${utcStamp(market.settleAt)}` : status === "void" ? `Refunded ${utcStamp(market.settleAt)}` : `Settles ${utcStamp(market.settleAt)}`;
+  return (
+    <div className={CLOCK}>
+      <p className={CLOCK_LABEL}>{label}</p>
+      <p
+        className={cn(
+          "figure mt-1.5 font-medium font-stretch-[85%] lg:mt-3",
+          word.length > 4 ? "text-[2rem] sm:text-[2.75rem] lg:text-[3.75rem] xl:text-[4.5rem]" : "text-[2.75rem] sm:text-[3.5rem] lg:text-[5rem] xl:text-[6.25rem]",
+          "leading-[0.8]",
+          tone,
+        )}
+      >
+        {word}
+      </p>
+      <p className="mono-meta mt-3.5 hidden lg:block">
+        <time dateTime={market.settleAt}>{meta}</time>
+      </p>
+    </div>
+  );
+}
+
+/** "57% say No", the split, and the points in (the house bots seed every pool, so it says so). */
+function Crowd({ market, final }: { market: CallMarketView; final: boolean }) {
+  const lead = crowdLead(market.odds);
+  const empty = !(market.odds.total > 0);
+  return (
+    <div className={CROWD}>
+      <p className="mb-[9px] font-display text-[1.1875rem] leading-none lg:mb-3.5 lg:text-[1.875rem]">
+        {lead ? (
+          <>
+            <b
+              className={cn(
+                "mr-[3px] font-sans text-xl font-semibold tracking-[-0.01em] tabular-nums font-stretch-[88%] lg:mr-1.5 lg:text-[1.875rem]",
+                lead.side === "yes" ? "text-yes" : "text-no",
+              )}
+            >
+              {lead.pct}
+            </b>
+            {final ? "said" : "say"} {lead.side === "yes" ? "Yes" : "No"}
+          </>
+        ) : empty ? (
+          "No points in yet"
+        ) : (
+          "An even split"
+        )}
+      </p>
+      <SplitBar odds={market.odds} />
+      <p className="mt-2 text-xs leading-snug text-pretty text-muted-foreground lg:mt-3 lg:text-[0.84375rem] lg:leading-[1.4]">
+        {empty ? "Points only." : `${formatPoints(market.odds.total)} points in, incl. bot seed. Points only.`}
+      </p>
+    </div>
+  );
+}
+
+function Stage({
+  market,
+  index,
+  total,
+  count,
+  final,
+  week,
+  now,
+  reduced,
+  questionId,
+}: {
+  market: CallMarketView;
+  index: number;
+  total: number;
+  count: number;
+  final: boolean;
+  week: WeekTrackModel | null;
+  now: number;
+  reduced: boolean;
+  questionId: string;
+}) {
+  const status = liveStatus(market, now);
+  const settled = final && status === "settled" && market.settledPrice !== null;
+  // Locked or final, the action is the board, never one nobody can take until next week.
+  const action = final ? "See all results" : status === "open" ? "Make a prediction" : "See predictions";
+  return (
+    <>
+      <div className={MAIN}>
+        <div className={KICK}>
+          <XStockLogo symbol={market.symbol} className="size-[22px] lg:size-7" />
+          <b className="font-semibold whitespace-nowrap text-foreground">
+            {final && week ? `Week of ${utcDayMonth(week.monday)}` : "This week's prediction"}
+          </b>
+          {total > 1 ? (
+            <>
+              <span aria-hidden className="h-3.5 w-px shrink-0 bg-rule-2" />
+              <span className="whitespace-nowrap">
+                {index + 1} of {total}
+              </span>
+            </>
+          ) : null}
+          {settled ? <span className="stamp ml-0.5">Final</span> : null}
+        </div>
+        <h2
+          id={questionId}
+          className="mt-2.5 font-display text-[2.1875rem] leading-[0.98] font-normal tracking-[-0.012em] sm:text-5xl lg:mt-4 lg:text-[3.25rem] lg:leading-[0.96] xl:text-[4.375rem]"
+        >
+          Will {market.ticker} close above{" "}
+          <span className="block whitespace-nowrap">
+            {formatUsd(market.strike)} on {formatSettleDay(market.settleAt)}?
+          </span>
+        </h2>
+        <Gauge market={market} settled={settled} />
+        {count > total ? (
+          <Link
+            href="/predictions"
+            className="mt-2 inline-flex min-h-10 items-center rounded-sm text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--focus)] motion-reduce:transition-none"
+          >
             See all {count} predictions
             <Arrow />
           </Link>
         ) : null}
-      </>
+      </div>
+      <div className={SIDE}>
+        <Clock market={market} now={now} final={final} reduced={reduced} />
+        <Crowd market={market} final={final} />
+        <Link href="/predictions" className={cn(STAGE_ACTION, "mt-auto hidden self-start lg:inline-flex")}>
+          {action}
+        </Link>
+      </div>
+    </>
+  );
+}
+
+/** The loading stage, at its loaded sizes, so the hero does not jump when the board arrives. */
+function StageSkeleton() {
+  return (
+    <>
+      <div className={MAIN} aria-hidden>
+        <div className="flex items-center gap-3">
+          <Bar className="size-[22px] rounded-full lg:size-7" />
+          <Bar className="h-3.5 w-44" />
+        </div>
+        <Bar className="mt-2.5 h-[34px] w-[85%] lg:mt-4 lg:h-[50px] xl:h-[67px]" />
+        <Bar className="mt-0.5 h-[34px] w-[65%] lg:mt-0.5 lg:h-[50px] xl:h-[67px]" />
+        <div className="relative mt-3.5 h-[84px] lg:mt-[30px] lg:h-[108px]">
+          <Bar className="absolute inset-x-0 top-10 h-2 lg:top-[52px] lg:h-2.5" />
+        </div>
+      </div>
+      <div className={SIDE} aria-hidden>
+        <div className={CLOCK}>
+          <Bar className="h-3 w-16 lg:h-3.5" />
+          <Bar className="mt-1.5 h-[35px] w-32 lg:mt-3 lg:h-16 lg:w-52 xl:h-20 xl:w-64" />
+          <Bar className="mt-3.5 hidden h-3.5 w-44 lg:block" />
+        </div>
+        <div className={CROWD}>
+          <Bar className="h-[19px] w-24 lg:h-[30px] lg:w-44" />
+          <Bar className="mt-[9px] h-3 w-full lg:mt-3.5 lg:h-4" />
+          <Bar className="mt-2 h-3 w-3/4" />
+        </div>
+        <Bar className="mt-auto hidden h-12 w-48 lg:block" />
+      </div>
+    </>
+  );
+}
+
+/** The stage for the states with no question to show: a sentence and the way to the board. */
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="col-span-2 py-6 lg:py-8">
+      <p className={KICK}>
+        <b className="font-semibold text-foreground">Friday predictions</b>
+      </p>
+      <p className="mt-3 max-w-[24ch] font-display text-[1.75rem] leading-[1.02] text-balance sm:text-4xl lg:mt-4 lg:text-[2.75rem]">{children}</p>
+      <Link href="/predictions" className={cn(STAGE_ACTION, "mt-6")}>
+        See predictions
+      </Link>
+    </div>
+  );
+}
+
+const TABS = "[grid-area:mkts] mt-[30px] grid border-y border-rule md:grid-cols-3 lg:mt-0";
+
+/** This week's questions as tabs (WAI-ARIA tabs: arrow keys, Home and End move the selection). */
+function MarketTabs({
+  markets,
+  selected,
+  onSelect,
+  baseId,
+  panelId,
+}: {
+  markets: CallMarketView[];
+  selected: number;
+  onSelect: (id: string) => void;
+  baseId: string;
+  panelId: string;
+}) {
+  const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const onKey = (e: React.KeyboardEvent, i: number) => {
+    const n = markets.length;
+    const j =
+      e.key === "ArrowRight" || e.key === "ArrowDown"
+        ? (i + 1) % n
+        : e.key === "ArrowLeft" || e.key === "ArrowUp"
+          ? (i - 1 + n) % n
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? n - 1
+              : -1;
+    if (j < 0) return;
+    e.preventDefault();
+    onSelect(markets[j].id);
+    refs.current[j]?.focus();
+  };
+  return (
+    <div role="tablist" aria-label="This week's predictions" className={TABS}>
+      {markets.map((m, i) => {
+        const on = i === selected;
+        return (
+          <button
+            key={m.id}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            type="button"
+            role="tab"
+            id={`${baseId}-tab-${i}`}
+            aria-selected={on}
+            aria-controls={panelId}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onSelect(m.id)}
+            onKeyDown={(e) => onKey(e, i)}
+            className={cn(
+              "relative grid min-w-0 cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-3 pt-3.5 pb-[15px] text-left outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-inset motion-reduce:transition-none md:pr-7 md:pb-4",
+              i > 0 && "border-t border-rule md:border-t-0 md:border-l md:pl-7",
+              on ? "before:absolute before:inset-x-0 before:-top-px before:h-0.5 before:bg-paper md:before:right-7" : "opacity-[0.86] hover:opacity-100",
+              on && i > 0 && "md:before:left-7",
+            )}
+          >
+            <XStockLogo symbol={m.symbol} className="size-[26px]" />
+            <span className="truncate text-sm leading-tight text-muted-foreground">
+              <b className="mr-1 font-semibold text-foreground">{m.ticker}</b>above {formatUsd(m.strike)}
+            </span>
+            <SplitBar odds={m.odds} className="col-span-2" />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TabsSkeleton() {
+  return (
+    <div className={TABS} aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          data-slot="tab-skeleton"
+          className={cn("grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 pt-3.5 pb-[15px] md:pr-7 md:pb-4", i > 0 && "border-t border-rule md:border-t-0 md:border-l md:pl-7")}
+        >
+          <Bar className="size-[26px] rounded-full" />
+          <Bar className="h-3.5 w-36" />
+          <Bar className="col-span-2 h-3 w-full lg:h-4" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The hero's stage and tabs: this week's prediction (open or locked) as the stage, the week's other
+ * questions as tabs. From Friday's close, the week that just closed, as final results.
+ */
+export function LivePredictions() {
+  const calls = useCalls();
+  const league = useLeague();
+  const reduced = useReducedMotion();
+  const now = useServerNow(calls.data?.now, reduced ? 60_000 : 1_000);
+  const week = landingWeek(calls.data, league.data, now);
+  const { shown, count, final } = pickHeroMarkets(calls.data?.markets, now, week);
+  const [picked, setPicked] = React.useState<string | null>(null);
+  const baseId = React.useId();
+  const panelId = `${baseId}-panel`;
+  const questionId = `${baseId}-question`;
+  const index = Math.max(0, shown.findIndex((m) => m.id === picked));
+  const market = shown[index];
+  const tabs = market !== undefined && shown.length > 1;
+
+  let body: React.ReactNode;
+  if (calls.loading) {
+    body = <StageSkeleton />;
+  } else if (calls.error || !calls.data) {
+    body = <Notice>This week&apos;s board is not available right now.</Notice>;
+  } else if (!market) {
+    body = <Notice>{NEXT_WEEK_MARKETS_COPY}</Notice>;
+  } else {
+    body = (
+      <Stage
+        market={market}
+        index={index}
+        total={shown.length}
+        count={count}
+        final={final}
+        week={week}
+        now={now}
+        reduced={reduced}
+        questionId={questionId}
+      />
     );
   }
 
   return (
-    <div className={cn("flex min-w-0 flex-col gap-2", className)} aria-busy={q.loading || undefined}>
-      {body}
+    <div className="contents">
+      {/* A section, not an article: ARIA in HTML allows role=tabpanel on section and div only. */}
+      <section
+        id={panelId}
+        role={tabs ? "tabpanel" : undefined}
+        aria-labelledby={tabs ? `${baseId}-tab-${index}` : market ? questionId : undefined}
+        aria-label={market ? undefined : "This week's predictions"}
+        aria-busy={calls.loading || undefined}
+        className={STAGE}
+      >
+        {body}
+      </section>
+      {calls.loading ? <TabsSkeleton /> : tabs ? <MarketTabs markets={shown} selected={index} onSelect={setPicked} baseId={baseId} panelId={panelId} /> : null}
     </div>
   );
 }
 
 /* ------------------------------------------------------------------------------------------ */
-/* Ranking                                                                                     */
+/* The three games, each a lane on the week                                                    */
 /* ------------------------------------------------------------------------------------------ */
 
-/** Podium colours from docs/DESIGN.md: gold, silver, bronze. Keyed by rank (tied ranks share a colour). */
-const RANK_CHIP: Record<number, string> = {
-  1: "border-gold/30 bg-gold/10 text-gold",
-  2: "border-zinc-300/20 bg-zinc-300/10 text-zinc-300",
-  3: "border-[#d49a6a]/25 bg-[#d49a6a]/10 text-[#d49a6a]",
-};
-
-const RANK_CHIP_BASE = "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold";
-const RANK_CHIP_QUIET = "border-white/[0.08] bg-white/[0.03] text-muted-foreground";
-
-function RowsSkeleton() {
-  return (
-    <ol className="flex flex-col divide-y divide-white/[0.05]" aria-hidden>
-      {[0, 1, 2].map((i) => (
-        <li key={i} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-          <Bar className="size-7 shrink-0 rounded-full" />
-          <Bar className="h-4 w-28" />
-          <span className="ml-auto flex flex-col items-end gap-1.5">
-            <Bar className="h-4 w-20" />
-            <Bar className="h-3 w-12" />
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function LeagueTop({ q, className }: { q: Loaded<LeagueResponse>; className?: string }) {
-  const now = useServerNow(q.data?.now);
-  const league = q.data?.league ?? null;
-  const rows = q.data?.leaderboard.slice(0, 3) ?? [];
-  const closesAt = league?.open && league.closesIn !== null && q.data ? Date.parse(q.data.now) + league.closesIn : null;
-  const meta = closesAt ? `Closes in ${formatCountdown(closesAt - now)}` : league && !league.open ? "Between weeks" : null;
-
-  return (
-    <PreviewCard
-      icon={TrophyIcon}
-      label={PRACTICE_LEAGUE_TITLE}
-      shortLabel={PRACTICE_SHORT}
-      subLabel={PRACTICE_SUB}
-      meta={meta}
-      href="/competition"
-      cta="Practice in the competition"
-      className={className}
-    >
-      {q.loading ? (
-        <RowsSkeleton />
-      ) : q.error || !q.data ? (
-        <Unavailable what="The competition" />
-      ) : rows.length === 0 ? (
-        <p className="py-2 text-sm text-muted-foreground">No trades yet this week. First trade takes the top spot.</p>
-      ) : (
-        <ol className="flex flex-col divide-y divide-white/[0.05]">
-          {rows.map((r) => (
-            <li key={r.userId} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-              <span className={cn(RANK_CHIP_BASE, RANK_CHIP[r.rank] ?? RANK_CHIP_QUIET)}>{r.rank}</span>
-              <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                <span className="truncate text-sm font-medium text-foreground">{displayName(r.handle, r.address)}</span>
-                {/* Phones: icon only, so the name keeps the width. sm and up: the "house bot" pill. */}
-                {r.isBot ? (
-                  <span
-                    role="img"
-                    aria-label={BOT_LABEL}
-                    title={BOT_LABEL}
-                    className="inline-flex shrink-0 items-center gap-1 text-muted-foreground/70 sm:rounded-full sm:border sm:border-white/[0.06] sm:bg-white/[0.03] sm:px-1.5 sm:text-xs sm:text-muted-foreground"
-                  >
-                    <BotIcon className="size-3.5 sm:size-3" aria-hidden />
-                    <span className="hidden sm:inline">house bot</span>
-                  </span>
-                ) : null}
-              </span>
-              <span className="flex shrink-0 flex-col items-end leading-tight">
-                <span className="text-sm font-semibold tracking-tight text-foreground">{formatUsd(r.equityUsd)}</span>
-                <span
-                  className={cn(
-                    "text-xs font-medium",
-                    r.pnlPct > 0 ? "text-emerald-400" : r.pnlPct < 0 ? "text-rose-400" : "text-muted-foreground",
-                  )}
-                >
-                  {formatSignedPct(r.pnlPct, 2)}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
-    </PreviewCard>
-  );
-}
-
-/** Season top 3: only real players are ever on this board. */
-function SeasonTop({ rows, className }: { rows: LeaderboardRow[]; className?: string }) {
-  return (
-    <PreviewCard icon={TrophyIcon} label="Season leaderboard" meta="Season 0" href="/leaderboard" cta="See the full leaderboard" className={className}>
-      <ol className="flex flex-col divide-y divide-white/[0.05]">
-        {rows.map((r) => (
-          <li key={r.userId} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-            <span className={cn(RANK_CHIP_BASE, RANK_CHIP[r.rank] ?? RANK_CHIP_QUIET)}>{r.rank}</span>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{displayName(r.handle, r.address)}</span>
-            <span className="shrink-0 text-sm font-semibold tracking-tight text-foreground">
-              {formatPoints(r.points)} <span className="text-xs font-medium text-muted-foreground">Season pts</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-    </PreviewCard>
-  );
-}
-
+const LANE_COLS = "xl:grid-cols-[16.75rem_minmax(0,1fr)_14.75rem] xl:gap-x-10";
 /**
- * Season top 3 when three real players exist, else the virtual competition. Neutral skeleton while
- * the board loads. Sits after the prediction cards.
+ * A lane's words sit above the gold "now" line (z-10), with a halo in the grained ground's own tone
+ * (#101011), so the line passes behind them instead of striking through them.
  */
-export function RankCard({ className }: { className?: string }) {
-  const board = useBoard();
-  const league = useLeague();
-  if (board.loading) {
-    return (
-      <PreviewCard icon={TrophyIcon} label="Leaderboard" href="/leaderboard" cta="See the leaderboard" className={className}>
-        <RowsSkeleton />
-      </PreviewCard>
-    );
-  }
-  const top = seasonTopRows(board.data);
-  return top ? <SeasonTop rows={top} className={className} /> : <LeagueTop q={league} className={className} />;
+const LANE_TEXT =
+  "absolute top-8 z-10 text-[0.8125rem] leading-none font-medium whitespace-nowrap text-foreground [text-shadow:0_0_1px_rgb(16_16_17),0_0_3px_rgb(16_16_17),0_0_6px_rgb(16_16_17)] xl:top-[46px] xl:text-sm";
+const LANE_BAR = "absolute top-[54px] h-2 xl:top-[72px] xl:h-2.5";
+
+/** The days above the lanes (desktop), with the gold "now" tag. */
+function DayAxis({ week }: { week: WeekTrackModel | null }) {
+  const nowX = week ? trackX(week.nowMs, week.monday) : null;
+  return (
+    <div className="relative h-[30px]">
+      {TRACK_DAYS.map((d, i) => {
+        const past = week !== null && nowX !== null && (i < 5 ? week.monday + i * DAY_MS <= week.nowMs : nowX >= WEEKDAYS_SHARE);
+        // A day name the "now" tag would sit on steps aside for it.
+        const covered = nowX !== null && nowX >= d.x - 0.012 && nowX - d.x < 0.05;
+        return (
+          <span
+            key={d.long}
+            className={cn(
+              "absolute bottom-[9px] translate-x-[7px] text-[0.78125rem] leading-none font-medium whitespace-nowrap",
+              past ? "text-muted-foreground" : "text-dim",
+              covered && "invisible",
+            )}
+            style={{ left: pct(d.x) }}
+          >
+            {d.long}
+          </span>
+        );
+      })}
+      {nowX !== null ? (
+        <span
+          className="absolute bottom-1.5 -translate-x-1/2 bg-signal px-[5px] pt-[3px] pb-0.5 text-[0.78125rem] leading-none font-semibold text-signal-foreground"
+          style={{ left: pct(nowX) }}
+        >
+          Now
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
-/* ------------------------------------------------------------------------------------------ */
-/* Game tiles                                                                                  */
-/* ------------------------------------------------------------------------------------------ */
+/**
+ * Friday's finish: a checkered line at the close, and its stamp (filled once the week is final). The
+ * stamp sits above the "now" line (z-10): over the weekend "now" lands right on it.
+ */
+function Finish({ x, weekend }: { x: number; weekend: boolean }) {
+  return (
+    <>
+      <span
+        aria-hidden
+        className="absolute inset-y-0 -bottom-px w-1.5 -translate-x-[3px] bg-[conic-gradient(var(--paper)_25%,transparent_0_50%,var(--paper)_0_75%,transparent_0)] bg-[length:6px_6px] opacity-55"
+        style={{ left: pct(x) }}
+      />
+      <span
+        className={cn(
+          "absolute top-[70px] z-10 -translate-x-1/2 px-1.5 pt-1 pb-[3px] font-sans text-[11px] leading-none font-extrabold tracking-[0.06em] uppercase italic font-stretch-[112%] xl:top-[69px] xl:translate-x-3",
+          weekend ? "bg-paper text-ink" : "bg-ink text-foreground shadow-[inset_0_0_0_1px_var(--paper)] xl:bg-transparent",
+        )}
+        style={{ left: pct(x) }}
+      >
+        Final
+      </span>
+    </>
+  );
+}
 
-const TILE_ICON: Record<GameTileKey, LucideIcon> = {
-  predictions: TargetIcon,
-  competition: TrophyIcon,
-  quests: ZapIcon,
-};
+/** Elapsed (cream) then still to run (faint), from the lane's start to `end`. */
+function RunBar({ end, nowX }: { end: number; nowX: number }) {
+  const done = Math.min(end, nowX);
+  return (
+    <>
+      <span className={cn(LANE_BAR, "left-0 bg-[rgb(243_240_232/0.62)]")} style={{ width: pct(done) }} />
+      <span className={cn(LANE_BAR, "bg-[rgb(243_240_232/0.2)]")} style={{ left: pct(done), width: pct(Math.max(0, end - done)) }} />
+    </>
+  );
+}
 
 /**
- * Three games, one Season leaderboard: one glass tile per game with one live number (an em dash
- * while it loads or when it is unavailable, never a made-up figure), a short note and one button.
+ * The lane's accessible name (the lane is role="img", so its drawn words are not read): everything
+ * the lane says, the next quest checked and the week's prediction count included.
+ */
+function laneLabel(kind: GameTileKey, week: WeekTrackModel | null, next: { title: string; points: number } | null = null, weekCount = 0): string {
+  if (kind === "quests") {
+    const base = `On-chain quests: your wallet is checked ${WALLET_CHECK_TIMING}.`;
+    return next ? `${base} Next check: ${next.title}, +${formatPoints(next.points)} points.` : base;
+  }
+  if (kind === "predictions") {
+    const count = weekCount > 0 ? ` ${weekCount} ${week?.weekend ? "settled" : "this week"}.` : "";
+    if (!week || week.lockAt === null) return `Predictions: Yes or No on Friday's close.${count}`;
+    const locked = week.weekend || week.nowMs >= week.lockAt;
+    return `Predictions ${locked ? "locked" : "lock"} ${spokenUtcDayTime(week.lockAt)} and settle after Friday's close.${count}`;
+  }
+  if (!week || week.closeAt === null) return "The weekly competition, with virtual cash.";
+  return `The virtual-cash competition ${week.weekend ? "closed" : "closes"} ${spokenUtcDayTime(week.closeAt)}.`;
+}
+
+function LaneTrack({
+  kind,
+  week,
+  weekCount,
+  next,
+}: {
+  kind: GameTileKey;
+  week: WeekTrackModel | null;
+  weekCount: number;
+  next: { title: string; points: number } | null;
+}) {
+  const at = (t: number) => (week ? trackX(t, week.monday) : 0);
+  const nowX = week ? at(week.nowMs) : null;
+  const lockAt = week?.lockAt ?? null;
+  const lockX = lockAt !== null ? at(lockAt) : null;
+  const closeX = week?.closeAt != null ? at(week.closeAt) : null;
+  const weekend = week?.weekend ?? false;
+
+  let content: React.ReactNode = null;
+  if (week && nowX !== null) {
+    if (kind === "predictions") {
+      const end = lockX ?? closeX;
+      const state = weekend ? "Final" : lockAt !== null && week.nowMs >= lockAt ? "Locked" : "Open";
+      content = (
+        <>
+          <span className={cn(LANE_TEXT, "left-0")}>
+            {state}
+            {weekCount > 0 ? (
+              <span className="ml-2 hidden font-normal text-muted-foreground xl:inline">
+                {weekCount} {weekend ? "settled" : "this week"}
+              </span>
+            ) : null}
+          </span>
+          {end !== null ? <RunBar end={end} nowX={nowX} /> : null}
+          {lockAt !== null && lockX !== null ? (
+            <>
+              {closeX !== null && closeX > lockX ? (
+                <span
+                  className={cn(LANE_BAR, "bg-[repeating-linear-gradient(135deg,rgb(243_240_232/0.34)_0_2px,transparent_2px_6px)]")}
+                  style={{ left: pct(lockX), width: pct(closeX - lockX) }}
+                />
+              ) : null}
+              <span className="absolute top-[46px] h-6 w-0.5 -translate-x-px bg-paper xl:top-[62px] xl:h-[30px]" style={{ left: pct(lockX) }} />
+              <span className={LANE_TEXT} style={{ left: `calc(${pct(lockX)} + 10px)` }}>
+                Lock
+                {/* The time only where the lane leaves it room before Friday's finish (the week track above always shows it). */}
+                <span className="ml-2 hidden font-mono text-[0.8125rem] font-normal text-muted-foreground min-[1400px]:inline">{utcDayTime(lockAt)}</span>
+              </span>
+            </>
+          ) : null}
+        </>
+      );
+    } else if (kind === "competition") {
+      content = (
+        <>
+          <span className={cn(LANE_TEXT, "left-0")}>Paper trades with $10,000 virtual cash</span>
+          {closeX !== null ? <RunBar end={closeX} nowX={nowX} /> : null}
+        </>
+      );
+    } else {
+      content = (
+        <>
+          <span className={cn(LANE_TEXT, "left-0")}>
+            Checked from your wallet<span className="hidden xl:inline">, at sign-in and through the day</span>
+          </span>
+          {/* Checks, not a bar: a dotted rail, the checks already run in cream, the rest of the week faint. */}
+          <span className="absolute inset-x-0 top-[59px] h-0.5 -translate-y-1/2 bg-[repeating-linear-gradient(90deg,var(--rule-2)_0_2px,transparent_2px_7px)] xl:top-[76px]" />
+          <span
+            className="absolute left-0 top-[59px] h-0.5 -translate-y-1/2 bg-[repeating-linear-gradient(90deg,rgb(243_240_232/0.62)_0_2px,transparent_2px_7px)] xl:top-[76px]"
+            style={{ width: pct(nowX) }}
+          />
+          <span
+            className="absolute top-[59px] z-10 size-[11px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink shadow-[inset_0_0_0_1.5px_var(--paper),0_0_0_4px_rgb(243_240_232/0.12)] xl:top-[76px] xl:size-[13px]"
+            style={{ left: pct(nowX) }}
+          />
+          {/* The tip reads from the ring onwards, clear of the "now" line; late in the week it turns to the left of it. */}
+          <span
+            className={cn(
+              "absolute top-[70px] text-[0.78125rem] leading-[1.25] font-medium whitespace-nowrap text-foreground xl:top-24 xl:text-[0.8125rem]",
+              nowX > 0.7 ? "-translate-x-[calc(100%+12px)] text-right" : "translate-x-3",
+            )}
+            style={{ left: pct(nowX) }}
+          >
+            Next check
+            {next ? (
+              <span className="hidden text-[0.78125rem] font-normal text-muted-foreground xl:block">
+                {next.title} · +{formatPoints(next.points)}
+              </span>
+            ) : null}
+          </span>
+        </>
+      );
+    }
+  }
+
+  return (
+    <div className="relative min-h-[92px] xl:min-h-[132px]" role="img" aria-label={laneLabel(kind, week, next, weekCount)}>
+      {/* The days: a rule at each midnight, the weekend hatched. */}
+      {TRACK_DAYS.map((d) => (
+        <span key={d.long} className="absolute inset-y-0 w-px bg-rule" style={{ left: pct(d.x) }} />
+      ))}
+      <span
+        className="absolute inset-y-0 right-0 bg-[repeating-linear-gradient(135deg,rgb(243_240_232/0.025)_0_6px,transparent_6px_12px)]"
+        style={{ left: pct(WEEKDAYS_SHARE) }}
+      />
+      {TRACK_DAYS.map((d) => (
+        <span key={`d-${d.long}`} className="absolute top-2 translate-x-[5px] text-[0.6875rem] leading-none font-medium text-dim xl:hidden" style={{ left: pct(d.x) }}>
+          {d.short}
+        </span>
+      ))}
+      {content}
+      {week && closeX !== null && kind !== "quests" ? <Finish x={closeX} weekend={weekend} /> : null}
+      {nowX !== null ? <span className="absolute inset-y-0 -bottom-px w-px bg-signal" style={{ left: pct(nowX) }} /> : null}
+    </div>
+  );
+}
+
+/**
+ * Three games, one Season leaderboard: each a lane on this week's Monday-to-Friday axis, with one
+ * large live figure (an em dash while it loads or when it is unavailable, never a made-up figure),
+ * one short line and one button.
  */
 export function GameTiles({ className }: { className?: string }) {
   const calls = useCalls();
   const league = useLeague();
   const plays = usePlays();
-  const now = useServerNow(calls.data?.now);
+  const now = useServerNow(calls.data?.now ?? league.data?.now, 30_000);
+  const week = landingWeek(calls.data, league.data, now);
+  const weekend = week?.weekend ?? false;
 
-  const competition = competitionTileStat(league.data);
-  const quests = onChainQuestTileStat(plays.data);
-  // No dead end: between weeks (nothing open or locked) the tile says so, and with every
-  // prediction locked its button offers the board instead of an action nobody can take.
-  const liveCount = calls.data ? pickLiveMarkets(calls.data.markets, now, 0).count : null;
+  // With every prediction locked, the button offers the board instead of an action nobody can take.
   const openCount = calls.data ? calls.data.markets.filter((m) => liveStatus(m, now) === "open").length : null;
-  const live: Record<GameTileKey, { value: string | null; note: string; busy: boolean }> = {
-    predictions: {
-      value: liveCount === 0 ? "Between weeks" : predictionsTileStat(calls.data?.markets, now),
-      note: liveCount === 0 ? NEXT_WEEK_MARKETS_COPY : TILE_COPY.predictions.note,
-      busy: calls.loading,
-    },
-    competition: {
-      value: competition?.value ?? null,
-      note: competition?.note ?? TILE_COPY.competition.note,
-      busy: league.loading,
-    },
-    quests: {
-      value: quests?.value ?? null,
-      note: questTileNote(quests),
-      busy: plays.loading,
-    },
+  const weekCount =
+    week && calls.data
+      ? calls.data.markets.filter((m) => {
+          const t = Date.parse(m.settleAt);
+          return t >= week.monday && t < week.nextMonday;
+        }).length
+      : 0;
+  const live: Record<GameTileKey, { figure: TileFigure | null; busy: boolean }> = {
+    predictions: { figure: predictionsLaneFigure(calls.data?.markets, now, week), busy: calls.loading },
+    competition: { figure: competitionLaneFigure(league.data, weekend), busy: league.loading },
+    quests: { figure: questTileFigure(onChainQuestTileStat(plays.data)), busy: plays.loading },
   };
+  const next = nextQuestCheck(plays.data);
 
   return (
-    <section aria-labelledby="games-title" className={cn("flex flex-col gap-3", className)}>
+    <section aria-labelledby="games-title" className={className}>
       <h2 id="games-title" className="sr-only">
         Three games, one Season leaderboard
       </h2>
-      <ul className="grid gap-3 sm:grid-cols-3">
+      <div aria-hidden className={cn("hidden xl:grid", LANE_COLS)}>
+        <p className="self-end pb-[7px] font-display text-[1.625rem] leading-none text-muted-foreground">
+          {weekend && week ? `Week of ${utcDayMonth(week.monday)}` : "This week"}
+        </p>
+        <DayAxis week={week} />
+        <span />
+      </div>
+      <ul>
         {GAME_TILE_ORDER.map((key) => {
           const copy = TILE_COPY[key];
-          const Icon = TILE_ICON[key];
-          const { value, note, busy } = live[key];
+          const { figure, busy } = live[key];
           return (
-            <li
-              key={key}
-              className="relative flex min-w-0 flex-col gap-2 overflow-hidden rounded-2xl border border-white/[0.07] bg-card p-4 lg:px-5"
-            >
-              <span
-                className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent"
-                aria-hidden
-              />
-              <h3 className="flex items-center gap-2 text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                <Icon className={cn("size-4", key === "predictions" ? "text-ember" : "text-gold")} aria-hidden />
-                {copy.title}
-              </h3>
-              <div className="flex min-w-0 flex-col gap-0.5" aria-busy={busy || undefined}>
-                <p className="text-2xl leading-8 font-semibold tracking-tight text-balance text-foreground tabular-nums sm:text-xl sm:leading-7 lg:text-2xl lg:leading-8">
-                  {value ?? (
+            <li key={key} className={cn("grid border-t border-rule-2 xl:border-rule xl:last:border-b", LANE_COLS)}>
+              <div
+                className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 pt-[18px] pb-1 xl:block xl:pt-6 xl:pb-[22px]"
+                aria-busy={busy || undefined}
+              >
+                <h3 className="font-display text-[1.875rem] leading-none font-normal tracking-[-0.005em] xl:text-[2.25rem]">{copy.title}</h3>
+                <p className="figure col-start-2 row-start-1 text-[2rem] leading-[0.8] font-light tabular-nums xl:mt-3.5 xl:text-[2.75rem]">
+                  {figure?.figure ?? (
                     <>
                       <span aria-hidden>{TILE_PLACEHOLDER}</span>
                       <span className="sr-only">{busy ? "Loading" : "Not available right now"}</span>
                     </>
                   )}
                 </p>
-                <p className="text-xs leading-snug text-pretty text-muted-foreground">{note}</p>
+                <p className="col-span-2 mt-2 text-[0.84375rem] leading-[1.35] text-pretty text-muted-foreground xl:mt-2.5 xl:max-w-[30ch]">
+                  {figure?.line ?? copy.note}
+                </p>
               </div>
-              <Link
-                href={copy.href}
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "mt-auto h-auto min-h-10 self-start py-1.5 whitespace-normal sm:min-h-8 lg:h-8 lg:py-0",
-                )}
-              >
+              <LaneTrack kind={key} week={week} weekCount={weekCount} next={next} />
+              <Link href={copy.href} className={cn(RULED_LINK, "mt-1 mb-5 justify-self-start xl:my-0 xl:self-center xl:justify-self-end")}>
                 {key === "predictions" && openCount === 0 ? "See predictions" : copy.cta}
-                <ArrowRightIcon data-icon="inline-end" aria-hidden />
+                <Arrow />
               </Link>
             </li>
           );
@@ -627,4 +950,53 @@ export function GameTiles({ className }: { className?: string }) {
   );
 }
 
-export default ScoreboardPreview;
+/* ------------------------------------------------------------------------------------------ */
+/* Season seats                                                                                */
+/* ------------------------------------------------------------------------------------------ */
+
+const SEAT = "grid h-[76px] grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 px-4 py-3 lg:h-[108px] lg:px-5 lg:py-[18px]";
+
+/**
+ * The Season seats: the Season leaderboard's first three places. A real player takes a seat (bots
+ * are never on this board; starter points never count); every seat left is an open "Your slot".
+ * While the board loads, and after a failed read, it renders nothing.
+ */
+export function SeasonTop({ className }: { className?: string }) {
+  const seats = seasonSeats(useBoard().data);
+  // An open seat says whose it could be: the visitor's, until they hold a seat themselves (as /leaderboard).
+  const userId = useOptionalSession()?.session?.userId ?? null;
+  if (!seats) return null;
+  const open = openSeatCopy(seats, userId);
+  return (
+    <div className={cn("min-w-0", className)}>
+      <ol aria-label="Season top 3" className="grid grid-cols-2 gap-2 lg:gap-2.5 xl:grid-cols-[1.25fr_1fr_1fr]">
+        {seats.map(({ rank, row }) =>
+          row ? (
+            <li key={rank} className={cn(SEAT, "col-span-2 bg-ink-2 shadow-[inset_0_0_0_1px_var(--rule)] xl:col-span-1")}>
+              <span className="figure text-[2.75rem] leading-[0.8] font-light lg:text-[3.75rem]">{row.rank ?? rank}</span>
+              <div className="min-w-0">
+                <p className="truncate text-base leading-[1.1] font-semibold">{displayName(row.handle, row.address)}</p>
+                <p className="mt-1 text-[1.375rem] leading-none font-semibold tabular-nums font-stretch-[85%] lg:mt-2 lg:text-[1.625rem]">
+                  {formatPoints(row.points)}
+                  <span className="ml-1.5 font-sans text-[0.8125rem] font-normal text-muted-foreground font-stretch-normal">Season points</span>
+                </p>
+              </div>
+            </li>
+          ) : (
+            <li key={rank} className={cn(SEAT, "border border-dashed border-[rgb(243_240_232/0.3)]")}>
+              <span className="figure text-[2.75rem] leading-[0.8] font-light text-dim lg:text-[3.75rem]">{rank}</span>
+              <div className="min-w-0">
+                <p className="text-base leading-[1.1] font-semibold">{open.title}</p>
+                <p className="mt-1 text-sm leading-tight text-muted-foreground lg:mt-2">{open.hint}</p>
+              </div>
+            </li>
+          ),
+        )}
+      </ol>
+      <Link href="/leaderboard" className={cn(RULED_LINK, "mt-5 text-[0.9375rem]")}>
+        Leaderboard
+        <Arrow />
+      </Link>
+    </div>
+  );
+}

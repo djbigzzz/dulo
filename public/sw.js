@@ -8,10 +8,11 @@
  *   - everything else (/api, RPC, ...)   -> untouched; the app must never serve a
  *                                           stale price or balance from here.
  *
- * Bump CACHE_VERSION whenever the precache list or the strategy changes.
+ * Bump CACHE_VERSION whenever the precache list, the strategy or a precached file's content changes
+ * (the icons are cache-first, so a new look only reaches installed apps through a new version).
  */
 
-const CACHE_VERSION = "dulo-v2";
+const CACHE_VERSION = "dulo-v4";
 const PRECACHE = [
   "/offline",
   "/favicon.svg",
@@ -85,7 +86,7 @@ async function networkFirstNavigation(request) {
     const offline = await cache.match(OFFLINE_URL);
     if (offline) return offline;
     return new Response(
-      "<!doctype html><title>Offline</title><body style=\"background:#0a0908;color:#fafafa;font-family:system-ui;padding:2rem\"><h1>You are offline</h1><p>Dulo needs a connection to read your on-chain activity.</p>",
+      "<!doctype html><title>Offline</title><body style=\"background:#0b0b0c;color:#f3f0e8;font-family:system-ui,sans-serif;padding:2rem\"><h1 style=\"font-family:'Times New Roman',serif;font-weight:400\">You are offline</h1><p>Dulo needs a connection to read your on-chain activity.</p>",
       { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
     );
   }

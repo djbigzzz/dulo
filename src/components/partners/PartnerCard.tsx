@@ -17,18 +17,21 @@ export interface PartnerCardProps {
 /** Shown wherever Partner logos are listed: a logo on Dulo is not an endorsement. Defined in components/common/compliance. */
 export { PARTNER_MARKS_NOTICE } from "@/components/common/compliance";
 
-const LOGO_TILE =
-  "flex shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] p-1 shadow-[inset_0_1px_0_rgb(255_245_230/0.06),0_8px_20px_-12px_rgb(0_0_0/0.7)]";
-const DIVIDER = "h-px bg-gradient-to-r from-transparent via-white/10 to-transparent";
+/** One Partner per row on 1px rules: logo, name and listing, the blurb, the quest count, the way in. */
+export const PARTNER_ROW =
+  "group grid min-h-[5.5rem] grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-4 border-t border-rule py-4 outline-none transition-colors duration-200 hover:bg-white/[0.025] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-inset motion-reduce:transition-none sm:grid-cols-[3rem_minmax(0,14rem)_minmax(0,1fr)_auto_auto] sm:gap-x-6 sm:px-2";
 
-/** "Quests live" as a gold pill with a check; "Coming soon" as a muted dashed pill. */
+/**
+ * "Quests live" as a cream ruled tag with a check; "Coming soon" as a muted dashed tag. Never a hue:
+ * a listing is a fact, not a gain.
+ */
 export function ListingPill({ label, className }: { label: PartnerListingLabel; className?: string }) {
   const soon = label === "Coming soon";
   return (
     <span
       className={cn(
-        "inline-flex h-6 w-fit items-center gap-1 rounded-full border px-2 text-xs font-medium whitespace-nowrap",
-        soon ? "border-dashed border-white/15 text-muted-foreground" : "border-gold/20 bg-gold/[0.06] text-gold",
+        "inline-flex h-5 w-fit items-center gap-1 border px-1.5 text-xs font-semibold whitespace-nowrap",
+        soon ? "border-dashed border-[rgb(243_240_232/0.38)] text-muted-foreground" : "border-rule-2 text-foreground",
         className,
       )}
     >
@@ -38,76 +41,60 @@ export function ListingPill({ label, className }: { label: PartnerListingLabel; 
   );
 }
 
-/** One Partner on /partners. The whole card links to the Partner page. */
+/** A partner logo in the round ink well, greyscale (docs/DESIGN.md "Logos"). */
+export function PartnerMark({ name, logoUrl, size = 48, className }: { name: string; logoUrl: string | null; size?: number; className?: string }) {
+  return (
+    <span className={cn("inline-flex shrink-0 [&_img]:logo-greyscale", className)}>
+      <PartnerLogo name={name} logoUrl={logoUrl} size={size} />
+    </span>
+  );
+}
+
+/** One Partner on /partners, as a row of the list. The whole row links to the Partner page. */
 export function PartnerCard({ partner, className }: PartnerCardProps) {
   const label = partnerListingLabel(partner.livePlayCount);
-  const soon = label === "Coming soon";
   const plays = `${partner.playCount} ${partner.playCount === 1 ? "quest" : "quests"}`;
 
   return (
-    <Link
-      href={`/partners/${encodeURIComponent(partner.slug)}`}
-      className={cn(
-        "group flex h-full flex-col gap-4 rounded-2xl border border-white/[0.07] bg-card p-5 outline-none transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.04] focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-6",
-        className,
-      )}
-    >
-      <div className="flex items-center gap-4">
-        <span className={LOGO_TILE}>
-          <PartnerLogo name={partner.name} logoUrl={partner.logoUrl} size={48} className={cn("rounded-xl ring-0", soon && "opacity-80")} />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-          <p className="w-full truncate text-base font-semibold tracking-tight">{partner.name}</p>
-          <ListingPill label={label} />
-        </div>
-        <span
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/[0.07] text-muted-foreground transition-all duration-300 group-hover:border-white/15 group-hover:text-foreground"
-          aria-hidden
-        >
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-        </span>
+    <Link href={`/partners/${encodeURIComponent(partner.slug)}`} className={cn(PARTNER_ROW, className)}>
+      <PartnerMark name={partner.name} logoUrl={partner.logoUrl} />
+      <div className="flex min-w-0 flex-col items-start gap-1.5">
+        <p className="w-full truncate text-[1.125rem] leading-tight font-semibold">{partner.name}</p>
+        <ListingPill label={label} />
       </div>
-      <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">{partner.blurb}</p>
-      <div className="mt-auto flex flex-col gap-3">
-        <div className={DIVIDER} aria-hidden />
-        <p className="text-sm font-medium tabular-nums">
-          {plays}
-          {partner.livePlayCount > 0 && partner.livePlayCount < partner.playCount ? (
-            <span className="font-normal text-muted-foreground"> · {partner.livePlayCount} live</span>
-          ) : null}
-        </p>
-      </div>
+      <p className="col-span-full col-start-2 line-clamp-2 text-[0.9375rem] leading-relaxed text-muted-foreground sm:col-span-1 sm:col-start-auto">{partner.blurb}</p>
+      <p className="col-start-3 row-start-1 text-right text-[0.9375rem] font-semibold tabular-nums sm:col-start-auto sm:row-start-auto">
+        {plays}
+        {partner.livePlayCount > 0 && partner.livePlayCount < partner.playCount ? (
+          <span className="block text-[0.8125rem] font-normal text-muted-foreground">{partner.livePlayCount} live</span>
+        ) : null}
+      </p>
+      <ArrowRight className="hidden size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transition-none sm:block" aria-hidden />
     </Link>
   );
 }
 
-/** Call-to-action card for projects that want to list quests. */
+/** The open seat at the end of the list, for projects that want to list quests (the dashed "Your slot" row). */
 export function ListProjectCard({ className }: { className?: string }) {
   return (
     <a
       href="#list"
       className={cn(
-        "border-gradient group flex h-full flex-col gap-4 rounded-2xl bg-card p-5 outline-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.04] focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-6",
+        "group my-1 grid min-h-[5.5rem] grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-4 border border-dashed border-[rgb(243_240_232/0.38)] px-3 py-4 outline-none transition-colors duration-200 hover:bg-white/[0.025] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none sm:gap-x-6 sm:px-2",
         className,
       )}
     >
-      <div className="flex items-center gap-4">
-        <span
-          className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.06] text-gold shadow-[inset_0_1px_0_rgb(255_245_230/0.08),0_0_24px_-8px_rgb(216_180_106/0.5)]"
-          aria-hidden
-        >
-          <Plus className="size-5" />
-        </span>
-        <p className="text-base font-semibold tracking-tight">List your project</p>
-      </div>
-      <p className="text-sm leading-relaxed text-muted-foreground">An on-chain quest is one JSON rule. List one and Dulo players find your project.</p>
-      <div className="mt-auto flex flex-col gap-3">
-        <div className={DIVIDER} aria-hidden />
-        <p className="inline-flex items-center gap-1.5 text-sm font-medium">
-          How listing works
-          <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" aria-hidden />
-        </p>
-      </div>
+      <span className="flex size-12 items-center justify-center rounded-full border-[1.5px] border-dashed border-muted-foreground text-muted-foreground" aria-hidden>
+        <Plus className="size-4" />
+      </span>
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="text-[1.125rem] leading-tight font-semibold">List your project</span>
+        <span className="text-[0.9375rem] leading-relaxed text-muted-foreground">An on-chain quest is one JSON rule. List one and Dulo players find your project.</span>
+      </span>
+      <span className="inline-flex items-center gap-1.5 text-[0.9375rem] font-semibold">
+        <span className="hidden sm:inline">How listing works</span>
+        <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transition-none" aria-hidden />
+      </span>
     </a>
   );
 }
@@ -136,6 +123,7 @@ export interface ListProjectSectionProps {
   contactHref?: string | null;
 }
 
+/** How a project would list: three steps as lanes on 1px rules, numbered in the scoreboard cut. */
 export function ListProjectSection({
   className,
   contactHref = partnerContactHref(process.env.NEXT_PUBLIC_PARTNER_CONTACT),
@@ -143,52 +131,40 @@ export function ListProjectSection({
   const external = contactHref?.startsWith("https:") ?? false;
   const points = [
     "Describe the on-chain action as one JSON rule: hold, deposit, trade or keep a position.",
-    "Dulo checks it against players' own wallets every 5 minutes. Nothing to deploy.",
+    "Dulo checks it against players' own wallets when they sign in and again through the day. Nothing to deploy.",
     "Your quests sit on the board with your logo and a page of their own.",
   ];
   return (
-    <section
-      id="list"
-      aria-labelledby="list-title"
-      className={cn("scroll-mt-24 rounded-2xl border border-white/[0.07] bg-card p-6 sm:p-8", className)}
-    >
-      <p className="flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-gold uppercase">
-        <span className="h-px w-5 bg-gradient-to-r from-gold/0 to-gold/80" aria-hidden />
-        For projects
-      </p>
-      <h2 id="list-title" className="mt-3 font-display text-3xl leading-tight font-normal sm:text-4xl">
-        List your project
-      </h2>
-      <div className={cn(DIVIDER, "my-6")} aria-hidden />
-      <ul className="grid gap-5 md:grid-cols-3 md:gap-6">
-        {points.map((p) => (
-          <li key={p} className="flex items-start gap-3 text-sm leading-relaxed text-muted-foreground">
-            <span
-              className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-gold/25 bg-gold/[0.08] text-gold shadow-[0_0_14px_-4px_rgb(216_180_106/0.5)]"
-              aria-hidden
-            >
-              <Check className="size-3.5" strokeWidth={2.75} />
+    <section id="list" aria-labelledby="list-title" className={cn("flex scroll-mt-6 flex-col gap-4", className)}>
+      <div className="flex flex-col gap-2 pb-1">
+        <p className="text-[0.9375rem] font-medium text-muted-foreground">For projects</p>
+        <h2 id="list-title" className="font-display text-[2rem] leading-none font-normal tracking-[-0.012em] sm:text-[2.5rem]">
+          List your project
+        </h2>
+      </div>
+      <ol className="grid border-b border-rule md:grid-cols-3 md:gap-x-8">
+        {points.map((p, i) => (
+          <li key={p} className="flex items-start gap-4 border-t border-rule py-5 text-[0.9375rem] leading-relaxed text-muted-foreground">
+            <span className="figure w-5 shrink-0 text-[2rem] leading-[0.8] text-foreground" aria-hidden>
+              {i + 1}
             </span>
             <span>{p}</span>
           </li>
         ))}
-      </ul>
+      </ol>
       {contactHref ? (
-        <>
-          <div className={cn(DIVIDER, "my-6")} aria-hidden />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm leading-relaxed text-muted-foreground">Tell us the on-chain action you want players to do.</p>
-            <a
-              href={contactHref}
-              {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-10 w-full px-4 sm:w-auto")}
-            >
-              {external ? <ArrowUpRight data-icon="inline-start" aria-hidden /> : <Mail data-icon="inline-start" aria-hidden />}
-              Talk to us
-              {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
-            </a>
-          </div>
-        </>
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">Tell us the on-chain action you want players to do.</p>
+          <a
+            href={contactHref}
+            {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full px-4 sm:w-auto")}
+          >
+            {external ? <ArrowUpRight data-icon="inline-start" aria-hidden /> : <Mail data-icon="inline-start" aria-hidden />}
+            Talk to us
+            {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
+          </a>
+        </div>
       ) : null}
     </section>
   );
@@ -196,18 +172,14 @@ export function ListProjectSection({
 
 export function PartnerCardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("flex h-full flex-col gap-4 rounded-2xl border border-white/[0.07] bg-card p-5 sm:p-6", className)} aria-hidden>
-      <div className="flex items-center gap-4">
-        <Skeleton className="size-14 rounded-2xl bg-white/[0.05]" />
-        <div className="flex flex-1 flex-col gap-2">
-          <Skeleton className="h-4 w-28 bg-white/[0.05]" />
-          <Skeleton className="h-5 w-24 rounded-full bg-white/[0.05]" />
-        </div>
+    <div className={cn(PARTNER_ROW, "hover:bg-transparent", className)} aria-hidden>
+      <Skeleton className="size-12 rounded-full" />
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-4 w-20" />
       </div>
-      <Skeleton className="h-4 w-full bg-white/[0.05]" />
-      <Skeleton className="h-4 w-3/4 bg-white/[0.05]" />
-      <div className={DIVIDER} />
-      <Skeleton className="h-4 w-16 bg-white/[0.05]" />
+      <Skeleton className="col-span-full col-start-2 h-4 w-full sm:col-span-1 sm:col-start-auto" />
+      <Skeleton className="col-start-3 row-start-1 h-4 w-16 sm:col-start-auto sm:row-start-auto" />
     </div>
   );
 }

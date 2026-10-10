@@ -19,6 +19,14 @@ import { assetNounFor, isPreIpoSource } from "@/components/common/issuer";
  */
 export type QuestKind = "in-platform" | "on-chain" | "partner-coming-soon";
 
+/**
+ * When a player's wallets are read, in plain words. The scheduled check (snapshot + evaluate) runs
+ * a few times a day, not on a fixed fast cadence; sign-in and the Refresh button on /quests read the
+ * wallet on the spot. Copy never promises a check "every 5 minutes" or "within seconds"
+ * (tests/plain-names.test.ts scans for it).
+ */
+export const WALLET_CHECK_TIMING = "when you sign in and again through the day";
+
 export function questKind(play: { rule: PlayRule; comingSoon: boolean }): QuestKind {
   if (play.comingSoon) return "partner-coming-soon";
   if (play.rule.type === "internal_event") return "in-platform";

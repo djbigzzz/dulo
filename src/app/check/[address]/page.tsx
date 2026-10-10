@@ -22,7 +22,7 @@ import { HoldingsList } from "@/app/check/_components/HoldingsList";
 import { PreviewBoard } from "@/app/check/_components/PreviewBoard";
 import { PreviewProofSheet } from "@/app/check/_components/PreviewPlayCard";
 
-const ENTER = "animate-in fade-in-0 slide-in-from-bottom-2 duration-500 motion-reduce:animate-none";
+const ENTER = "animate-in fade-in-0 duration-500 motion-reduce:animate-none";
 
 /** Route params arrive URL-encoded on some paths; a malformed escape is passed through (the API answers 400). */
 function safeDecode(s: string): string {
@@ -35,7 +35,7 @@ function safeDecode(s: string): string {
 
 function BackLink() {
   return (
-    <Link href="/check" className={buttonVariants({ variant: "ghost", size: "lg", className: "-ml-2.5 h-10 self-start text-muted-foreground" })}>
+    <Link href="/check" className={buttonVariants({ variant: "ghost", size: "lg", className: "-ml-3 h-10 self-start" })}>
       <ArrowLeft data-icon="inline-start" aria-hidden />
       Check another wallet
     </Link>
@@ -43,24 +43,23 @@ function BackLink() {
 }
 
 function ConnectPanel({ address }: { address: string }) {
-  // Hero panel: `ember-glow` stays outside cn() so tailwind-merge never drops bg-card (docs/DESIGN.md).
+  // The side panel (the competition's paper-trade panel): the page's one gold action, then a quiet one.
   return (
-    <section aria-labelledby="check-connect" className={`border-gradient bg-card ember-glow ${cn("relative flex flex-col gap-4 overflow-hidden rounded-3xl p-5 sm:p-6")}`}>
-      <p className="text-xs font-medium tracking-[0.14em] text-gold uppercase">Is this your wallet?</p>
-      <h2 id="check-connect" className="font-display text-3xl leading-[1.05] font-normal text-balance">
+    <section aria-labelledby="check-connect" className="relative flex flex-col gap-4 border border-rule bg-card p-5 sm:p-7">
+      <p className="text-[0.9375rem] font-medium text-muted-foreground">Is this your wallet?</p>
+      <h2 id="check-connect" className="font-display text-[2rem] leading-none font-normal tracking-[-0.012em] text-balance">
         {CONNECT_CTA_TITLE}
       </h2>
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        Sign one message with it (no transaction). Dulo then snapshots it every few minutes, so the on-chain quests it meets earn points and the streaks
-        start counting.
+      <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">
+        Sign one message with it (no transaction). Dulo then reads it at sign-in and again through the day, so the on-chain quests it meets earn points
+        and the streaks start counting.
       </p>
-      <ConnectButton size="lg" className="h-11 w-full text-base" />
-      <Link href={`/copy/${encodeURIComponent(address)}`} className={buttonVariants({ variant: "outline", size: "lg", className: "h-11 w-full text-base" })}>
+      <ConnectButton size="lg" fullLabel className="h-12 w-full text-base" />
+      <Link href={`/copy/${encodeURIComponent(address)}`} className={buttonVariants({ variant: "outline", size: "lg", className: "h-12 w-full text-base" })}>
         <Copy data-icon="inline-start" aria-hidden />
         Copy this wallet&apos;s portfolio
       </Link>
-      <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
-      <p className="text-xs leading-relaxed text-muted-foreground">Points only, no cash value. This check read the chain once: nothing stored, never scored.</p>
+      <p className="border-t border-rule pt-4 text-[0.8125rem] leading-relaxed text-muted-foreground">Points only, no cash value. This check read the chain once: nothing stored, never scored.</p>
     </section>
   );
 }
@@ -68,21 +67,21 @@ function ConnectPanel({ address }: { address: string }) {
 function LoadingState() {
   return (
     <div className="flex flex-col gap-6" aria-busy>
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-3 w-24" />
-        <Skeleton className="h-10 w-72 max-w-full" />
-        <Skeleton className="h-[82px] w-full rounded-2xl" />
+      <div className="flex flex-col gap-3 border-b border-rule-2 pb-6">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-12 w-80 max-w-full" />
       </div>
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <Skeleton className="h-[78px] w-full" />
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="flex flex-col gap-4">
-          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full" />
           <div className="grid gap-4 sm:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-40 w-full rounded-2xl" />
+              <Skeleton key={i} className="h-40 w-full" />
             ))}
           </div>
         </div>
-        <Skeleton className="h-80 w-full rounded-3xl" />
+        <Skeleton className="h-80 w-full" />
       </div>
     </div>
   );
@@ -130,8 +129,8 @@ export default function CheckWalletPage() {
   const preIpo = hasPreIpoHolding(data);
   const stats: Stat[] = [
     { label: preIpo ? "Holdings value" : "xStocks value", value: formatUsd(data.totalUsd), hint: positionsHint(data) },
-    { label: "Verified now", value: `${data.qualifying} of ${decidable}`, tone: data.qualifying > 0 ? "ember" : "default", hint: "on-chain quests" },
-    { label: "Would score", value: `+${formatPoints(data.qualifyingPoints)}`, tone: "gold", hint: "pts once connected" },
+    { label: "Verified now", value: `${data.qualifying} of ${decidable}`, hint: "on-chain quests" },
+    { label: "Would score", value: `+${formatPoints(data.qualifyingPoints)}`, hint: "points once connected" },
     { label: "Quests listed", value: formatPoints(data.plays.length), hint: "active this Season" },
   ];
 
@@ -141,11 +140,7 @@ export default function CheckWalletPage() {
       <PageHeader
         className="mb-0"
         eyebrow={data.label ? `Check a wallet · ${data.label}` : "Check a wallet"}
-        title={
-          <>
-            What this wallet <span className="text-gradient-ember pr-[0.08em] italic">already scores</span>
-          </>
-        }
+        title="What this wallet already scores"
         description={
           data.label
             ? preIpo
@@ -155,22 +150,23 @@ export default function CheckWalletPage() {
               ? "Its xStocks and pre-IPO tokens were read live from Token-2022 balances, and every quest was checked by the same engine the Season uses. Nothing was stored."
               : "Its xStocks were read live from Token-2022 balances, and every quest was checked by the same engine the Season uses. Nothing was stored."
         }
-        actions={<AddressChip address={data.address} chainId={data.chainId} explorer />}
+        actions={<AddressChip address={data.address} chainId={data.chainId} explorer className="h-auto rounded-none border-0 bg-transparent px-0 text-[0.875rem] text-muted-foreground" />}
         stats={<StatStrip stats={stats} />}
       />
 
-      <div className={cn("mt-4 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]", ENTER)}>
-        <div className="flex min-w-0 flex-col gap-8">
+      <div className={cn("mt-6 grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-12", ENTER)}>
+        <div className="flex min-w-0 flex-col gap-12">
           <HoldingsList data={data} />
 
           {/* Grouped as a verdict; the compliance pair prints once, at its foot, when a pre-IPO quest or token is on screen. */}
           <PreviewBoard data={data} onProof={openProof} />
         </div>
 
-        {/* Sticky lives on a wrapper: .border-gradient sets position: relative on the card itself. */}
-        <div className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-20">
+        {/* Sticky lives on a wrapper, clear of the sticky header. */}
+        <div className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-20">
           <ConnectPanel address={data.address} />
-          <CheckWalletBox />
+          {/* Stacked: the 380px column leaves the field too narrow for its placeholder in a row. */}
+          <CheckWalletBox stacked />
         </div>
       </div>
 

@@ -35,7 +35,7 @@ Expect the comparison question: how is this different from Crypto Fantasy League
 3. `/competition`: three paper trades with virtual cash, rank against labelled house bots (40s)
 4. `/quests`: in-platform and on-chain quests; open a proof (30s)
 5. `/check/<address>` with no sign-in (20s)
-6. If deployed: a transfer into your own linked wallet, quest complete within seconds via the Solami webhook (30s)
+6. A transfer into your own linked wallet, then Refresh on `/quests` and the quest completes. Only if the Solami webhook is configured (it is not in production today) does it complete within seconds on its own (30s)
 
 ## Questions to answer in your own words
 

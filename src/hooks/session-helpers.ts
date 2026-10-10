@@ -179,10 +179,20 @@ export interface SignInToastCopy {
  */
 export function signInToast(outcome: SignInOutcome, welcome?: WelcomeGrant | null): SignInToastCopy {
   if (isWelcomeGrant(welcome)) {
-    return { title: WELCOME_TITLE, description: WELCOME_COPY, action: { label: "Make a prediction", href: "/predictions" } };
+    return { title: WELCOME_TITLE, description: WELCOME_COPY, action: { label: "Make a prediction", href: "/start" } };
   }
   if (outcome === "linked") return { title: "Wallet added", description: "Quests now verify against this wallet too." };
   return { title: "Signed in", description: "The entertainment layer for xStocks." };
+}
+
+/** Pages that open their own prediction dialog on sign-in (useSignInIntent): the welcome toast keeps its copy there and drops its button. */
+export const OWN_PREDICTION_FLOW_PATHS: readonly string[] = Object.freeze(["/start", "/predictions"]);
+
+/** The toast action to show on `pathname`: none on a page in OWN_PREDICTION_FLOW_PATHS (a trailing slash is ignored). */
+export function actionForPath<A>(action: A | undefined, pathname: string | null | undefined): A | undefined {
+  if (!action) return undefined;
+  const path = typeof pathname === "string" ? pathname.replace(/\/+$/, "") || "/" : "";
+  return OWN_PREDICTION_FLOW_PATHS.includes(path) ? undefined : action;
 }
 
 /** Rank as shown next to Season points: "Rank #12" or "Not ranked yet". */

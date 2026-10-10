@@ -8,14 +8,15 @@ export const alt = "Dulo: The entertainment layer for xStocks.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const OBSIDIAN = "#0a0908";
-const WARM_WHITE = "#f4f1ea";
-const WARM_GREY = "#a9a299";
-const GOLD = "#d8b46a";
+// The Broadcast palette (docs/DESIGN.md): ink ground, cream text and tamga, muted grey, one rule.
+const INK = "#0b0b0c";
+const CREAM = "#f3f0e8";
+const GREY = "#a3a199";
+const RULE = "rgba(243,240,232,0.17)";
 
 const WORDMARK = "Dulo";
 const TAGLINE = "The entertainment layer for xStocks.";
-const EYEBROW = "Season 0 · Solana mainnet";
+const EYEBROW = "Stocks Season 0 · Solana mainnet";
 const FOOTER = "Predictions · Competition (virtual cash) · Quests · Points only";
 
 /** Unique characters of the strings, for Google Fonts' `text=` subsetting (plus upper case for text-transform). */
@@ -48,29 +49,26 @@ async function loadGoogleFont(family: string, weight: number, text: string): Pro
 type OgFont = { name: string; data: ArrayBuffer; weight: 400 | 500 | 600; style: "normal" };
 
 /**
- * Instrument Serif for the wordmark, Geist (the app's UI face) for everything else. Passing `fonts`
- * replaces next/og's bundled sans, so the serif is only used when Geist loaded too; otherwise the
- * "Dulo" subset would be the only font and leak its glyphs into the sans lines.
+ * Archivo 500 for the small lines and Instrument Serif (its one weight, 400) for the wordmark and
+ * the line. Without them the card falls back to next/og's bundled sans.
  */
-async function loadFonts(): Promise<{ fonts: OgFont[] | undefined; serif: boolean }> {
-  const [serif, sans500, sans600] = await Promise.all([
-    loadGoogleFont("Instrument Serif", 400, glyphs(WORDMARK)),
-    loadGoogleFont("Geist", 500, glyphs(EYEBROW, FOOTER)),
-    loadGoogleFont("Geist", 600, glyphs(TAGLINE)),
+async function loadFonts(): Promise<OgFont[] | undefined> {
+  const [sans500, serif400] = await Promise.all([
+    loadGoogleFont("Archivo", 500, glyphs(EYEBROW, FOOTER)),
+    loadGoogleFont("Instrument Serif", 400, glyphs(TAGLINE, WORDMARK)),
   ]);
-  if (!sans500 || !sans600) return { fonts: undefined, serif: false };
-  const fonts: OgFont[] = [
-    { name: "Geist", data: sans500, weight: 500, style: "normal" },
-    { name: "Geist", data: sans600, weight: 600, style: "normal" },
+  if (!sans500 || !serif400) return undefined;
+  return [
+    { name: "Archivo", data: sans500, weight: 500, style: "normal" },
+    { name: "Instrument Serif", data: serif400, weight: 400, style: "normal" },
   ];
-  if (serif) fonts.push({ name: "Instrument Serif", data: serif, weight: 400, style: "normal" });
-  return { fonts, serif: Boolean(serif) };
 }
 
-/** Social card, 1200x630: obsidian ground with a low ember glow, gold-gradient tamga, serif "Dulo", the positioning line. */
+/** Social card, 1200x630: the ink ground, the cream tamga, "Dulo" and the positioning line in the serif. */
 export default async function OpenGraphImage() {
-  const { fonts, serif } = await loadFonts();
-  const sansFamily = fonts ? "Geist" : "sans serif";
+  const fonts = await loadFonts();
+  const sansFamily = fonts ? "Archivo" : "sans serif";
+  const serifFamily = fonts ? "Instrument Serif" : "sans serif";
 
   return new ImageResponse(
     (
@@ -82,59 +80,43 @@ export default async function OpenGraphImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "72px 88px",
-          backgroundColor: OBSIDIAN,
-          backgroundImage:
-            "radial-gradient(circle at 88% -10%, rgba(255,106,42,0.26) 0%, rgba(255,106,42,0) 52%), radial-gradient(circle at 0% 110%, rgba(216,180,106,0.12) 0%, rgba(216,180,106,0) 46%)",
-          color: WARM_WHITE,
+          backgroundColor: INK,
+          color: CREAM,
           fontFamily: sansFamily,
         }}
       >
-        <div style={{ display: "flex", fontSize: 24, fontWeight: 500, letterSpacing: 4, textTransform: "uppercase", color: GOLD }}>
-          {EYEBROW}
-        </div>
+        <div style={{ display: "flex", fontSize: 26, fontWeight: 500, color: GREY }}>{EYEBROW}</div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
-            <svg width={168} height={168} viewBox="0 0 64 64" fill="none">
-              <defs>
-                <linearGradient id="og-tamga" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#f0d9a4" />
-                  <stop offset="55%" stopColor={GOLD} />
-                  <stop offset="100%" stopColor="#b8893f" />
-                </linearGradient>
-              </defs>
+            <svg width={156} height={156} viewBox="0 0 64 64" fill="none">
               {TAMGA_PATHS.map((d) => (
-                <path key={d} d={d} stroke="url(#og-tamga)" strokeWidth={TAMGA_STROKE} strokeLinecap="square" strokeLinejoin="miter" />
+                <path key={d} d={d} stroke={CREAM} strokeWidth={TAMGA_STROKE} strokeLinecap="square" strokeLinejoin="miter" />
               ))}
             </svg>
             <div
               style={{
                 display: "flex",
-                fontFamily: serif ? "Instrument Serif" : sansFamily,
-                fontWeight: serif ? 400 : 600,
-                fontSize: serif ? 210 : 170,
+                fontFamily: serifFamily,
+                fontWeight: 400,
+                fontSize: 200,
                 lineHeight: 1,
-                letterSpacing: serif ? -4 : -6,
-                color: WARM_WHITE,
-                paddingBottom: 12,
+                letterSpacing: 1,
+                color: CREAM,
+                paddingBottom: 8,
               }}
             >
               {WORDMARK}
             </div>
           </div>
-          <div style={{ display: "flex", fontSize: 50, fontWeight: 600, letterSpacing: -1, color: WARM_WHITE }}>{TAGLINE}</div>
+          <div style={{ display: "flex", fontFamily: serifFamily, fontSize: 66, fontWeight: 400, lineHeight: 1, letterSpacing: -0.8, color: CREAM }}>
+            {TAGLINE}
+          </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div
-            style={{
-              display: "flex",
-              width: "100%",
-              height: 2,
-              backgroundImage: "linear-gradient(90deg, rgba(216,180,106,0.55) 0%, rgba(255,106,42,0.55) 50%, rgba(255,106,42,0) 100%)",
-            }}
-          />
-          <div style={{ display: "flex", fontSize: 26, fontWeight: 500, color: WARM_GREY }}>{FOOTER}</div>
+          <div style={{ display: "flex", width: "100%", height: 1, backgroundColor: RULE }} />
+          <div style={{ display: "flex", fontSize: 26, fontWeight: 500, color: GREY }}>{FOOTER}</div>
         </div>
       </div>
     ),

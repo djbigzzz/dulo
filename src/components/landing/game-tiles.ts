@@ -1,6 +1,9 @@
 /**
- * The landing's three game tiles (approved wireframe, 16 Sep 2026): Predictions, Competition and
- * On-chain quests, each with one live number and one button. Pure and client-safe, no React.
+ * The landing's three games (approved wireframe, 16 Sep 2026): Predictions, Competition and
+ * On-chain quests, each with one large live figure, one short line and one button. Since the
+ * Broadcast pass (9 Oct 2026) each game is a lane on the same Monday-to-Friday axis as the week
+ * track, and the hero draws this week's prediction as the live price against the line it has to
+ * beat. Pure and client-safe, no React.
  *
  * Every number is read from /api/v1. While a read is loading, or after it failed, a helper
  * returns null and the tile prints an em dash: the landing never shows a made-up figure.
@@ -10,8 +13,10 @@
  */
 import type { CallMarketView, LeagueResponse, PlayView, PlaysResponse } from "@/lib/api-client";
 import { formatPoints } from "@/components/common/format";
-import { liveStatus } from "@/components/calls/calls-format";
+import { NEXT_WEEK_MARKETS_COPY, liveStatus } from "@/components/calls/calls-format";
+import { isPreIpoQuest } from "@/components/common/issuer";
 import { formatSignedPct, formatUsdWhole } from "@/components/league/format";
+import { utcDayMonth } from "@/components/layout/week-track";
 import { VIRTUAL_CASH_USD } from "@/lib/games/ledger-policy";
 
 /** What a tile prints while its number is loading or unavailable. */
@@ -64,19 +69,48 @@ function isLive(m: Pick<CallMarketView, "status" | "locksAt">, nowMs: number): b
   return s === "open" || s === "locked";
 }
 
-/**
- * "1,650 pts in this week": every point put into this week's open or locked predictions.
- * Null while the board is loading or failed (the tile shows an em dash instead).
- */
-export function predictionsTileStat(markets: readonly MarketLike[] | null | undefined, nowMs: number): string | null {
-  if (!markets) return null;
+/** Every point put into this week's open or locked predictions (a malformed total is skipped). */
+function livePointsIn(markets: readonly MarketLike[], nowMs: number): number {
   let total = 0;
   for (const m of markets) {
     if (!isLive(m, nowMs)) continue;
     const pts = m.odds?.total;
     if (typeof pts === "number" && Number.isFinite(pts) && pts > 0) total += pts;
   }
-  return `${formatPoints(total)} pts in this week`;
+  return total;
+}
+
+/**
+ * A tile's one large live figure and the one short line under it ("1,900" / "points in this
+ * week, incl. bot seed"). The helpers return null while a read is loading or failed: the tile
+ * prints an em dash.
+ */
+export interface TileFigure {
+  figure: string;
+  line: string;
+}
+
+/**
+ * "1,650" / "points in this week, incl. bot seed": every point put into this week's open or locked
+ * predictions. The house bots seed every pool, so the line says so, the same words as the hero card
+ * (with one real account, most of this total is the seed). Between Friday's settle and the next
+ * board: "Between weeks" and when the next one opens.
+ */
+export function predictionsTileFigure(markets: readonly MarketLike[] | null | undefined, nowMs: number): TileFigure | null {
+  if (!markets) return null;
+  if (!markets.some((m) => isLive(m, nowMs))) return { figure: "Between weeks", line: NEXT_WEEK_MARKETS_COPY };
+  return { figure: formatPoints(livePointsIn(markets, nowMs)), line: "points in this week, incl. bot seed" };
+}
+
+/**
+ * "+1.8%" / "#1 this week · house bot · virtual cash", or "$10,000" / "virtual cash to start" on
+ * an empty board. The line always says virtual cash, so the figure is never read as money.
+ */
+export function competitionTileFigure(league: Pick<LeagueResponse, "leaderboard"> | null | undefined): TileFigure | null {
+  if (!league) return null;
+  const leader = league.leaderboard?.[0];
+  if (!leader) return { figure: formatUsdWhole(VIRTUAL_CASH_USD), line: "virtual cash to start" };
+  return { figure: formatSignedPct(leader.pnlPct), line: `#1 this week${leader.isBot ? " · house bot" : ""} · virtual cash` };
 }
 
 /**
@@ -96,26 +130,6 @@ export function pickLiveMarkets<T extends Pick<CallMarketView, "status" | "locks
   return { shown: live.slice(0, Math.max(0, limit)), count: live.length };
 }
 
-export interface CompetitionTileStat {
-  value: string;
-  /** Always says "virtual cash", so the number is never read as real money. */
-  note: string;
-}
-
-/**
- * The weekly competition's leader: "#1 +1.8% this week" with "virtual cash" (and "house bot"
- * when the leader is one). An empty board reads "$10,000 virtual cash to start".
- * Null while the overview is loading or failed.
- */
-export function competitionTileStat(league: Pick<LeagueResponse, "leaderboard"> | null | undefined): CompetitionTileStat | null {
-  if (!league) return null;
-  const leader = league.leaderboard?.[0];
-  if (!leader) return { value: formatUsdWhole(VIRTUAL_CASH_USD), note: "virtual cash to start" };
-  return {
-    value: `#1 ${formatSignedPct(leader.pnlPct)} this week`,
-    note: `virtual cash${leader.isBot ? " · house bot" : ""}`,
-  };
-}
 
 export interface QuestTileStat {
   /** "9 quests live" */
@@ -153,14 +167,14 @@ export function onChainQuestTileStat(plays: Pick<PlaysResponse, "groups"> | null
   return { value: `${liveCount} ${liveCount === 1 ? "quest" : "quests"} live`, liveCount, comingSoonCount };
 }
 
-/** "Verified from your wallet · 2 coming soon" */
-export function questTileNote(stat: QuestTileStat | null): string {
-  const base = TILE_COPY.quests.note;
-  return stat && stat.comingSoonCount > 0 ? `${base} · ${stat.comingSoonCount} coming soon` : base;
+/** "11" / "quests live, verified from your wallet". Coming-soon partner quests are never counted. */
+export function questTileFigure(stat: QuestTileStat | null): TileFigure | null {
+  if (!stat) return null;
+  return { figure: formatPoints(stat.liveCount), line: `${stat.liveCount === 1 ? "quest" : "quests"} live, verified from your wallet` };
 }
 
 /**
- * One request per endpoint per page load. The hero cards and the tiles read the same four
+ * One request per endpoint per page load. The hero card and the tiles read the same
  * endpoints; whichever mounts first starts the request and the rest share its promise.
  *
  * - A pending request is always shared.
@@ -196,4 +210,130 @@ export function createSharedReads(ttlMs: number, clock: () => number = Date.now)
       entries.clear();
     },
   };
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Broadcast (9 Oct 2026): the hero's price track and the lanes on the week                    */
+/* ------------------------------------------------------------------------------------------ */
+
+/** The week the hero and the lanes are drawn on: the week track's own (WeekTrackModel). */
+export interface LandingWeek {
+  /** Monday 00:00 UTC. */
+  monday: number;
+  /** The Monday after. */
+  nextMonday: number;
+  /** True from Friday's close until Monday: the week is replayed as final. */
+  weekend: boolean;
+}
+
+function settlesIn(m: Pick<CallMarketView, "settleAt">, week: LandingWeek): boolean {
+  const t = Date.parse(m.settleAt);
+  return Number.isFinite(t) && t >= week.monday && t < week.nextMonday;
+}
+
+/**
+ * The hero's predictions. During the week: this week's open (then locked) ones, as pickLiveMarkets.
+ * From Friday's close to Monday: the week that just closed, as final results (the week track
+ * replays the same week), most points in first, then by ticker. `final` says which. With no week
+ * known yet, or nothing in the closed week, it falls back to the live board.
+ */
+export function pickHeroMarkets<T extends Pick<CallMarketView, "status" | "locksAt" | "settleAt" | "odds" | "ticker">>(
+  markets: readonly T[] | null | undefined,
+  nowMs: number,
+  week: LandingWeek | null,
+  limit = 3,
+): { shown: T[]; count: number; final: boolean } {
+  if (!markets) return { shown: [], count: 0, final: false };
+  if (week?.weekend) {
+    const closed = markets
+      .filter((m) => settlesIn(m, week))
+      .sort((a, b) => (b.odds?.total ?? 0) - (a.odds?.total ?? 0) || a.ticker.localeCompare(b.ticker));
+    if (closed.length > 0) return { shown: closed.slice(0, Math.max(0, limit)), count: closed.length, final: true };
+  }
+  return { ...pickLiveMarkets(markets, nowMs, limit), final: false };
+}
+
+/**
+ * The hero's price track reads the same helpers as /predictions' segments (calls-format), so the
+ * strike's wording, the gap and the crowd line never drift apart between the landing and the board.
+ * gaugePosition is calls-format's trackPosition under the name the hero has always used.
+ */
+export { trackPosition as gaugePosition, gapLabel, STRIKE_NOTE, crowdLead, utcStamp } from "@/components/calls/calls-format";
+
+/**
+ * The Predictions lane's figure. During the week: predictionsTileFigure (every point in this week's
+ * open or locked predictions). From Friday's close: the week that just closed, settled or still
+ * settling (a void market refunded its points and is left out).
+ */
+export function predictionsLaneFigure(
+  markets: readonly (MarketLike & Pick<CallMarketView, "settleAt">)[] | null | undefined,
+  nowMs: number,
+  week: LandingWeek | null,
+): TileFigure | null {
+  if (!markets) return null;
+  if (week?.weekend) {
+    let total = 0;
+    let any = false;
+    for (const m of markets) {
+      if (!settlesIn(m, week) || m.status === "void") continue;
+      any = true;
+      const pts = m.odds?.total;
+      if (typeof pts === "number" && Number.isFinite(pts) && pts > 0) total += pts;
+    }
+    if (any) return { figure: formatPoints(total), line: `points in, week of ${utcDayMonth(week.monday)}, incl. bot seed` };
+  }
+  return predictionsTileFigure(markets, nowMs);
+}
+
+/** LeagueResponse.leaderboard is the top 50: a full list says "50+". */
+const STANDINGS_CAP = 50;
+
+/**
+ * The Competition lane's figure: how many accounts are on this week's virtual-cash standings and
+ * how many of them are house bots ("16" / "on this week's virtual-cash standings, 15 of them house
+ * bots"), or the starting virtual cash before anyone trades. From Friday's close, the week's final
+ * #1 (LeagueResponse.lastSettled), with the bot label. Every line says virtual cash.
+ */
+export function competitionLaneFigure(
+  league: Pick<LeagueResponse, "leaderboard" | "lastSettled"> | null | undefined,
+  weekend: boolean,
+): TileFigure | null {
+  if (!league) return null;
+  const top = weekend ? league.lastSettled?.top?.[0] : undefined;
+  if (top) return { figure: formatSignedPct(top.pnlPct), line: `#1 at Friday's close${top.isBot ? " · house bot" : ""} · virtual cash` };
+  const rows = league.leaderboard ?? [];
+  if (rows.length === 0) return { figure: formatUsdWhole(VIRTUAL_CASH_USD), line: "virtual cash to start" };
+  const bots = rows.filter((r) => r.isBot).length;
+  const n = rows.length;
+  if (n >= STANDINGS_CAP) {
+    return { figure: `${STANDINGS_CAP}+`, line: `on this week's virtual-cash standings${bots > 0 ? ", house bots included" : ""}` };
+  }
+  const tail =
+    bots === 0 ? "" : bots === n ? (n === 1 ? ", a house bot" : ", all house bots") : `, ${bots} of them ${bots === 1 ? "a house bot" : "house bots"}`;
+  return { figure: formatPoints(n), line: `on this week's virtual-cash standings${tail}` };
+}
+
+/**
+ * The quest the next wallet check could complete, for the quests lane ("Next check · First
+ * Position · +100"): the first live on-chain xStocks quest on the board that is not complete yet.
+ * Null while loading, or when none is left.
+ */
+export function nextQuestCheck(plays: Pick<PlaysResponse, "groups"> | null | undefined): { title: string; points: number } | null {
+  for (const play of flattenPlays(plays)) {
+    if (play.rule.type === "internal_event" || play.comingSoon || play.status === "complete" || isPreIpoQuest(play)) continue;
+    return { title: play.title, points: play.points };
+  }
+  return null;
+}
+
+/** The welcome offer with its grant in cream: "Sign in free: " / "1,000 starter points and $10,000 of virtual cash" / " to play. …". */
+export function offerParts(line: string): { lead: string; strong: string; rest: string } {
+  const m = /^(.*?:\s)(.+?)(\sto play\..*)$/.exec(line);
+  return m ? { lead: m[1], strong: m[2], rest: m[3] } : { lead: line, strong: "", rest: "" };
+}
+
+/** The three verbs, the first two in cream: "Predict. Compete. " / "Complete on-chain quests." */
+export function verbParts(line: string): { lead: string; rest: string } {
+  const at = line.indexOf("Complete");
+  return at > 0 ? { lead: line.slice(0, at), rest: line.slice(at) } : { lead: "", rest: line };
 }

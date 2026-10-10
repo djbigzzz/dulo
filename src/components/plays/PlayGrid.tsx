@@ -1,8 +1,8 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronRight, Clock, Gamepad2, SearchX, WalletCards } from "lucide-react";
+import { ArrowRight, Clock, SearchX } from "lucide-react";
 import { cn } from "cn";
 import type { PartnerGroup, PartnerSummary, PlayView } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { formatPoints } from "@/components/common/format";
 import { isPreIpoQuest } from "@/components/common/issuer";
 import { PlayCard, PlayCardSkeleton } from "@/components/plays/PlayCard";
 import { matchesFilter, partnerPageHref, questKind, type PlayFilter } from "@/components/plays/play-meta";
+import { SECTION_TITLE } from "@/components/common/SectionHeading";
 
 export interface PlayGridProps {
   groups: PartnerGroup[];
@@ -22,9 +23,11 @@ export interface PlayGridProps {
   className?: string;
 }
 
-const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";
-const TILE = "flex shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgb(255_245_230/0.06)]";
-const DIVIDER = "h-px bg-gradient-to-r from-white/[0.12] via-white/[0.05] to-transparent";
+/**
+ * The segment board: every quest draws its own 1px rule and each cell pulls back by one pixel, so
+ * neighbouring rules overlap into one ruled board (no gaps, no boxes in boxes), on every column count.
+ */
+export const SEGMENT_GRID = "grid pt-px pl-px sm:grid-cols-2 lg:grid-cols-3 [&>li]:-mt-px [&>li]:-ml-px";
 
 /** Group headings on the board. */
 export const IN_PLATFORM_HEADING = "In-platform quests: points and virtual cash";
@@ -39,10 +42,38 @@ interface SoonRow {
 interface KindGroup {
   id: string;
   title: string;
-  icon: ComponentType<{ className?: string }>;
   plays: PlayView[];
   /** Listed Partners whose quests sit in this group, in board order (the house Partner has no page). */
   partners: PartnerSummary[];
+}
+
+/**
+ * The group's quests as one segmented track, the week track's elapsed bar in miniature: a segment
+ * per quest, cream once complete, half-lit while in progress. Decorative: the count beside it says it.
+ */
+function SegmentTrack({ plays, signedIn }: { plays: PlayView[]; signedIn: boolean }) {
+  const done = plays.filter((p) => p.status === "complete").length;
+  return (
+    <div className="flex items-center gap-4">
+      <div className="flex h-1.5 min-w-0 flex-1 gap-[3px]" aria-hidden>
+        {plays.map((p) => (
+          <span
+            key={p.key}
+            className={cn("h-full flex-1", p.status === "complete" ? "bg-foreground" : p.status === "in_progress" ? "bg-[rgb(243_240_232/0.42)]" : "bg-ink-4")}
+          />
+        ))}
+      </div>
+      <p className="shrink-0 text-[0.9375rem] text-muted-foreground tabular-nums">
+        {signedIn ? (
+          <>
+            <span className="font-semibold text-foreground">{done}</span> of {plays.length} complete
+          </>
+        ) : (
+          `${plays.length} ${plays.length === 1 ? "quest" : "quests"}`
+        )}
+      </p>
+    </div>
+  );
 }
 
 /**
@@ -77,32 +108,14 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
   }
 
   const live: KindGroup[] = [
-    {
-      id: "quests-in-platform",
-      title: IN_PLATFORM_HEADING,
-      icon: Gamepad2,
-      plays: inPlatform,
-      partners: [],
-    },
-    {
-      id: "quests-on-chain",
-      title: ON_CHAIN_HEADING,
-      icon: WalletCards,
-      plays: onChain,
-      partners: onChainPartners,
-    },
+    { id: "quests-in-platform", title: IN_PLATFORM_HEADING, plays: inPlatform, partners: [] },
+    { id: "quests-on-chain", title: ON_CHAIN_HEADING, plays: onChain, partners: onChainPartners },
   ].filter((g) => g.plays.length > 0);
 
   if (live.length === 0 && soon.length === 0) {
     return (
-      <div
-        role="status"
-        className={cn(
-          "flex flex-col items-center gap-3 rounded-2xl border border-white/[0.07] bg-card px-4 py-10 text-center text-sm text-muted-foreground",
-          className,
-        )}
-      >
-        <span className={cn(TILE, "size-10 text-gold")} aria-hidden>
+      <div role="status" className={cn("flex flex-col items-center gap-3 border border-rule px-4 py-12 text-center text-[0.9375rem] text-muted-foreground", className)}>
+        <span className="flex size-10 items-center justify-center rounded-full bg-ink-4 text-foreground ring-1 ring-rule-2 ring-inset" aria-hidden>
           <SearchX className="size-4" />
         </span>
         No quests match this filter yet.
@@ -111,41 +124,38 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
   }
 
   return (
-    <div className={cn("flex flex-col gap-10 sm:gap-12", className)}>
+    <div className={cn("flex flex-col gap-14 sm:gap-16", className)}>
       {live.map((group) => (
-        <section key={group.id} data-quest-group={group.id} aria-labelledby={group.id} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
-            <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <span className={cn(TILE, "size-11 text-gold")} aria-hidden>
-                <group.icon className="size-4" />
-              </span>
-              <div className="min-w-48 flex-1">
-                <h2 id={group.id} className="text-lg leading-tight font-semibold tracking-tight text-balance">
-                  {group.title}
-                </h2>
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  {group.plays.length} {group.plays.length === 1 ? "quest" : "quests"}
-                </p>
-              </div>
-              {group.partners.map((partner) => (
-                <Link
-                  key={partner.slug}
-                  href={partnerPageHref(partner.slug)!}
-                  aria-label={`${partner.name} partner page`}
-                  className={cn(buttonVariants({ variant: "ghost" }), "group/link h-10 shrink-0 gap-2 sm:h-8")}
-                >
-                  <PartnerLogo name={partner.name} logoUrl={partner.logoUrl} size={18} className="rounded-md ring-0" />
-                  {partner.name}
-                  <ArrowRight data-icon="inline-end" className="transition-transform group-hover/link:translate-x-0.5" aria-hidden />
-                </Link>
-              ))}
-            </header>
-            <div className={DIVIDER} aria-hidden />
-          </div>
-          <ul className={GRID}>
+        <section key={group.id} data-quest-group={group.id} aria-labelledby={group.id} className="flex flex-col gap-5">
+          <header className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+              <h2 id={group.id} className={SECTION_TITLE}>
+                {group.title}
+              </h2>
+              {group.partners.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                  {group.partners.map((partner) => (
+                    <Link
+                      key={partner.slug}
+                      href={partnerPageHref(partner.slug)!}
+                      aria-label={`${partner.name} partner page`}
+                      className={cn(buttonVariants({ variant: "link" }), "group/link min-h-10 gap-2 sm:min-h-0 [&_img]:logo-greyscale")}
+                    >
+                      <PartnerLogo name={partner.name} logoUrl={partner.logoUrl} size={18} />
+                      {partner.name}
+                      <ArrowRight data-icon="inline-end" className="transition-transform group-hover/link:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <SegmentTrack plays={group.plays} signedIn={signedIn} />
+          </header>
+          <ul className={SEGMENT_GRID}>
             {group.plays.map((play) => (
               <li key={play.key} className="min-w-0">
-                <PlayCard play={play} signedIn={signedIn} onProof={onProof} />
+                {/* The section heading names the kind, so the card's corner does not repeat it. */}
+                <PlayCard play={play} signedIn={signedIn} onProof={onProof} showKind={false} />
               </li>
             ))}
           </ul>
@@ -154,45 +164,35 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
 
       {soon.length > 0 ? (
         <section aria-labelledby="coming-soon" className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
-            <header className="flex items-center gap-3">
-              <span className={cn(TILE, "size-11 text-gold")} aria-hidden>
-                <Clock className="size-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 id="coming-soon" className="text-lg leading-tight font-semibold tracking-tight">
-                  {COMING_SOON_HEADING}
-                </h2>
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  {soon.length} {soon.length === 1 ? "quest" : "quests"}
-                </p>
-              </div>
-            </header>
-            <div className={DIVIDER} aria-hidden />
-          </div>
-          <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-card">
+          <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+            <h2 id="coming-soon" className={SECTION_TITLE}>
+              {COMING_SOON_HEADING}
+            </h2>
+            <p className="text-[0.9375rem] text-muted-foreground tabular-nums">
+              {soon.length} {soon.length === 1 ? "quest" : "quests"}
+            </p>
+          </header>
+          <ul className="border-b border-rule">
             {soon.map(({ partner, play }) => (
-              <li key={play.key}>
+              <li key={play.key} className="border-t border-rule">
                 <SoonRowLink
                   href={partnerPageHref(partner.slug)}
-                  className="group/row flex min-h-16 items-center gap-3 px-4 py-3 outline-none transition-colors duration-200 hover:bg-white/[0.03] focus-visible:bg-white/[0.04] sm:gap-4 sm:px-5"
+                  className="group/row flex min-h-16 items-center gap-3 py-3 outline-none transition-colors duration-200 hover:bg-white/[0.025] focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-inset motion-reduce:transition-none sm:gap-4 sm:px-2 [&_img]:logo-greyscale"
                 >
-                  <PartnerLogo
-                    name={partner.name}
-                    logoUrl={partner.logoUrl}
-                    size={36}
-                    className="opacity-70 grayscale-[0.7] transition duration-300 group-hover/row:opacity-100 group-hover/row:grayscale-0"
-                  />
+                  <PartnerLogo name={partner.name} logoUrl={partner.logoUrl} size={36} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-foreground/90">{play.title}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{partner.name}</span>
+                    <span className="block truncate text-[0.9375rem] font-semibold text-foreground">{play.title}</span>
+                    <span className="block truncate text-[0.84375rem] text-muted-foreground">{partner.name}</span>
                   </span>
-                  <span className="shrink-0 text-sm font-medium text-muted-foreground tabular-nums">+{formatPoints(play.points)}</span>
-                  <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-gold/20 bg-gold/[0.06] px-2 text-xs font-medium text-gold">
+                  <span className="shrink-0 text-right leading-none">
+                    <span className="figure text-[1.5rem] text-muted-foreground">+{formatPoints(play.points)}</span>
+                  </span>
+                  <span className="inline-flex h-6 shrink-0 items-center gap-1 border border-dashed border-[rgb(243_240_232/0.38)] px-2 text-xs font-medium text-muted-foreground">
+                    <Clock className="size-3" aria-hidden />
                     Soon
                   </span>
-                  <ChevronRight
-                    className="hidden size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover/row:translate-x-0.5 group-hover/row:text-foreground sm:block"
+                  <ArrowRight
+                    className="hidden size-4 shrink-0 text-muted-foreground transition-transform group-hover/row:translate-x-0.5 group-hover/row:text-foreground motion-reduce:transition-none sm:block"
                     aria-hidden
                   />
                 </SoonRowLink>
@@ -206,9 +206,9 @@ export function PlayGrid({ groups, signedIn, filter = "all", onProof, className 
           at its foot, and the pre-IPO line beside it whenever a quest fenced to PreStocks is on screen. */}
       {onChain.length > 0 ? (
         <div data-slot="board-compliance" className="flex flex-col gap-1">
-          <p className="text-xs text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p>
+          <p className="text-[0.8125rem] leading-relaxed text-pretty text-muted-foreground">{COMPLIANCE_LINE}</p>
           {onChain.some(isPreIpoQuest) ? (
-            <p data-slot="pre-ipo-compliance" className="text-xs text-pretty text-muted-foreground">
+            <p data-slot="pre-ipo-compliance" className="text-[0.8125rem] leading-relaxed text-pretty text-muted-foreground">
               {PRE_IPO_COMPLIANCE_LINE}
             </p>
           ) : null}
@@ -231,18 +231,15 @@ function SoonRowLink({ href, className, children }: { href: string | null; class
 
 export function PlayGridSkeleton({ cards = 6 }: { cards?: number }) {
   return (
-    <div role="status" className="flex flex-col gap-4" aria-busy aria-label="Loading quests">
-      <div className="flex flex-col gap-3">
-        <header className="flex items-center gap-3">
-          <Skeleton className="size-11 rounded-xl bg-white/[0.05]" />
-          <div className="flex flex-col gap-1.5">
-            <Skeleton className="h-5 w-32 bg-white/[0.05]" />
-            <Skeleton className="h-3 w-14 bg-white/[0.05]" />
-          </div>
-        </header>
-        <div className={DIVIDER} aria-hidden />
-      </div>
-      <div className={GRID}>
+    <div role="status" className="flex flex-col gap-5" aria-busy aria-label="Loading quests">
+      <header className="flex flex-col gap-4">
+        <Skeleton className="h-8 w-72 max-w-full" />
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-1.5 flex-1" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+      </header>
+      <div className={cn(SEGMENT_GRID, "[&>div]:-mt-px [&>div]:-ml-px")}>
         {Array.from({ length: cards }).map((_, i) => (
           <PlayCardSkeleton key={i} />
         ))}

@@ -18,7 +18,14 @@ export interface AddressChipProps {
   className?: string;
 }
 
-/** Monospace truncated address with optional copy + explorer actions. */
+/**
+ * Copy and explorer: 24px targets edge to edge (WCAG 2.5.8) around the 12px glyphs; -my-1 keeps a
+ * 24px chip's row height.
+ */
+const ACTION =
+  "-my-1 inline-flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] motion-reduce:transition-none";
+
+/** A truncated address (mono: it is data) on a square ruled well, with optional copy + explorer actions. */
 export function AddressChip({ address, chainId, chars = 4, copy = true, explorer = false, className }: AddressChipProps) {
   const [copied, setCopied] = React.useState(false);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,7 +52,7 @@ export function AddressChip({ address, chainId, chars = 4, copy = true, explorer
   return (
     <span
       className={cn(
-        "inline-flex h-6 max-w-full items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] px-2 font-mono text-xs text-foreground",
+        "inline-flex h-6 max-w-full items-center gap-0.5 rounded-[2px] border border-rule-2 bg-ink-3 pr-0.5 pl-2 font-mono text-xs text-foreground",
         className,
       )}
     >
@@ -57,7 +64,7 @@ export function AddressChip({ address, chainId, chars = 4, copy = true, explorer
           type="button"
           onClick={onCopy}
           aria-label={copied ? "Copied" : "Copy address"}
-          className="inline-flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className={ACTION}
         >
           {copied ? <Check className="size-3" aria-hidden /> : <Copy className="size-3" aria-hidden />}
         </button>
@@ -68,7 +75,7 @@ export function AddressChip({ address, chainId, chars = 4, copy = true, explorer
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Open in explorer"
-          className="inline-flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className={ACTION}
         >
           <ExternalLink className="size-3" aria-hidden />
         </a>

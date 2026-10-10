@@ -1,8 +1,8 @@
 /**
  * Inline quest (Play) evaluation right after a prediction is placed (15 Sep review M-F).
  *
- * The cron evaluates every user every 5 minutes, so without this a first prediction would
- * leave First Prediction "Not started" for up to 5 minutes. evaluateCallPlays runs only the
+ * The scheduled tick evaluates every user hours apart, so without this a first prediction would
+ * leave First Prediction "Not started" until the next tick. evaluateCallPlays runs only the
  * quests a prediction can move (internal_event call_placed, and game_action, which a new
  * prediction also emits) for the caller, straight after the points-in row commits:
  *   - DB-only: the context is the user's internal events (Call positions, League trades) with

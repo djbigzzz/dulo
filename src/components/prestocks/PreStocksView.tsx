@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Gamepad2, Sprout } from "lucide-react";
+import { ArrowRight, ChevronDownIcon, Gamepad2, Sprout } from "lucide-react";
 import { cn } from "cn";
 import { useSession } from "@/hooks/useSession";
-import { api, leagueApi, type LeagueResponse, type LeagueSymbolsResponse, type PartnerDetail, type PlaysResponse, type PlayView } from "@/lib/api-client";
+import { api, leagueApi, type LeagueSymbolsResponse, type PartnerDetail, type PlaysResponse, type PlayView } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { COMPLIANCE_LINE, PRE_IPO_COMPLIANCE_LINE } from "@/components/common/compliance";
@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { SignInBanner } from "@/components/common/SignInBanner";
 import { StatStrip, type Stat } from "@/components/common/StatStrip";
 import { useApiQuery } from "@/components/common/useApiQuery";
+import { useLeagueQuery } from "@/components/layout/WeekData";
 import { formatUsd } from "@/components/common/format";
 import { WEEKEND_TRADES_COPY, formatSignedUsd, formatUsdWhole, isPreWeek, pnlClass } from "@/components/league/format";
 import { PositionsTable, PositionsTableSkeleton } from "@/components/league/PositionsTable";
@@ -34,22 +35,22 @@ const CHAIN_ID = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 export const PRE_IPO_PAGE_TITLE = "Pre-IPO tokens, 24/7";
 export const PRE_IPO_PAGE_DESCRIPTION = "Trade them with virtual cash in this week's competition, complete pre-IPO quests, and see what the mint says.";
 
-const DIVIDER = "h-px bg-gradient-to-r from-white/[0.12] via-white/[0.05] to-transparent";
 const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-4";
 
+/**
+ * A Broadcast section name: a small muted lead-in (plain text, no tracked capitals), the name in
+ * Instrument Serif, a muted hint on the right, and a strong rule under the row (PageHeader's rule).
+ */
 function SectionHeading({ id, eyebrow, title, hint }: { id: string; eyebrow: string; title: React.ReactNode; hint?: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
-        <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-medium tracking-[0.14em] text-gold uppercase">{eyebrow}</p>
-          <h2 id={id} className="font-display text-3xl leading-none font-normal sm:text-4xl">
-            {title}
-          </h2>
-        </div>
-        {hint ? <p className="max-w-xl text-sm text-pretty text-muted-foreground">{hint}</p> : null}
+    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-rule-2 pb-4">
+      <div className="flex min-w-0 flex-col gap-2">
+        <p className="text-sm font-medium text-muted-foreground">{eyebrow}</p>
+        <h2 id={id} className="font-display text-[2rem] leading-none font-normal tracking-[-0.012em] sm:text-[2.5rem]">
+          {title}
+        </h2>
       </div>
-      <div className={DIVIDER} aria-hidden />
+      {hint ? <p className="max-w-md text-sm text-pretty text-muted-foreground sm:text-right">{hint}</p> : null}
     </div>
   );
 }
@@ -70,7 +71,7 @@ export interface PreStocksViewProps {
  * pre-IPO tokens with the caller's pre-IPO positions, the four pre-IPO quests with live progress,
  * and the corporate actions read from the mints. Every read goes through /api/v1.
  *
- * Hierarchy (22 Sep): the trade form's submit is the page's one ember action; every other control
+ * Hierarchy (22 Sep): the trade form's submit is the page's one primary (white) action; every other control
  * is outline or ghost, the sign-in banner's Connect included. The compliance pair prints once, in
  * the header details. Under lg the trade section comes before the board (CSS order; the DOM keeps
  * board, trade, quests, actions), so a phone reaches the action first.
@@ -80,7 +81,8 @@ export function PreStocksView({ className }: PreStocksViewProps) {
   const sessionKey = session?.userId ?? "";
 
   const symbols = useApiQuery<LeagueSymbolsResponse>((signal) => leagueApi.symbols({ signal }), ["prestocks:symbols", sessionKey]);
-  const league = useApiQuery<LeagueResponse>((signal) => leagueApi.overview({ signal }), ["prestocks:league", sessionKey]);
+  // The shell's shared read (WeekData); the week track under the header reads the same request.
+  const league = useLeagueQuery(["prestocks:league", sessionKey]);
   const partner = useApiQuery<PartnerDetail>((signal) => api.partner(PRE_IPO_PARTNER_SLUG, { signal }), "prestocks:partner", { refetchOnFocus: false });
   const plays = useApiQuery<PlaysResponse>(() => api.plays(), ["prestocks:plays", sessionKey], { refetchOnFocus: false });
 
@@ -164,40 +166,23 @@ export function PreStocksView({ className }: PreStocksViewProps) {
   return (
     <div className={cn("flex flex-col gap-10 sm:gap-12", className)}>
       <PageHeader
-        className="mb-0"
+        className="mb-0 pt-0"
         eyebrow="PreStocks"
         title={PRE_IPO_PAGE_TITLE}
         description={PRE_IPO_PAGE_DESCRIPTION}
-        stats={stats ? <StatStrip stats={stats} /> : league.loading && sessionKey ? <Skeleton className="h-[84px] w-full rounded-2xl" /> : undefined}
-        details={
-          <>
-            <p>
-              Pre-IPO tokens are Token-2022 mints issued by PreStocks on Solana. They trade on Jupiter around the clock, so their DEX price
-              never waits for Wall Street to open. The issuer also publishes its own mark; the board shows both, each with its source and age.
-            </p>
-            <p>
-              In the weekly competition they fill at the live DEX quote with the same 0.1% spread and the same {startingCash} of virtual cash as
-              your xStock trades, and count on the same leaderboard. Nothing is bought on-chain. {WEEKEND_TRADES_COPY}.
-            </p>
-            <p>
-              Two pre-IPO quests are completed with paper trades here; two are verified from your own wallet. A quest describes a wallet state
-              or an in-app action, never a purchase. Points only, no cash value.
-            </p>
-          </>
-        }
+        stats={stats ? <StatStrip stats={stats} /> : league.loading && sessionKey ? <Skeleton className="h-[84px] w-full" /> : undefined}
       />
 
-      <div className="-mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 sm:-mt-6">
-        <MarketSessionChip />
-        <p className="max-w-2xl text-sm text-pretty text-muted-foreground">
-          The US session chip is for xStocks. Pre-IPO tokens quote on Solana at any hour, and every price carries its source and age.
-        </p>
-      </div>
-
       {/* a + b. The board and the trade section: DOM order board, trade; under lg the trade section shows first. */}
-      <div className="flex flex-col gap-10 sm:gap-12">
-        <section aria-labelledby="pre-ipo-board" className="flex min-w-0 flex-col gap-5">
-          <SectionHeading id="pre-ipo-board" eyebrow="The board" title="Eight pre-IPO tokens" hint="DEX price from Jupiter, the issuer's mark from PreStocks, and Jupiter's 24h move." />
+      <div className="-mt-2 flex flex-col gap-12 sm:-mt-4 sm:gap-14">
+        {/* The board is the page's hero, like the competition's standings: a plain caption, then the rows. */}
+        <section aria-labelledby="pre-ipo-board" className="flex min-w-0 flex-col gap-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">
+            <h2 id="pre-ipo-board" className="text-[1.0625rem] leading-tight font-semibold tracking-[-0.01em] md:text-[1.1875rem]">
+              The board
+            </h2>
+            <p className="text-[0.8125rem] font-medium text-muted-foreground md:text-sm">DEX price from Jupiter, the issuer&apos;s mark from PreStocks, and Jupiter&apos;s 24h move.</p>
+          </div>
           {symbols.loading ? (
             <PreIpoBoardSkeleton />
           ) : symbols.error ? (
@@ -205,11 +190,31 @@ export function PreStocksView({ className }: PreStocksViewProps) {
           ) : (
             <PreIpoBoard symbols={symbols.data?.symbols ?? []} actions={partner.data?.corporateActions ?? []} />
           )}
+          <details className="group -mt-4 border-b border-rule text-sm text-muted-foreground [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 py-2 text-[0.9375rem] font-semibold text-foreground outline-none select-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+              How it works
+              <ChevronDownIcon className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+            </summary>
+            <div className="flex max-w-3xl flex-col gap-2 pt-1 pb-4 leading-relaxed">
+              <p>
+                Pre-IPO tokens are Token-2022 mints issued by PreStocks on Solana. They trade on Jupiter around the clock, so their DEX price
+                never waits for Wall Street to open. The issuer also publishes its own mark; the board shows both, each with its source and age.
+              </p>
+              <p>
+                In the weekly competition they fill at the live DEX quote with the same 0.1% spread and the same {startingCash} of virtual cash as
+                your xStock trades, and count on the same leaderboard. Nothing is bought on-chain. {WEEKEND_TRADES_COPY}.
+              </p>
+              <p>
+                Two pre-IPO quests are completed with paper trades here; two are verified from your own wallet. A quest describes a wallet state
+                or an in-app action, never a purchase. Points only, no cash value.
+              </p>
+            </div>
+          </details>
         </section>
 
         <section aria-labelledby="pre-ipo-trade" data-slot="pre-ipo-trade" className="order-first flex min-w-0 flex-col gap-5 lg:order-none">
           <SectionHeading id="pre-ipo-trade" eyebrow="Weekly competition (virtual cash)" title="Trade with virtual cash" hint={PRE_IPO_TRADE_NOTE} />
-          {/* Outline Connect: the trade form below carries the page's one ember action. */}
+          {/* Outline Connect: the trade form below carries the page's one primary action. */}
           <SignInBanner
             title={`Sign in to trade with ${startingCash} of virtual cash.`}
             hint="Same account and same leaderboard as your xStock paper trades."
@@ -223,29 +228,41 @@ export function PreStocksView({ className }: PreStocksViewProps) {
             <EmptyState icon={<Sprout aria-hidden />} title="Season 0 is being set up." description="The competition opens as soon as the Season starts. Check back in a moment." />
           ) : (
             <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-              {/* The form first on a phone (order), beside the positions from lg. */}
-              <section className="order-first rounded-2xl border-gradient bg-card p-5 lg:order-none lg:col-start-2" aria-labelledby="pre-ipo-trade-form">
-                <div className="mb-5 flex flex-col gap-1">
-                  <h3 id="pre-ipo-trade-form" className="text-lg font-semibold tracking-tight">
-                    Paper trade a pre-IPO token
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {closed ? `This week is settling. ${WEEKEND_TRADES_COPY}.` : weekend ? `${WEEKEND_TRADES_COPY}. Virtual fills at the live quote, 0.1% spread.` : "Virtual fills at the live DEX quote, 0.1% spread."}
+              {/* The form first on a phone (order), beside the positions from lg: the competition's paper-trade slip. */}
+              <section
+                className="order-first flex flex-col bg-card p-[22px] ring-1 ring-rule max-md:-mx-[var(--gutter)] max-md:border-y max-md:border-rule-2 max-md:px-[var(--gutter)] max-md:py-5 max-md:ring-0 lg:order-none lg:col-start-2"
+                aria-labelledby="pre-ipo-trade-form"
+              >
+                <div className="mb-4 flex flex-col gap-2">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h3 id="pre-ipo-trade-form" className="font-display text-[2rem] leading-none font-normal tracking-[-0.01em]">
+                      Paper trade
+                    </h3>
+                    <span className="text-[0.84375rem] font-medium text-muted-foreground">Virtual cash</span>
+                  </div>
+                  <p className="text-[0.8125rem] leading-[1.45] text-muted-foreground">
+                    {closed
+                      ? `This week is settling. ${WEEKEND_TRADES_COPY}.`
+                      : weekend
+                        ? `${WEEKEND_TRADES_COPY}. Virtual fills at the live quote, 0.1% spread.`
+                        : "A pre-IPO token with virtual cash. Virtual fills at the live DEX quote, 0.1% spread."}
                   </p>
                 </div>
                 {tradePanel}
               </section>
               <div className="flex min-w-0 flex-col gap-3 lg:col-start-1 lg:row-start-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                  <h3 className="text-lg font-semibold tracking-tight">Your pre-IPO positions</h3>
+                  <h3 className="font-display text-[1.625rem] leading-none font-normal tracking-[-0.01em] sm:text-[1.875rem]">Your pre-IPO positions</h3>
                   {signedIn ? (
-                    <span className={cn("text-xs tabular-nums", pnlClass(pnl))}>{pnl === null ? "" : `${formatSignedUsd(pnl)} this week`}</span>
+                    <span className={cn("text-[0.84375rem] font-semibold tabular-nums font-stretch-[85%]", pnlClass(pnl))}>{pnl === null ? "" : `${formatSignedUsd(pnl)} this week`}</span>
                   ) : null}
                 </div>
                 {signedIn ? (
                   <PositionsTable positions={positions} emptyDescription="Paper-buy any pre-IPO token with your virtual cash. Sells count too." />
                 ) : (
                   <EmptyState
+                    variant="plain"
+                    className="border-y border-rule py-10"
                     icon={<Gamepad2 aria-hidden />}
                     title="Sign in to see your positions."
                     description={`${startingCash} of virtual cash a week, xStocks and pre-IPO tokens in one account.`}
@@ -257,7 +274,6 @@ export function PreStocksView({ className }: PreStocksViewProps) {
                     }
                   />
                 )}
-                <p className="text-xs text-pretty text-muted-foreground">{PRE_IPO_TRADE_NOTE}</p>
               </div>
             </div>
           )}
@@ -300,17 +316,26 @@ export function PreStocksView({ className }: PreStocksViewProps) {
 
       {/* d. Corporate actions, read from the mints (renders nothing while empty; an unlisted Partner is "nothing on record", not a failure) */}
       {partner.loading ? (
-        <Skeleton className="h-24 w-full rounded-2xl" aria-hidden />
+        <Skeleton className="h-24 w-full" aria-hidden />
       ) : partner.error && partner.errorStatus !== 404 ? (
         <ErrorState title="Couldn't read the mints" message={partner.error} onRetry={partner.refetch} />
       ) : (
         <CorporateActionsSection actions={partner.data?.corporateActions} className="pt-0" />
       )}
 
-      {/* Once per page, and visible without opening anything: the standard line and the pre-IPO line at the foot. */}
-      <div data-slot="board-compliance" className="flex flex-col gap-1 text-xs text-pretty text-muted-foreground">
-        <p>{COMPLIANCE_LINE}</p>
-        <p data-slot="pre-ipo-compliance">{PRE_IPO_COMPLIANCE_LINE}</p>
+      <div className="flex flex-col gap-5 border-t border-rule pt-6">
+        {/* The session chip is for xStocks; the line says why the pre-IPO board never waits for it. */}
+        <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:gap-6">
+          <MarketSessionChip />
+          <p className="max-w-2xl text-[0.8125rem] leading-snug text-pretty text-muted-foreground">
+            The US session chip is for xStocks. Pre-IPO tokens quote on Solana at any hour, and every price carries its source and age.
+          </p>
+        </div>
+        {/* Once per page, and visible without opening anything: the standard line and the pre-IPO line at the foot. */}
+        <div data-slot="board-compliance" className="flex max-w-3xl flex-col gap-1.5 text-[0.8125rem] leading-[1.5] text-pretty text-muted-foreground">
+          <p>{COMPLIANCE_LINE}</p>
+          <p data-slot="pre-ipo-compliance">{PRE_IPO_COMPLIANCE_LINE}</p>
+        </div>
       </div>
 
       <ProofDrawer play={proofPlay} open={proofOpen && proofPlay !== null} onOpenChange={setProofOpen} />
@@ -325,7 +350,7 @@ function TradeSkeleton() {
         <Skeleton className="h-5 w-40" />
         <PositionsTableSkeleton rows={2} />
       </div>
-      <Skeleton className="h-96 w-full rounded-2xl" />
+      <Skeleton className="h-96 w-full" />
     </div>
   );
 }

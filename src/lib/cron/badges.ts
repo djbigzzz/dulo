@@ -27,8 +27,8 @@ export const LEAGUE_TOP3_BADGE_KEY: BadgeKey = "league_top3";
 export const LEAGUE_TOP3_REF_RE = /^league:[^:]+:rank:[123]$/;
 /**
  * Mints attempted per tick. Each is a confirmed transaction paid from the funded server wallet;
- * two per 5-minute tick keeps the tick inside its budget and caps the wallet's burn if a bad
- * row loops (15 Sep review M-L). A backlog drains at 24 an hour.
+ * two per tick keeps the tick inside its budget and caps the wallet's burn if a bad
+ * row loops (15 Sep review M-L). A backlog drains two badges per tick.
  */
 export const DEFAULT_MINT_LIMIT = 2;
 

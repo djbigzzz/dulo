@@ -23,7 +23,7 @@ vi.mock("@solana/web3.js", async (importOriginal) => {
   return { ...actual, sendAndConfirmTransaction: mocks.sendAndConfirmTransaction };
 });
 
-import { BADGES, BADGE_KEYS, BADGE_SVGS, badgeMeta, badgeMetadataJson, renderBadgeSvg } from "@/lib/badges/designs";
+import { BADGES, BADGE_KEYS, BADGE_SVGS, CLEAR_Y, badgeMeta, badgeMetadataJson, renderBadgeSvg } from "@/lib/badges/designs";
 import { badgeImagePath, badgeInfo, badgeMetadataPath, isBadgeKey, txExplorerUrl } from "@/lib/badges/keys";
 import {
   BADGE_MINT_EXTENSIONS,
@@ -78,6 +78,9 @@ describe("badge designs", () => {
     for (const d of TAMGA_PATHS) expect(meta!.svg).toContain(`d="${d}"`);
     expect(meta!.svg).toContain(`<title id="b-${key}-t">`);
     expect(meta!.svg).toContain(meta!.color);
+    // Mono: flat near-black medallion (the page ground), no gradients or glows.
+    expect(meta!.svg).toContain('fill="#09090b"');
+    expect(meta!.svg).not.toMatch(/Gradient|url\(#/);
     expect(meta!.svg).toContain(BADGES[key].title);
     expect(meta!.svg).not.toMatch(/NaN|undefined/);
     expect(BADGE_SVGS[key]).toBe(meta!.svg);
@@ -92,6 +95,24 @@ describe("badge designs", () => {
     // The mirror design reflects the mark: the tamga paths appear twice.
     expect(BADGE_SVGS.mirror.split(TAMGA_PATHS[1]).length - 1).toBe(2);
     expect(BADGE_SVGS.first_position.split(TAMGA_PATHS[1]).length - 1).toBe(1);
+  });
+
+  it.each(BADGE_KEYS)("%s keeps its motif above the caption, so nothing runs through the badge's name", (key) => {
+    const svg = BADGE_SVGS[key];
+    const num = (el: string, name: string) => Number(el.match(new RegExp(` ${name}="([-\\d.]+)"`))?.[1] ?? 0);
+    const bottoms: number[] = [];
+    for (const el of svg.match(/<(circle|ellipse|line|polygon)\b[^>]*>/g) ?? []) {
+      if (/ r="210"/.test(el)) continue; // the ground's faint disc, behind everything
+      const half = num(el, "stroke-width") / 2;
+      if (el.startsWith("<circle")) bottoms.push(num(el, "cy") + num(el, "r") + half);
+      // A rotated leaf: its long radius bounds it whichever way it turns.
+      else if (el.startsWith("<ellipse")) bottoms.push(num(el, "cy") + (el.includes("rotate(") ? Math.max(num(el, "rx"), num(el, "ry")) : num(el, "ry")));
+      else if (el.startsWith("<line")) bottoms.push(Math.max(num(el, "y1"), num(el, "y2")) + half);
+      else for (const pt of el.match(/points="([^"]+)"/)![1].trim().split(/\s+/)) bottoms.push(Number(pt.split(",")[1]) + half);
+    }
+    expect(bottoms.length).toBeGreaterThan(0);
+    expect(Math.max(...bottoms)).toBeLessThanOrEqual(CLEAR_Y);
+    expect(svg).toContain(`<text x="256" y="424"`);
   });
 
   it("escapes the caption text", () => {

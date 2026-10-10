@@ -30,7 +30,7 @@ const Body = z.object({
  *   409  the competition week is settled (only while it settles) or no Season
  * Right after the fill the caller's league_trade / game_action quests (First Paper Trades, ...)
  * are evaluated inline, so a third trade completes First Paper Trades in this response instead
- * of on the next 5-minute tick. Only quests whose points this request awarded are listed. The
+ * of on the next scheduled tick. Only quests whose points this request awarded are listed. The
  * trade is already committed: that step never fails the request, and past its ~2.5s budget
  * it finishes in after().
  * -> ok({ trade, account, quote, fill, completedPlays: [{ key, title, points }] })

@@ -11,7 +11,7 @@ vi.mock("@/components/layout/MobileTabBar", () => ({ MobileTabBar: () => null })
 
 import { footerLinks } from "@/components/layout/AppShell";
 import { CHECK_INVALID_MESSAGE, SAMPLE_WALLETS, checkHref } from "@/components/landing/check-wallet";
-import { PRACTICE_LEAGUE_TITLE, SEASON_TOP_MIN_ROWS, seasonTopRows } from "@/components/landing/scoreboard-mode";
+import { SEASON_SEATS, openSeatCopy, seasonSeats } from "@/components/landing/scoreboard-mode";
 import { PRE_IPO_PUBLIC_WALLETS, PUBLIC_WALLETS, publicWalletLabel } from "@/lib/mirror/public-wallets";
 import { WELCOME_OFFER_LINE } from "@/lib/games/ledger-policy";
 import { NEXT_WEEK_MARKETS_COPY } from "@/components/calls/calls-format";
@@ -75,6 +75,40 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(landing).toContain("<CheckWalletBox");
   });
 
+  it("moves keyboard focus with 'Check a wallet': the #check section takes focus, so the next Tab reaches the address field", () => {
+    const landing = repoFile("src/app/page.tsx");
+    // Next's hash navigation calls focus() on the target; without tabIndex the call does nothing and focus stays in the hero.
+    expect(landing).toMatch(/<section\s+id="check"\s+tabIndex=\{-1\}/);
+  });
+
+  it("keeps the check field 44px tall on phones and visible without its card", () => {
+    const box = repoFile("src/components/landing/CheckWalletBox.tsx");
+    const input = box.slice(box.indexOf("<Input"), box.indexOf("/>", box.indexOf("<Input")));
+    // Stacked below sm: a bare flex-1 (basis 0) in the column overrides h-11 and draws a 28px field.
+    expect(input).toContain("h-11");
+    expect(input).toContain("sm:flex-1");
+    expect(input).not.toMatch(/[" ]flex-1\b/);
+    // The landing sets the box straight on the page (no panel); the field keeps its own edge, the input
+    // token (42%, 3.7:1 on ink: WCAG 1.4.11), so it stays visible.
+    expect(repoFile("src/app/page.tsx")).toMatch(/<CheckWalletBox bare \/>/);
+    expect(input).toContain("border-input");
+    expect(input).not.toContain("border-rule-2");
+    // 16px under md: iOS zooms the page on focus into a field under 16px.
+    expect(input).toMatch(/\btext-base\b[^"]*\bmd:text-sm\b/);
+  });
+
+  it("keeps the hero's Sign in as tall as the Connect it replaces: the pair fills the caller's size, never its padding", () => {
+    const src = repoFile("src/components/wallet/ConnectButton.tsx");
+    const branch = src.slice(src.indexOf("if (!signedIn) {"), src.indexOf("const points = user?.points"));
+    expect(branch).toContain('<div className={cn("inline-flex items-stretch gap-1", className, "p-0!")}>');
+    // Both buttons drop their fixed height and stretch to the wrapper, with the size's own height as the floor.
+    expect(branch).toMatch(/className=\{cn\("h-auto grow font-semibold", PAIR_MIN\[size\]\.h\)\}/);
+    expect(branch).toMatch(/className=\{cn\("aspect-square h-auto w-auto shrink-0 p-0", PAIR_MIN\[size\]\.h, PAIR_MIN\[size\]\.w\)\}/);
+    expect(src).toMatch(/lg: \{ h: "min-h-10", w: "min-w-10" \}/);
+    // The floor is the size's own height (Broadcast's lg button is 40px).
+    expect(repoFile("src/components/ui/button.tsx")).toMatch(/\blg: "h-10 /);
+  });
+
   it("states the welcome offer before sign-in, directly above the buttons, from the points policy", () => {
     const landing = repoFile("src/app/page.tsx");
     expect(landing).toMatch(/import \{[^}]*\bWELCOME_OFFER_LINE\b[^}]*\} from "@\/lib\/games\/ledger-policy"/);
@@ -84,42 +118,68 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(WELCOME_OFFER_LINE).toBe("Sign in free: 1,000 starter points and $10,000 of virtual cash to play. Points only, no cash value.");
   });
 
-  it("keeps the market session chip, the trust row and the compliance line in the hero", () => {
+  it("keeps the market session chip, the pre-IPO hook and the compliance line in the hero, as one quiet status line", () => {
     const landing = repoFile("src/app/page.tsx");
     const hero = landing.slice(landing.indexOf('aria-labelledby="hero-title"'), landing.indexOf("<GameTiles"));
-    expect(hero).toContain("<MarketSessionChip />");
-    // The one pre-IPO hook on the landing (22 Sep) sits beside the chip, at the trust line's size; nothing else moved.
-    expect(hero).toMatch(/<MarketSessionChip \/>[\s\S]{0,400}href="\/prestocks"[\s\S]{0,300}Pre-IPO tokens trade 24\/7/);
-    expect(hero.indexOf('href="/prestocks"')).toBeLessThan(hero.indexOf("TRUST.map("));
-    expect(hero).toContain("TRUST.map(");
+    expect(hero).toContain("<MarketSessionChip");
+    // The one pre-IPO hook on the landing (22 Sep) sits beside the chip, at the same quiet size.
+    expect(hero).toMatch(/<MarketSessionChip [^>]*\/>[\s\S]{0,400}href="\/prestocks"[\s\S]{0,300}Pre-IPO tokens trade 24\/7/);
+    // The trust row was folded away on 9 Oct 2026: one status line, not four chips.
+    expect(hero).not.toContain("TRUST.map(");
     expect(hero).toContain("{COMPLIANCE_LINE}");
+    // The regulatory line keeps AA contrast for 12px text: /80 is 5.3:1 on the page background, /70 only 4.3:1.
+    const compliance = hero.match(/<p className="([^"]*)">\{COMPLIANCE_LINE\}<\/p>/);
+    const tone = compliance?.[1].split(" ").find((c) => c.startsWith("text-muted-foreground"));
+    expect(["text-muted-foreground", "text-muted-foreground/90", "text-muted-foreground/80"]).toContain(tone);
+    // The pre-IPO link draws the focus ring (its outline-none removes the global outline) and is at least 24px tall.
+    const preIpo = hero.match(/href="\/prestocks"\s+className="([^"]*)"/);
+    expect(preIpo?.[1]).toContain("focus-visible:ring-2 focus-visible:ring-[var(--focus)]");
+    expect(preIpo?.[1]).toContain("min-h-6");
     expect(landing).toMatch(/import \{[^}]*\bCOMPLIANCE_LINE\b[^}]*\} from "@\/components\/common\/compliance"/);
-    // Phones read the pitch, then session and trust, then the live cards.
+    // Broadcast (9 Oct 2026): the pitch and the way in, then the live stage and its tabs, then the status line under them.
     expect(hero.indexOf("<MarketSessionChip")).toBeGreaterThan(hero.indexOf("Check a wallet"));
-    expect(hero.indexOf("<MarketSessionChip")).toBeLessThan(hero.indexOf("<LivePredictions"));
-    // The H1 steps down below sm so Connect sits on the first 375 px screen.
-    expect(landing).toMatch(/id="hero-title"\s+className="font-display text-4xl /);
+    expect(hero.indexOf("<MarketSessionChip")).toBeGreaterThan(hero.indexOf("<LivePredictions"));
+    // On a phone the grid puts the stage between the headline and the way in, so the headline, the prediction,
+    // the welcome line, Connect and Check a wallet all sit on the first 390 px screen.
+    expect(hero).toContain("[grid-template-areas:'head'_'stage'_'join'_'mkts'_'status']");
+    expect(hero).toContain("lg:[grid-template-areas:'head_join'_'stage_stage'_'mkts_mkts'_'status_status']");
+    // The H1 is Instrument Serif at its one weight: 41px on a phone, 56px from lg, 68px from xl (the 1440 mockup); never italic.
+    expect(landing).toMatch(/id="hero-title"\s+className="[^"]*\bfont-display text-\[2\.5625rem\] [^"]*\bfont-normal\b[^"]*\blg:text-\[3\.5rem\] xl:text-\[4\.25rem\]/);
+    expect(landing.slice(landing.indexOf('id="hero-title"'), landing.indexOf("</h1>"))).not.toMatch(/italic|font-semibold|font-bold/);
   });
 
-  it("puts the live prediction cards first in the hero, then the ranking, and the game tiles right under it", () => {
+  it("signed in, the hero's first button is the next step, never the wallet chip again", () => {
+    const landing = repoFile("src/app/page.tsx");
+    const hero = landing.slice(landing.indexOf('aria-labelledby="hero-title"'), landing.indexOf("<GameTiles"));
+    expect(hero).toMatch(/<SessionSwitch signedIn=\{<ContinueTour \/>\} signedOut=\{<ConnectButton /);
+    expect(landing).toMatch(/href="\/start"[^>]*>\s*Continue the tour/);
+    // The welcome offer is for visitors who have not signed in yet. A signed-in player gets a plain line
+    // that is true at a first sign-in too: the first-grant toast says "Welcome to Dulo" at that moment.
+    expect(hero).toMatch(/<SessionSwitch\s+signedIn=\{[\s\S]{0,300}You&apos;re signed in\.[\s\S]{0,300}signedOut=\{[\s\S]{0,300}\{WELCOME_OFFER_LINE\}/);
+    expect(landing).not.toMatch(/Welcome back/i);
+    // The landing shows no personal balance (docs/HANDOFF.md 3.8, decided 16 Sep 2026).
+    expect(landing).not.toMatch(/\buser\??\.points|PointsSummary|seasonPoints|formatPoints/);
+    expect(repoFile("src/components/landing/SessionSwitch.tsx")).not.toMatch(/\.points|formatPoints|balance/);
+  });
+
+  it("puts this week's predictions in the hero as one featured card, and the game tiles right under it", () => {
     const landing = repoFile("src/app/page.tsx");
     const predictions = landing.indexOf("<LivePredictions");
-    const rank = landing.indexOf("<RankCard");
     const tiles = landing.indexOf("<GameTiles");
     expect(predictions).toBeGreaterThan(-1);
-    expect(rank).toBeGreaterThan(predictions);
+    // The hero ranking card was cut on 9 Oct 2026: the tiles carry the competition's live figure.
+    expect(landing).not.toContain("<RankCard");
     // The tiles follow the hero section and come before the Check section.
     expect(tiles).toBeGreaterThan(landing.indexOf("</section>"));
     expect(tiles).toBeLessThan(landing.indexOf('id="check"'));
     const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
     expect(src).not.toContain("PlayTeaser");
     expect(src).toContain("export function LivePredictions");
-    expect(src).toContain("export function RankCard");
+    expect(src).not.toContain("export function RankCard");
     expect(src).toContain("export function GameTiles");
-    expect(src).toContain("Live right now");
-    // Predictions show at every width: no viewport-height gate on them any more.
-    expect(src).not.toContain("min-height:740px");
-    const cards = src.slice(src.indexOf("export function LivePredictions"), src.indexOf("export function RankCard"));
+    expect(src).toContain("This week's prediction");
+    // The stage and its tabs (Broadcast): from the stage component through LivePredictions.
+    const cards = src.slice(src.indexOf("function Stage("), src.indexOf("export function GameTiles"));
     expect(cards).not.toMatch(/min-height/);
     expect(cards).toContain("See all {count} predictions");
     expect(cards).toContain("NEXT_WEEK_MARKETS_COPY");
@@ -132,9 +192,10 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
     expect(landing).not.toContain("PLAY_KINDS");
     for (const chip of ['"Hold"', '"Diversify"', '"DCA"', '"Earnings"']) expect(landing).not.toContain(chip);
     expect(landing).not.toMatch(/\b(paid|pays?|earn\w*) (points )?(for|by) (holding|buying)/i);
-    // Closing CTA: Connect plus "Make a prediction".
+    // Closing CTA: Connect plus the tour; signed in, the tour plus "Make a prediction".
     const cta = landing.slice(landing.indexOf('aria-labelledby="cta"'));
     expect(cta).toContain("<ConnectButton");
+    expect(cta).toMatch(/href="\/start"[^>]*>\s*Take the tour/);
     expect(cta).toMatch(/href="\/predictions"[^>]*>\s*Make a prediction/);
     // No betting words or internal odds on the landing.
     expect(landing).not.toMatch(/probability|odds today|~0%/i);
@@ -142,49 +203,44 @@ describe("landing — check any wallet (M-C) and the three-games hero (C9)", () 
   });
 });
 
-describe("ScoreboardPreview — Season top 3 once three real players exist", () => {
+describe("SeasonTop — the landing's three Season seats (Broadcast, 9 Oct 2026)", () => {
   const board = (n: number): LeaderboardResponse => ({
     season: null,
     limit: 3,
     rows: Array.from({ length: n }, (_, i) => ({ rank: i + 1, userId: `u${i}`, handle: null, address: null, points: 300 - i * 50 })),
   });
 
-  it("shows the virtual competition until the board has three rows", () => {
-    expect(SEASON_TOP_MIN_ROWS).toBe(3);
-    expect(seasonTopRows(null)).toBeNull();
-    expect(seasonTopRows(undefined)).toBeNull();
-    expect(seasonTopRows(board(0))).toBeNull();
-    expect(seasonTopRows(board(2))).toBeNull();
-    expect(seasonTopRows(board(3))?.map((r) => r.userId)).toEqual(["u0", "u1", "u2"]);
-    expect(seasonTopRows(board(5))).toHaveLength(3);
-    expect(PRACTICE_LEAGUE_TITLE).toBe("Virtual competition: house bots until players join");
+  it("always draws three seats: each real player takes one in rank order, every other seat is open; nothing while loading", () => {
+    expect(SEASON_SEATS).toBe(3);
+    expect(seasonSeats(null)).toBeNull();
+    expect(seasonSeats(undefined)).toBeNull();
+    expect(seasonSeats(board(0))?.map((s) => s.row)).toEqual([null, null, null]);
+    const one = seasonSeats(board(1));
+    expect(one?.map((s) => s.rank)).toEqual([1, 2, 3]);
+    expect(one?.map((s) => s.row?.userId ?? null)).toEqual(["u0", null, null]);
+    expect(seasonSeats(board(3))?.map((s) => s.row?.userId)).toEqual(["u0", "u1", "u2"]);
+    expect(seasonSeats(board(5))).toHaveLength(3);
+    // An open seat is an invitation, never a made-up player: it says "Your slot" and "Open", no name and no points.
+    expect(openSeatCopy(one ?? [], null)).toEqual({ title: "Your slot", hint: "Open" });
+    expect(openSeatCopy(one ?? [], "u9")).toEqual({ title: "Your slot", hint: "Open" });
+    // Once the visitor holds a seat, the seats left wait for someone else (as /leaderboard says it).
+    expect(openSeatCopy(one ?? [], "u0")).toEqual({ title: "Open seat", hint: "Waiting for the next player" });
+    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
+    const seats = src.slice(src.indexOf("export function SeasonTop"));
+    expect(seats).toContain("openSeatCopy(seats, userId)");
+    expect(seats).toContain("{open.title}");
+    expect(seats).toContain("border-dashed");
+  });
+
+  it("sits in the closing section, below the fold, never in the hero", () => {
+    const landing = repoFile("src/app/page.tsx");
+    const cta = landing.slice(landing.indexOf('aria-labelledby="cta"'));
+    expect(cta).toContain("<SeasonTop ");
+    expect(landing.indexOf("<SeasonTop")).toBeGreaterThan(landing.indexOf('aria-labelledby="cta"'));
   });
 });
 
-describe("mobile layout at 375 px — landing competition preview and the /competition Trade button", () => {
-  it("shortens the virtual competition title on phones and moves the rest to a muted sub-line", () => {
-    const [short, rest] = PRACTICE_LEAGUE_TITLE.split(": ");
-    expect(short).toBe("Virtual competition");
-    expect(rest).toBe("house bots until players join");
-    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
-    expect(src).toContain('PRACTICE_LEAGUE_TITLE.split(": ")');
-    expect(src).toContain("shortLabel={PRACTICE_SHORT}");
-    expect(src).toContain("subLabel={PRACTICE_SUB}");
-    // Full title from sm up, short title and sub-line below sm.
-    expect(src).toContain('<span className="sm:hidden">{shortLabel}</span>');
-    expect(src).toContain('<span className="hidden sm:inline">{label}</span>');
-    expect(src).toMatch(/text-muted-foreground sm:hidden">\{subLabel\}/);
-  });
-
-  it("drops the bot pill text on phones but keeps a labelled icon", () => {
-    const src = repoFile("src/components/landing/ScoreboardPreview.tsx");
-    expect(src).toContain('const BOT_LABEL = "House bot, never earns points"');
-    expect(src).toContain("aria-label={BOT_LABEL}");
-    expect(src).toContain("title={BOT_LABEL}");
-    expect(src).toContain('<span className="hidden sm:inline">house bot</span>');
-    // The competition page's BotMarker uses the same words.
-    expect(repoFile("src/components/league/LeagueLeaderboard.tsx")).toContain('aria-label="House bot, never earns points"');
-  });
+describe("mobile layout at 375 px — the /competition Trade button", () => {
 
   it("makes the competition Trade button sticky above the tab bar so it rests clear of the last row and the footer", () => {
     const page = repoFile("src/app/competition/page.tsx");
@@ -195,21 +251,32 @@ describe("mobile layout at 375 px — landing competition preview and the /compe
     // The tab bar shows up to lg now, so the button keeps clearing it at md too.
     expect(cls).not.toContain("md:bottom-6");
     expect(cls).not.toContain("fixed");
-    // In flow after the grid (so its resting slot is under the last section), before the sheet.
-    expect(page.indexOf('data-slot="league-trade-fab"')).toBeGreaterThan(page.indexOf("</aside>"));
-    expect(page.indexOf('data-slot="league-trade-fab"')).toBeLessThan(page.indexOf("<Sheet open="));
+    // In flow after the grid and the session line (so its resting slot is at the end of the page).
+    expect(page.indexOf('data-slot="league-trade-fab"')).toBeGreaterThan(page.indexOf('data-slot="league-trade-panel"'));
+    expect(page.indexOf('data-slot="league-trade-fab"')).toBeGreaterThan(page.indexOf("<MarketSessionChip />"));
     // The old fixed-button clearance padding is gone.
     expect(page).not.toContain("pb-24");
   });
 
-  it("hides the Trade button while the sign-in banner is in view, so it never covers the banner's Connect", () => {
+  it("jumps to the trade panel, and steps aside while the standings (and the open seat's Connect) or the panel are in view", () => {
+    // Broadcast (9 Oct): the paper-trade panel sits under the standings on a phone (the 390 mockup),
+    // so the floating button scrolls to it and moves focus there instead of opening a sheet.
     const page = repoFile("src/app/competition/page.tsx");
-    expect(page).toMatch(/import \{ useInView \} from "@\/hooks\/useInView"/);
-    expect(page).toContain("const bannerInView = useInView(bannerRef, !session);");
-    expect(page).toContain("const hideFab = !session && bannerInView;");
-    expect(page).toMatch(/<div ref=\{bannerRef\} data-slot="league-sign-in"[^>]*>\s*<SignInBanner/);
-    const fab = page.slice(page.indexOf('data-slot="league-trade-fab"'), page.indexOf("<Sheet open="));
+    expect(page).toMatch(/import \{ useInView, useScrolledPast \} from "@\/hooks\/useInView"/);
+    expect(page).toContain("const boardInView = useInView(boardRef, loaded);");
+    expect(page).toContain("const panelInView = useInView(panelRef, loaded);");
+    // Once the panel is above the viewport the button's down arrow would be false: it hides there too.
+    expect(page).toContain("const panelPassed = useScrolledPast(panelRef, loaded);");
+    expect(page).toContain("const hideFab = boardInView || panelInView || panelPassed;");
+    // The open seat (and its Connect) lives inside the observed standings section.
+    expect(page).toMatch(/<section ref=\{boardRef\}[^>]*aria-labelledby="league-board"/);
+    expect(page.indexOf("<section ref={boardRef}")).toBeLessThan(page.indexOf("seat={seat}"));
+    expect(page).toMatch(/<section\s+id="league-trade"\s+ref=\{panelRef\}\s+tabIndex=\{-1\}/);
+    expect(page).toContain("el.focus({ preventScroll: true });");
+    expect(page).not.toContain("<Sheet");
+    const fab = page.slice(page.indexOf('data-slot="league-trade-fab"'));
     expect(fab).toContain('hideFab && "pointer-events-none invisible opacity-0"');
+    expect(fab).toContain("onClick={jumpToPanel}");
     // Fails open: no observer (server, old browser) means the button shows.
     const hook = repoFile("src/hooks/useInView.ts");
     expect(hook).toContain('typeof IntersectionObserver === "undefined"');

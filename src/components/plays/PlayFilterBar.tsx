@@ -15,9 +15,10 @@ export interface PlayFilterBarProps {
 const useIsoLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
 
 /**
- * Segmented All · In-platform · On-chain · Badges control ("Filter quests"). A radiogroup with a roving tabindex:
- * Tab lands on the selected option, arrow keys / Home / End move and select. A glass pill
- * slides under the selected option; until it has been measured the option paints its own fill.
+ * All · In-platform · On-chain · Badges ("Filter quests"), drawn as Broadcast tabs: plain labels on a
+ * 1px rule, the selected one cream over a 2px cream bar (the nav's and the trade panel's tabs). A
+ * radiogroup with a roving tabindex: Tab lands on the selected option, arrow keys / Home / End move
+ * and select. The bar slides between options; until it has been measured the option draws its own.
  */
 export function PlayFilterBar({ value, onChange, counts, className }: PlayFilterBarProps) {
   const refs = React.useRef<Array<HTMLButtonElement | null>>([]);
@@ -62,15 +63,12 @@ export function PlayFilterBar({ value, onChange, counts, className }: PlayFilter
       role="radiogroup"
       aria-label="Filter quests"
       onKeyDown={onKeyDown}
-      className={cn(
-        "relative inline-flex w-full rounded-xl border border-white/[0.07] bg-white/[0.025] p-1 shadow-[inset_0_1px_0_rgb(255_245_230/0.04),0_1px_2px_rgb(0_0_0/0.3)] backdrop-blur-sm sm:w-fit",
-        className,
-      )}
+      className={cn("relative flex w-full gap-1 border-b border-rule sm:gap-6", className)}
     >
       {pill ? (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-y-1 rounded-lg bg-white/[0.08] shadow-[inset_0_1px_0_rgb(255_245_230/0.12),0_1px_3px_rgb(0_0_0/0.45)] ring-1 ring-white/[0.06] transition-[left,width] duration-300 ease-out motion-reduce:transition-none"
+          className="pointer-events-none absolute -bottom-px h-0.5 bg-foreground transition-[left,width] duration-300 ease-out motion-reduce:transition-none"
           style={{ left: pill.left, width: pill.width }}
         />
       ) : null}
@@ -89,19 +87,14 @@ export function PlayFilterBar({ value, onChange, counts, className }: PlayFilter
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(f.value)}
             className={cn(
-              "relative z-10 flex h-9 min-w-0 flex-auto items-center justify-center gap-1 rounded-lg px-1.5 text-sm font-medium whitespace-nowrap transition-colors duration-200 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:flex-none sm:gap-1.5 sm:px-3.5",
+              "relative z-10 flex h-11 min-w-0 flex-auto items-center justify-center gap-1.5 px-1 text-[0.9375rem] font-medium whitespace-nowrap transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-inset motion-reduce:transition-none sm:flex-none sm:px-0",
               selected ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-              selected && !pill && "bg-white/[0.08]",
+              selected && !pill && "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-foreground",
             )}
           >
             {f.label}
             {count !== undefined ? (
-              <span
-                className={cn(
-                  "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs tabular-nums transition-colors",
-                  selected ? "bg-white/[0.1] text-foreground/85" : "bg-white/[0.04] text-muted-foreground",
-                )}
-              >
+              <span className={cn("text-[0.84375rem] font-semibold tabular-nums font-stretch-[85%]", selected ? "text-foreground" : "text-dim")}>
                 <span className="sr-only"> (</span>
                 {count}
                 <span className="sr-only">)</span>

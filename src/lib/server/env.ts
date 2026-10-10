@@ -38,7 +38,7 @@ const schema = z.object({
       message: `CRON_SECRET still holds the "${CRON_SECRET_PLACEHOLDER_PREFIX}" placeholder; set a random value in production`,
     }),
   SERVER_WALLET_SECRET: z.string().default(""),
-  /** Solami standard API key with WebhooksManage (lib/cron/solami-sync). Empty = no webhook, the 5-minute tick alone verifies quests. */
+  /** Solami standard API key with WebhooksManage (lib/cron/solami-sync). Empty = no webhook (production today): sign-in, Refresh and the scheduled tick verify quests. */
   SOLAMI_API_KEY: z.string().default(""),
   SOLAMI_API_URL: z.string().default("https://api.solami.dev"),
   /** Id of the Dulo webhook, printed by `npm run solami:webhook` on first create. Empty = the next sync creates one. */

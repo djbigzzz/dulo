@@ -217,7 +217,7 @@ export const POST = handler(async (req) => {
   await createSessionCookie(session, res);
 
   // Snapshot this account's wallets and evaluate its quests right away, so "First Position"
-  // is already complete when the quests board loads instead of after the next 5-minute tick.
+  // is already complete when the quests board loads instead of after the next scheduled tick.
   // after() runs once the response is sent and keeps the serverless function alive for it;
   // runForUser never throws and caps itself at ~8s, the .catch is belt and braces.
   after(() =>
@@ -226,7 +226,7 @@ export const POST = handler(async (req) => {
     }),
   );
   // A wallet linked in this request joins the Solami webhook's watch list (lib/cron/solami-sync),
-  // so its next xStock transfer verifies within seconds. Best effort: the 5-minute tick covers it.
+  // so its next xStock transfer verifies within seconds once a Solami key is set. Best effort: the scheduled tick covers it.
   // Loaded lazily: only deployments with a Solami key pay for the import.
   if (e.SOLAMI_API_KEY && now.getTime() - wallet.createdAt.getTime() < 60_000) {
     after(async () => {

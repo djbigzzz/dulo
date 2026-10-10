@@ -1,8 +1,9 @@
 # Deploy the demo
 
 Everything in this file is free and takes about twenty minutes. At the end there is a public URL
-that a judge can open, connect a wallet to and play. The README's Deploy section describes the
-paid, long-term setup (Vercel Pro + Supabase); this is the shortest path to a working demo.
+that a judge can open, connect a wallet to and play. The README's Deploy section covers the full
+setup and what a paid plan would change; this is the shortest path to a working demo, and it is
+how production runs (Vercel Hobby + Neon).
 
 There is no smart contract to deploy, no migration to write and no build step that touches the
 database. The only thing the app needs that a laptop does not provide is one Postgres database.
@@ -112,7 +113,7 @@ Expect a line like `48 rows (19 created, 29 updated)` at the end.
 
 ## 5. Keep the clock running
 
-One tick every five minutes runs the games, snapshots wallets, evaluates quests and mints badges.
+One tick runs the games, snapshots wallets, evaluates quests and mints badges.
 Vercel's Hobby plan only allows daily crons, so the repo ships a GitHub Actions pinger that does the
 same job for free. It stays inert until you switch it on, in **Settings → Secrets and variables →
 Actions**:
@@ -121,8 +122,10 @@ Actions**:
 - Secrets: `CRON_SECRET` = the same value you set in Vercel
 
 Then run it once by hand: **Actions → Cron tick (Hobby fallback) → Run workflow**. A green run means
-the whole backend works end to end. GitHub schedules can run five to thirty minutes late under load,
-which is fine for snapshots and quest evaluation.
+the whole backend works end to end. The pinger asks for a tick every five minutes, but GitHub runs
+scheduled workflows late or skips them under load: in production the median gap between runs has
+been about 4.75 hours. Sign-in and Refresh on `/quests` read a player's wallets at once, and the
+prediction and competition boards run an overdue settlement or rollover when they are read.
 
 `vercel.json` also schedules one daily run at 21:10 UTC, after the Friday settle in both summer and
 winter time: if the pinger is ever off, the week still settles. On Vercel Pro you can raise that schedule
@@ -139,9 +142,10 @@ production because it would land in request logs.
 
 Then open the site and walk the judge path:
 
-1. The landing shows three live prediction cards with real prices, and three game tiles with real
-   numbers rather than dashes. If the cards are stuck on skeletons, the database is empty — step 4
-   did not run against this database.
+1. The landing shows this week's featured prediction with its price (source and age) and the other
+   two as rows, and three game tiles with real numbers rather than dashes (9 Oct 2026: calm
+   redesign). If the card is stuck on a skeleton, the database is empty — step 4 did not run
+   against this database.
 2. **Check a wallet** → **Public holder A**. This is the strongest page in the app and needs no
    sign-in: it reads a real mainnet wallet, applies the Token-2022 multipliers and shows which
    on-chain quests that wallet already meets, with every price carrying its source and age.

@@ -2,7 +2,7 @@
 
 Paste-ready copy for the submit form at https://hackathons.solana.com/hackathons/stocklana. The headings below follow the form's own steps.
 
-- **Status:** updated 22 Sep 2026 for the live deployment at https://projectdulo.com (Vercel + Neon, since 21 Sep). Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct.
+- **Status:** updated 22 Sep 2026 for the live deployment (Vercel + Neon, since 21 Sep; at https://projectdulo.com since 7 Oct). Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), and judging runs to 2 Oct.
 - **No placeholders.** Everything inside a paste block is true today. Anything that depends on a thing that does not exist yet (the live URL, the videos, a minted badge, player numbers) is listed under "Add once it exists" in the Links step, outside the blocks.
 - **Limits:** Short Description 280 characters, Full Description 5,000 characters, Pitch Video 3:00, Technical Video 5:00, at least one link.
 
@@ -81,7 +81,7 @@ Players are free. Partners would list on-chain quests and pay per verified compl
 
 ## Team
 
-Built solo. Live since 21 Sep 2026 on Vercel and Neon: no external players yet (one account so far: the founder's), no partner signed and no badge minted; every count on the site is real, and most of them read zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,428 tests, CI on every push.
+Built solo. Live since 21 Sep 2026 on Vercel and Neon: no external players yet (one account so far: the founder's), no partner signed and no badge minted; every count on the site is real, and most of them read zero. Next.js 15, TypeScript and Postgres, no Anchor program, 1,558 tests, CI on every push.
 
 Points only, no cash value. Not investment advice. xStocks are not available to U.S. persons or in restricted jurisdictions. Dulo is independent and not affiliated with xStocks (Backed Finance owns that brand). Original work, written for this hackathon.
 ````
@@ -169,7 +169,7 @@ Submissions close **Fri 25 Sep 2026, 16:00 ET** (20:00 UTC, 21:00 Irish), confir
 - [ ] `git status --ignored` shows `!! docs/private/`, and `git ls-files docs/private` prints nothing. No tracked file cites a path inside it.
 - [ ] Secret grep over tracked files is clean: `git grep -nIE "(-----BEGIN|api[_-]?key[\"' ]*[:=]|api-key=|postgres(ql)?://[^ ]*:[^ @]*@)" -- ':!*.example' ':!docs/*'` returns only variable names, never a value.
 - [ ] No keypair, `.env` or wallet file is tracked.
-- [ ] CI is green on the default branch. `npx vitest run` printed **1,428** on 7 Oct; re-read it on the day and make the Full Description and the README say the same number.
+- [ ] CI is green on the default branch. `npx vitest run` printed **1,558** on 10 Oct; re-read it on the day and make the Full Description and the README say the same number.
 - [ ] The repo is public, MIT, with the README's disclosure section intact.
 
 ### Badge names (gate: do this before a badge can ever mint)

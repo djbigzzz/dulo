@@ -29,32 +29,21 @@ const QUICK_AMOUNTS = [50, 100, 250] as const;
 /** A copy is built from the wallet's xStocks only (lib/mirror/allocation COPY_ASSET_SOURCE); pre-IPO tokens are left out. */
 export const COPY_SCOPE_NOTE = "Pre-IPO tokens are not part of a copy: the plan covers this wallet's xStocks only.";
 
-/** Inset well (DESIGN.md): inputs and leg rows inside the plan card. */
-const WELL = "rounded-xl border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]";
 
 function Step({ n, title, description, children, done = false, last = false }: { n: number; title: string; description?: React.ReactNode; children: React.ReactNode; done?: boolean; last?: boolean }) {
   return (
-    <li className={cn("relative flex gap-3 sm:gap-4", !last && "pb-7")}>
-      {/* Thin gold-to-nothing connector between step numerals. */}
-      {last ? null : <span className="absolute top-10 bottom-2 left-[15.5px] w-px bg-gradient-to-b from-gold/60 via-gold/25 to-white/[0.05]" aria-hidden />}
-      <span
-        className={cn(
-          "relative flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold tabular-nums transition-colors duration-300",
-          done
-            ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
-            : "border-gold/30 bg-[linear-gradient(180deg,rgb(240_217_164/0.16),rgb(216_180_106/0.04))] text-[#f0d9a4] shadow-[inset_0_1px_0_rgb(255_240_200/0.2)]",
-        )}
-        aria-hidden
-      >
-        {done ? <CheckCircle2 className="size-4" /> : n}
+    <li className={cn("relative flex gap-4 border-t border-rule pt-5", !last && "pb-6")}>
+      {/* The step as a scoreboard numeral; a cream check once it is done. */}
+      <span className={cn("figure w-6 shrink-0 text-[2rem] leading-[0.8]", done ? "text-foreground" : "text-muted-foreground")} aria-hidden>
+        {done ? <CheckCircle2 className="mt-0.5 size-5" /> : n}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <div className="flex flex-col gap-0.5 pt-1">
-          <h3 className="text-base font-semibold tracking-tight">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-[1.0625rem] leading-tight font-semibold">
             <span className="sr-only">Step {n}: </span>
             {title}
           </h3>
-          {description ? <p className="text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+          {description ? <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">{description}</p> : null}
         </div>
         {children}
       </div>
@@ -86,7 +75,7 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
         budgetUsd: budget,
       });
       setRecordedAt(r.recordedAt);
-      toast.success("Got it. We'll check your wallet within 5 minutes.", {
+      toast.success("Got it. We're checking your wallet now.", {
         description: r.status === "complete" ? "Your wallet already matched a copied portfolio; this refreshes the check." : `${toleranceCopy(tolerance)} for the next snapshot to count it as a match.`,
       });
       onRecorded?.();
@@ -106,14 +95,16 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
   };
 
   return (
-    <section className={cn("rounded-2xl border-gradient bg-card p-5 sm:p-6", className)} aria-labelledby="mirror-plan">
-      <div className="flex flex-col gap-1">
-        <h2 id="mirror-plan" className="text-lg font-semibold tracking-tight">
-          Copy this portfolio
-        </h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">Dulo never touches your funds. Every swap happens in Jupiter, signed by you.</p>
+    <section className={cn("border border-rule bg-card p-5 sm:p-7", className)} aria-labelledby="mirror-plan">
+      <div className="flex flex-col gap-2 pb-5">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 id="mirror-plan" className="font-display text-[2rem] leading-none font-normal tracking-[-0.012em] sm:text-[2.25rem]">
+            Copy this portfolio
+          </h2>
+          <span className="shrink-0 text-[0.84375rem] text-muted-foreground">Your own wallet</span>
+        </div>
+        <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">Dulo never touches your funds. Every swap happens in Jupiter, signed by you.</p>
       </div>
-      <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
       <div>
         <ol className="flex flex-col">
           <Step
@@ -127,9 +118,9 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
                 <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden>
                   $
                 </span>
-                <Input inputMode="decimal" value={raw} onChange={(e) => setRaw(e.target.value)} aria-invalid={budget === null} className={cn(WELL, "h-11 pl-7 text-base font-semibold tabular-nums md:text-base dark:bg-black/25")} />
+                <Input inputMode="decimal" value={raw} onChange={(e) => setRaw(e.target.value)} aria-invalid={budget === null} className="h-11 pl-7 text-base font-semibold tabular-nums md:text-base" />
               </label>
-              <div className={cn(WELL, "grid shrink-0 grid-cols-3 gap-1 p-1 sm:flex")}>
+              <div className="grid shrink-0 grid-cols-3 gap-1 sm:flex">
                 {QUICK_AMOUNTS.map((amount) => (
                   <Button
                     key={amount}
@@ -137,10 +128,8 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
                     variant="outline"
                     size="lg"
                     className={cn(
-                      "h-9 min-w-12 rounded-[10px] px-2.5 font-medium tabular-nums",
-                      budget === amount
-                        ? "border-white/15 bg-white/[0.09] text-foreground shadow-[inset_0_1px_0_rgb(255_245_230/0.1)]"
-                        : "border-transparent bg-transparent text-muted-foreground shadow-none hover:text-foreground",
+                      "h-11 min-w-14 px-3 font-semibold tabular-nums",
+                      budget === amount ? "border-foreground bg-foreground text-background hover:border-foreground hover:bg-foreground" : "text-muted-foreground hover:text-foreground",
                     )}
                     aria-pressed={budget === amount}
                     onClick={() => setRaw(String(amount))}
@@ -161,11 +150,11 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
             done={plan.legs.length > 0 && plan.legs.every((l) => opened.has(l.assetId))}
           >
             {plan.legs.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-white/[0.08] px-3 py-4 text-center text-sm text-muted-foreground">
+              <p className="border border-dashed border-[rgb(243_240_232/0.3)] px-3 py-4 text-center text-[0.9375rem] text-muted-foreground">
                 {target.legs.length === 0 ? "This wallet holds nothing worth $1 or more right now." : "Raise the amount: every swap would be under $1."}
               </p>
             ) : (
-              <ul className="flex flex-col gap-2">
+              <ul className="border-b border-rule">
                 {plan.legs.map((leg) => {
                   const mint = mintOfAssetId(leg.assetId);
                   const href = mint
@@ -177,10 +166,10 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
                     : null;
                   const wasOpened = opened.has(leg.assetId);
                   return (
-                    <li key={leg.assetId} className={cn(WELL, "flex items-center gap-3 py-2 pr-2 pl-3.5")}>
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="text-sm font-semibold">{leg.symbol}</span>
-                        <span className="text-xs text-muted-foreground tabular-nums">
+                    <li key={leg.assetId} className="flex min-h-14 items-center gap-3 border-t border-rule py-2">
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="text-[0.9375rem] font-semibold">{leg.symbol}</span>
+                        <span className="text-[0.8125rem] text-muted-foreground tabular-nums">
                           {stale ? "≈ " : ""}
                           {formatUsdc(leg.usdc)}
                           <span className="hidden sm:inline"> · {formatWeight(leg.weight)}</span>
@@ -192,15 +181,15 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => setOpened((s) => new Set(s).add(leg.assetId))}
-                          className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-9 shrink-0 rounded-[10px] px-3 font-medium", wasOpened && "text-muted-foreground")}
+                          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-9 shrink-0 px-3", wasOpened && "text-muted-foreground")}
                           aria-label={`Open Jupiter to swap ${formatUsdc(leg.usdc)} into ${leg.symbol} (opens in a new tab)`}
                         >
-                          {wasOpened ? <CheckCircle2 data-icon="inline-start" className="text-emerald-400" aria-hidden /> : null}
+                          {wasOpened ? <CheckCircle2 data-icon="inline-start" className="text-foreground" aria-hidden /> : null}
                           Open in Jupiter
                           <ExternalLink data-icon="inline-end" aria-hidden />
                         </a>
                       ) : (
-                        <span className="text-xs text-muted-foreground">Not swappable</span>
+                        <span className="text-[0.8125rem] text-muted-foreground">Not swappable</span>
                       )}
                     </li>
                   );
@@ -208,12 +197,12 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
               </ul>
             )}
             {plan.dropped.length > 0 ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[0.8125rem] text-muted-foreground">
                 Skipped because they would be under $1: {plan.dropped.map((d) => `${d.symbol} (${formatWeight(d.weight)})`).join(", ")}. Your wallet can still match without them.
               </p>
             ) : null}
-            <p className="text-xs leading-relaxed text-muted-foreground/80">{COPY_SCOPE_NOTE}</p>
-            <p className="text-xs leading-relaxed text-muted-foreground/80">{MIRROR_COMPLIANCE_LINE}</p>
+            <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">{COPY_SCOPE_NOTE}</p>
+            <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">{MIRROR_COMPLIANCE_LINE}</p>
           </Step>
 
           <Step
@@ -227,13 +216,13 @@ export function MirrorPlanCard({ target, signedIn, stale, tolerance, usdcMint = 
             }
             done={recordedAt !== null}
           >
-            <Button size="lg" onClick={() => void record()} disabled={!canVerify} className="h-11 w-full rounded-xl text-base font-semibold sm:w-auto sm:self-start sm:px-5">
+            <Button size="xl" onClick={() => void record()} disabled={!canVerify} className="h-12 w-full text-base sm:w-auto sm:self-start">
               {recording ? <Loader2 className="animate-spin" data-icon="inline-start" aria-hidden /> : <CheckCircle2 data-icon="inline-start" aria-hidden />}
               I&apos;ve done my swaps
             </Button>
             {recordedAt ? (
-              <p className="text-sm text-emerald-300" role="status">
-                Saved. The next snapshot, within 5 minutes, checks your wallet.
+              <p className="text-[0.9375rem] font-semibold text-foreground" role="status">
+                Saved. We&apos;re checking your wallet now. If a swap is still landing, press Refresh on the Quests page in a minute.
               </p>
             ) : null}
           </Step>

@@ -3,77 +3,64 @@
 import { cn } from "cn";
 import type { CallOdds } from "@/lib/api-client";
 import { formatPoints } from "@/components/common/format";
-import { formatPct } from "@/components/calls/calls-format";
+import { splitPct } from "@/components/calls/calls-format";
 
 export interface PoolBarProps {
   odds: CallOdds;
-  /** Highlight the side the viewer holds (or is about to stake). */
+  /** Highlight the side the viewer holds (or is about to put points on): the other side's bar dims. */
   highlight?: "yes" | "no" | null;
-  /** Show the share and multiplier above the bar. Cards turn this off because their side buttons carry it. */
+  /** Show the points on each side under the split. Off where the line beside it already says the total. */
   labels?: boolean;
   className?: string;
 }
 
 /**
- * Yes/No pool split: a 10px inset well holding an emerald (Yes) and a rose (No) gradient
- * segment with a 2px gap, pool sizes under it. An empty market renders a neutral 50/50.
+ * The Broadcast split, both sides always named: "43 Yes ▬▬▬▬|▬▬▬▬▬ No 57", a green (Yes) and a red
+ * (No) bar with a 3px gap and a hairline at the halfway mark, the whole percents always adding up
+ * to 100 (splitPct). An empty pool draws two neutral bars and says so.
  */
 export function PoolBar({ odds, highlight = null, labels = true, className }: PoolBarProps) {
   const yesPct = Math.round(odds.yesProb * 100);
-  const empty = odds.total === 0;
+  const split = splitPct(odds);
+  const empty = !(odds.total > 0);
+  const width = empty ? 50 : yesPct;
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      {labels ? (
-        <div className="flex items-baseline justify-between gap-2 text-sm">
-          <span className={cn("flex items-baseline gap-1.5", highlight === "yes" ? "font-semibold text-emerald-400" : "text-foreground")}>
-            <span className="font-medium">Yes</span>
-            <span className="tabular-nums">{formatPct(odds.yesProb)}</span>
-          </span>
-          <span className={cn("flex items-baseline gap-1.5", highlight === "no" ? "font-semibold text-rose-400" : "text-foreground")}>
-            <span className="tabular-nums">{formatPct(odds.noProb)}</span>
-            <span className="font-medium">No</span>
-          </span>
-        </div>
-      ) : null}
       <div
         role="img"
-        aria-label={`Yes pool ${formatPoints(odds.yesPool)} points (${formatPct(odds.yesProb)}), No pool ${formatPoints(odds.noPool)} points (${formatPct(odds.noProb)})`}
-        className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]"
+        aria-label={
+          empty
+            ? "No points in yet"
+            : `Yes ${split.yes} (${formatPoints(odds.yesPool)} points), No ${split.no} (${formatPoints(odds.noPool)} points)`
+        }
+        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 text-[0.9375rem] leading-none font-semibold tabular-nums font-stretch-[88%]"
       >
-        <div
-          className={cn(
-            "h-full rounded-full transition-[width,opacity] duration-300",
-            empty
-              ? "bg-white/[0.08]"
-              : "bg-[linear-gradient(90deg,#059669_0%,#34d399_100%)] shadow-[inset_0_1px_0_rgb(255_255_255/0.25)]",
-            highlight === "no" && !empty && "opacity-40",
-          )}
-          style={{ width: `${empty ? 50 : yesPct}%` }}
-        />
-        <div
-          className={cn(
-            "h-full flex-1 rounded-full transition-opacity duration-300",
-            empty
-              ? "bg-white/[0.05]"
-              : "bg-[linear-gradient(90deg,#fb7185_0%,#e11d48_100%)] shadow-[inset_0_1px_0_rgb(255_255_255/0.25)]",
-            highlight === "yes" && !empty && "opacity-40",
-          )}
-        />
-      </div>
-      {/* The middle line wraps (centred) on phones rather than cutting off the house-bot label. */}
-      <div className="flex items-start justify-between gap-2 text-xs tabular-nums text-muted-foreground">
-        <span className="inline-flex shrink-0 items-center gap-1.5 leading-4">
-          <span className="size-1.5 rounded-full bg-emerald-400/80" aria-hidden />
-          {formatPoints(odds.yesPool)} pts
+        <span aria-hidden className={cn("whitespace-nowrap", empty ? "text-muted-foreground" : "text-yes")}>
+          {empty ? "Yes" : `${yesPct} Yes`}
         </span>
-        <span className="min-w-0 text-center leading-4 text-balance">
-          {empty ? "No points in yet" : `${formatPoints(odds.total)} pts in the pool, including the house-bot seed`}
+        <span aria-hidden className="relative flex h-1.5 gap-[3px]">
+          <i
+            className={cn(
+              "block h-full transition-[width,opacity] duration-300 motion-reduce:transition-none",
+              empty ? "bg-ink-4" : "bg-yes",
+              highlight === "no" && !empty && "opacity-40",
+            )}
+            style={{ width: `calc(${width}% - 1.5px)` }}
+          />
+          <i className={cn("block h-full flex-1 transition-opacity duration-300 motion-reduce:transition-none", empty ? "bg-ink-4" : "bg-no", highlight === "yes" && !empty && "opacity-40")} />
+          <span className="absolute -top-1 -bottom-1 left-1/2 w-px bg-rule-2" />
         </span>
-        <span className="inline-flex shrink-0 items-center gap-1.5 leading-4">
-          {formatPoints(odds.noPool)} pts
-          <span className="size-1.5 rounded-full bg-rose-400/80" aria-hidden />
+        <span aria-hidden className={cn("whitespace-nowrap", empty ? "text-muted-foreground" : "text-no")}>
+          {empty ? "No" : `No ${100 - yesPct}`}
         </span>
       </div>
+      {labels ? (
+        <p className="text-[0.8125rem] leading-snug text-pretty text-muted-foreground tabular-nums">
+          {empty
+            ? "No points in yet."
+            : `${formatPoints(odds.yesPool)} on Yes, ${formatPoints(odds.noPool)} on No: ${formatPoints(odds.total)} points in, incl. bot seed.`}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -23,7 +23,7 @@ import { catalogueIndexFrom } from "@/lib/cron/evaluate";
 import type { WalletHoldingsRead } from "@/lib/cron/snapshot";
 import { CORPORATE_ACTION_EXPLANATION, corporateActionLabel, corporateActionWhen, multiplierChangeLabel } from "@/components/common/corporate-actions";
 import { formatDateUtc } from "@/components/common/format";
-import { CorporateActionsSection, PartnerBody } from "@/components/partners/PartnerView";
+import { CORPORATE_ACTIONS_SHOWN, CorporateActionsSection, PartnerBody } from "@/components/partners/PartnerView";
 import { HoldingRow } from "@/app/check/_components/HoldingsList";
 import { holdingActionLine } from "@/app/check/_components/check-format";
 import { PlayCard } from "@/components/plays/PlayCard";
@@ -178,6 +178,36 @@ describe("Partner page — Corporate actions section", () => {
     expect(html(createElement(CorporateActionsSection, { actions: null }))).toBe("");
     expect(html(createElement(CorporateActionsSection, { actions: undefined }))).toBe("");
     expect(html(createElement(CorporateActionsSection, { actions: [null as unknown as CorporateActionView] }))).toBe("");
+  });
+
+  it("folds a long list (xStocks records an adjustment per mint): the largest changes first, the rest in a closed details", () => {
+    // 40 small rebases in symbol order, then the split, as the API sorts them.
+    const small: CorporateActionView[] = Array.from({ length: 40 }, (_, i) => ({
+      ...OPENAI_ADJUSTMENT,
+      assetId: `${SOL}/token:Xs${String(i).padStart(4, "0")}` as AssetId,
+      symbol: `A${String(i).padStart(2, "0")}x`,
+      source: "xstocks",
+      multiplierBefore: 1,
+      multiplierAfter: 1 + (i + 1) / 10_000,
+      ratio: 1 + (i + 1) / 10_000,
+    }));
+    const out = html(createElement(CorporateActionsSection, { actions: [...small, { ...SPACEX_SPLIT, source: "xstocks" }] }));
+    // Every row is still in the document (a details, not a page), but only the first few are open.
+    expect(out.split('data-slot="corporate-action"').length - 1).toBe(41);
+    const more = out.indexOf('data-slot="corporate-actions-more"');
+    expect(more).toBeGreaterThan(-1);
+    expect(out.slice(more)).not.toMatch(/<details[^>]*\bopen\b/);
+    const visible = out.slice(0, more);
+    expect(visible.split('data-slot="corporate-action"').length - 1).toBe(CORPORATE_ACTIONS_SHOWN);
+    // The split leads, then the largest rebases; the smallest sit in the fold.
+    expect(visible.indexOf(">SPACEX<")).toBeGreaterThan(-1);
+    expect(visible.indexOf(">SPACEX<")).toBeLessThan(visible.indexOf(">A39x<"));
+    expect(visible).not.toContain(">A00x<");
+    expect(out).toContain(`Show the other ${41 - CORPORATE_ACTIONS_SHOWN} actions`);
+    // A short list (the PreStocks page) is untouched: both rows, in order, no fold.
+    const short = html(createElement(CorporateActionsSection, { actions: [SPACEX_SPLIT, OPENAI_ADJUSTMENT] }));
+    expect(short).not.toContain("corporate-actions-more");
+    expect(short.indexOf(">SPACEX<")).toBeLessThan(short.indexOf(">OPENAI<"));
   });
 
   it("shows a pending action as 'Takes effect' and keeps the same explanation", () => {
