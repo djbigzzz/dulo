@@ -197,3 +197,76 @@ the workflow by hand.
 **Sign-in fails with an internal error.** The app cannot reach Postgres. Check `DATABASE_URL` in
 Vercel, and that the database is awake — Neon's free tier suspends an idle database and the first
 request after that pays the wake-up.
+
+## Local development: the tick and the checks
+
+Run one cron tick, the same request the scheduler sends (in production, the GitHub Actions pinger, whose median gap has been about 4.75 hours, and Vercel's daily cron; see [Full setup reference](#full-setup-reference)). `?steps=` picks a subset of `games,snapshot,evaluate,badges`. The evaluate step also gives starter points to any real player who signed in before they existed:
+
+```bash
+curl -s -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/tick"
+curl -s -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/tick?steps=snapshot,evaluate"
+```
+
+Checks:
+
+```bash
+npx vitest run      # 1,558 tests across 75 files on 10 Oct 2026; no database needed
+npx next typegen    # once on a fresh clone: next-env.d.ts and .next/types are gitignored, and tsc needs the route types
+npm run typecheck
+npm run lint
+npm run build       # stop the dev server first (they share .next)
+```
+
+## Environment variables
+
+Server-only variables are parsed by `src/lib/server/env.ts`. `NEXT_PUBLIC_*` variables are bundled into the client, so never put a secret in one. The template is `.env.example`.
+
+| Variable | Required | What it does |
+|---|---|---|
+| `DATABASE_URL` | yes | Postgres, pooled for the app runtime. Production runs on Neon: its pooled URL (the `-pooler` host) with `pgbouncer=true&connection_limit=1`, which `npm run db:neon` adds. On Supabase, use the transaction pooler (port 6543) with `?pgbouncer=true&connection_limit=1&connect_timeout=5`. Locally, a plain URL. |
+| `DIRECT_URL` | Prisma CLI | Used by `prisma db push` / `migrate` only, because schema changes cannot run through a pooler. On Neon this is the direct (unpooled) URL; on Supabase the session pooler (port 5432); locally it is the same value as `DATABASE_URL`. |
+| `JWT_SECRET` | yes | HS256 session key, 32+ characters (`openssl rand -base64 48`). |
+| `CRON_SECRET` | yes | 16+ characters (`openssl rand -hex 16`), accepted only as `Authorization: Bearer` in production. The `.env.example` placeholder is refused in production. |
+| `HELIUS_API_KEY` | production | Helius RPC for every chain read. When empty, reads fall back to `NEXT_PUBLIC_RPC`, and the production tick health lists a warning. |
+| `JUPITER_API_KEY` | production | Jupiter Price v3 key (free at portal.jup.ag). Keyless Jupiter is throttled and serves stale or missing prices under load. |
+| `SERVER_WALLET_SECRET` | for badges | Base58 or JSON-array secret key of the badge-minting wallet. When empty, badges stay "Minting soon". |
+| `PYTH_API_KEY` | no | Unset in Season 0. Without it, Jupiter prices the competition and settles the predictions, with the source shown. |
+| `PYTH_HERMES_URL` | no | Default `https://hermes.pyth.network`. |
+| `XSTOCKS_API_URL` | no | Default `https://api.xstocks.fi/api/v2/public`. |
+| `NEXT_PUBLIC_APP_URL` | production | The public origin. A production Vercel build fails without a non-localhost value. It is baked into badge metadata URIs at mint time. |
+| `NEXT_PUBLIC_RPC` | no | Public fallback RPC when `HELIUS_API_KEY` is empty (default `https://api.mainnet-beta.solana.com`). Never put a key here. |
+| `NEXT_PUBLIC_APP_NAME` | no | Default `Dulo`. |
+| `NEXT_PUBLIC_GITHUB_URL`, `NEXT_PUBLIC_X_URL`, `NEXT_PUBLIC_VIDEO_URL` | no | Footer links, rendered only when set. Read at build time. |
+| `NEXT_PUBLIC_PARTNER_CONTACT` | no | A `mailto:` or https URL for the `/partners` "Talk to us" button. Hidden when unset. |
+| `SOLAMI_API_KEY` | no | Solami standard key with WebhooksManage. Enables the webhook that re-reads a player's wallets within seconds of a transfer. Unset in production, so the webhook is off; empty = sign-in, Refresh and the scheduled tick alone. |
+| `SOLAMI_API_URL` | no | Default `https://api.solami.dev`. |
+| `SOLAMI_WEBHOOK_ID`, `SOLAMI_WEBHOOK_SECRET` | with a Solami key | Printed once by `npm run solami:webhook`. Without the secret, `/api/hooks/solami` refuses every delivery. |
+| `FOUNDER_WALLETS` | script only | Comma-separated founder wallets that `npm run stats` excludes. |
+
+## Full setup reference
+
+Steps 1 to 8 above are the short version. Production runs that way today (Vercel Hobby, Neon Postgres in us-east-1). What follows is the full setup, and what a paid plan would change.
+
+1. **Scheduling.** `vercel.json` pins functions to `iad1` and schedules `/api/cron/tick` once a day at 21:10 UTC, chosen to fall after the Friday settle in both summer and winter time, because Hobby refuses any cron that runs more than once a day; Hobby may fire it any time in that hour. `.github/workflows/tick.yml` asks GitHub Actions for a tick every 5 minutes once `TICK_PINGER_ENABLED` is set, but GitHub runs scheduled workflows late or skips them under load: in production the median gap between pinger runs has been about 4.75 hours, so the scheduled tick runs hours apart, not minutes. Both send `CRON_SECRET` as the Bearer header, and the tick route allows up to 300 seconds. Reads cover the gaps: sign-in and Refresh re-read one player's wallets and evaluate their quests at once (`runForUser`), and the prediction and competition boards run an overdue settlement or weekly rollover when they are read (`src/lib/cron/catch-up.ts`). On Pro, raise the `vercel.json` schedule to `*/5 * * * *` for a real 5-minute tick, and the pinger becomes redundant.
+2. **Postgres in us-east-1**, next to `iad1`. Production uses Neon; any Postgres works.
+   - **Neon (production):** `DATABASE_URL` is the pooled URL (its host contains `-pooler`) with `pgbouncer=true&connection_limit=1`, and `DIRECT_URL` is the direct, unpooled one. Paste Neon's `.env` block into `.env.production.local` and `npm run db:neon` maps it onto those two names.
+   - **Supabase:** `DATABASE_URL` is the transaction pooler: `postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&connect_timeout=5`, and `DIRECT_URL` is the session pooler on port 5432 of the same host, not `db.<ref>.supabase.co`.
+3. **Keys and URLs.** Set `HELIUS_API_KEY`, `JUPITER_API_KEY`, `JWT_SECRET` and `CRON_SECRET`. Set `NEXT_PUBLIC_APP_URL` to the public origin before the first badge mint: `https://projectdulo.com` in production since 7 Oct 2026, or `https://<project>.vercel.app` until a custom domain resolves.
+4. **Schema and seed.** With the production variables loaded in your shell, run `npx prisma db push` then `npx prisma db seed` (or `npm run db:setup -- --env .env.production.local`, which does both against that file's database only). The seed is idempotent.
+5. **Check the tick.**
+   ```bash
+   curl -s -H "Authorization: Bearer $CRON_SECRET" "$APP/api/cron/tick" | jq '.data.health'
+   ```
+   It should show `ok: true`, `rpcHost` = the Helius host and `warnings: []`.
+6. **Badges.** Create a wallet and fund it with SOL for rent and fees (about 0.006 SOL per badge). Set `SERVER_WALLET_SECRET` and redeploy. Each tick mints up to 2 pending badges, and `?steps=badges` runs that step alone.
+7. **Catalogue.** If xStocks has listed new assets, run `npm run catalogue:build` before a deploy and commit `src/lib/assets/xstocks-catalogue.json`. That bundled catalogue is served while the live fetch runs, and if it fails.
+
+## Usage stats
+
+Read any number off `npm run -s stats` on the day, never from memory. Reproduce against a live database:
+
+```bash
+FOUNDER_WALLETS="<addr1>,<addr2>" DATABASE_URL="<transaction pooler url>" npm run -s stats
+```
+
+It prints one timestamped JSON object (`signedInUsers`, `usersWithCompletedPlay`, `playsVerified`, `leaguePlayers`, `leagueTrades`, `callsPlaced`, `xstocksUsdHeld`, ...). It is read-only and never writes a row.

@@ -140,7 +140,7 @@ describe("copy — the added catalogue rewards state their own rule", () => {
  * disprove, unsourced stats, entrant counts or internal odds; the videos have hard length limits.
  */
 describe("public docs — sourced claims, private planning, video scripts", () => {
-  const TRACKED_DOCS = ["docs/HANDOFF.md", "docs/REVIEW-2026-09-14.md", ".env.example", "README.md", "docs/SUBMISSION.md", "src/app/page.tsx"];
+  const TRACKED_DOCS = ["docs/HANDOFF.md", "docs/REVIEW-2026-09-14.md", ".env.example", "README.md", "docs/HOW-IT-WORKS.md", "docs/DEPLOY.md", "docs/SUBMISSION.md", "src/app/page.tsx"];
   const FALSE_OR_UNSOURCED = [
     /only consumer/i,
     /not one has a reason/i,
