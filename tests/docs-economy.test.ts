@@ -29,6 +29,8 @@ const ROOT = path.resolve(__dirname, "..");
 const read = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8");
 
 const README = read("README.md");
+/** The detail the README links to (12 Oct 2026: the economy, the quest catalogue and the internals moved here). */
+const GUIDE = read("docs/HOW-IT-WORKS.md");
 const SUBMISSION = read("docs/SUBMISSION.md");
 const HANDOFF = read("docs/HANDOFF.md");
 const BRIEF = read("CLAUDE.md");
@@ -86,23 +88,23 @@ describe("docs economy — starter points, virtual cash, points only", () => {
   it("the numbers the docs state are the numbers the policy uses", () => {
     expect(fmt(STARTER_POINTS)).toBe("1,000");
     expect(VIRTUAL_CASH_USD).toBe(STARTING_CASH_USD);
-    expect(README).toContain(`$${fmt(VIRTUAL_CASH_USD)} of virtual cash per competition week`);
-    expect(README).toContain(`at least ${MIN_TRADES_FOR_WEEKLY_POINTS} trades that week`);
-    expect(README).toContain(`${fmt(MIN_CALL_POINTS)} to ${fmt(MAX_CALL_POINTS)} points`);
+    expect(GUIDE).toContain(`$${fmt(VIRTUAL_CASH_USD)} of virtual cash per competition week`);
+    expect(GUIDE).toContain(`at least ${MIN_TRADES_FOR_WEEKLY_POINTS} trades that week`);
+    expect(GUIDE).toContain(`${fmt(MIN_CALL_POINTS)} to ${fmt(MAX_CALL_POINTS)} points`);
     // The weekly ladder, exactly as RANK_POINTS pays it.
     const ladder = RANK_POINTS.map(fmt).join(" / ");
-    expect(README).toContain(ladder);
+    expect(GUIDE).toContain(ladder);
     expect(HANDOFF).toContain("MIN_TRADES_FOR_WEEKLY_POINTS");
     expect(HANDOFF).toMatch(/MIN_TRADES_FOR_WEEKLY_POINTS|3 trades/);
     // Ledger refs and the non-scoring sources, as the code writes them.
     expect(HANDOFF).toContain(`\`${starterRef("<seasonId>")}\``);
-    expect(README).toContain(`\`${starterRef("<seasonId>")}\``);
+    expect(GUIDE).toContain(`\`${starterRef("<seasonId>")}\``);
     expect(HANDOFF).toContain(openStakePrefix("<marketId>"));
     expect(HANDOFF).toContain(`\`${JSON.stringify([...NON_SCORING_SOURCES]).replace(/,/g, ", ")}\``);
   });
 
-  it("README explains how points work: three games, the Season points rule, the quest totals and the plan", () => {
-    const how = section(README, "## How points work");
+  it("HOW-IT-WORKS explains how points work: three games, the Season points rule, the quest totals and the plan", () => {
+    const how = section(GUIDE, "## How points work");
     for (const needle of [
       "Three games, one Season leaderboard",
       "Copy a portfolio is a tool",
@@ -133,8 +135,8 @@ describe("docs economy — starter points, virtual cash, points only", () => {
     expect(economy).toContain(`In-platform quests are worth ${fmt(total(inPlatform))} points and on-chain quests ${fmt(total(onChain))}`);
   });
 
-  it("README lists every live quest and every coming-soon partner quest by its shipped title", () => {
-    const quests = section(README, "### 3. Quests");
+  it("HOW-IT-WORKS lists every live quest and every coming-soon partner quest by its shipped title", () => {
+    const quests = section(GUIDE, "### 3. Quests");
     for (const play of SEASON0_PLAYS) {
       expect(quests, play.key).toContain(`| ${play.title} |`);
       const row = quests.split("\n").find((l) => l.startsWith(`| ${play.title} |`))!;
@@ -277,7 +279,7 @@ describe("docs economy — the HANDOFF catalogue, economy and known limits", () 
     expect(summariseLedger(rows, new Set()).seasonPoints).toBe(-50);
     const refunded = [...rows, { source: "call", ref: "call:m1:refund:u1:yes", delta: 100 }];
     expect(summariseLedger(refunded, new Set()).seasonPoints).toBe(50);
-    expect(README).toContain("minus the points you put in if it does not, and zero on a refund");
+    expect(GUIDE).toContain("minus the points you put in if it does not, and zero on a refund");
   });
 
   it("§3.9 lists the known limitations of 16 Sep", () => {

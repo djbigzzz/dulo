@@ -1,19 +1,41 @@
 import { chromium } from "playwright";
 import fs from "node:fs";
-const BASE = "https://projectdulo.com";
+const BASE = process.env.BASE || "http://localhost:3201";   // a local build of main; its /api/v1 GETs are read from production
+const PROD = "https://projectdulo.com";
 const OUT = process.cwd() + "/shots";
 const FPS = 30;
 const VP = { width: 432, height: 936 };
 const WIN = { x: 0, y: 0, width: 432, height: 412 };            // frames are 1296x1236 at DSF 3
 const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" }).catch(() => chromium.launch());
+const cache = new Map();
+async function prod(pq) {                                     // read-only: GETs only, cached, 3 tries
+  if (cache.has(pq)) return cache.get(pq);
+  let last = { status: 502, body: "{}", type: "application/json" };
+  for (let i = 0; i < 3; i++) {
+    try { const r = await fetch(PROD + pq, { headers: { accept: "application/json" } }); last = { status: r.status, body: await r.text(), type: r.headers.get("content-type") || "application/json" }; if (r.ok) break; } catch {}
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  if (last.status === 200) cache.set(pq, last);
+  return last;
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ease = (k) => 0.5 - 0.5 * Math.cos(Math.PI * k);         // sine in-out: peak speed 1.57x the mean (the cubic was 3x)
 const seg = (t, t0, t1, a, z) => (t <= t0 ? a : t >= t1 ? z : a + (z - a) * ease((t - t0) / (t1 - t0)));
 // Headless Chromium drops backdrop-blur, so make the app chrome opaque (fixes the bleed-through).
-const CHROME = "header.sticky{background:#0a0908!important;backdrop-filter:none!important}nav.fixed.bottom-0{background:#0a0908!important;backdrop-filter:none!important}::-webkit-scrollbar{display:none}";
+const CHROME = "::-webkit-scrollbar{display:none}";
 
 async function open(path, ready) {
   const ctx = await b.newContext({ viewport: VP, deviceScaleFactor: 3, isMobile: true, hasTouch: true, timezoneId: "America/New_York", locale: "en-US" });
+  await ctx.route("**/*", async (route) => {
+    const req = route.request(), u = new URL(req.url());
+    if (u.hostname !== "localhost") return route.continue();
+    if (u.pathname.startsWith("/api/")) {
+      if (req.method() !== "GET") return route.fulfill({ status: 403, body: "{}" });     // nothing is ever written
+      const r = await prod(u.pathname + u.search);
+      return route.fulfill({ status: r.status, headers: { "content-type": r.type }, body: r.body });
+    }
+    return route.continue();
+  });
   const p = await ctx.newPage();
   await p.clock.install();
   await p.goto(BASE + path, { waitUntil: "networkidle" });
@@ -46,15 +68,16 @@ async function film(p, name, seconds, frame) {
     return { top: c.top + scrollY, x: w.left + w.width / 2, y: w.top + scrollY + w.height / 2 };
   });
   if (!m) throw new Error("No open prediction. Capture after the Friday tick opens next week's questions.");
-  const sy = Math.round(m.top + 10);                        // today 736
-  const dx = m.x, dy = m.y - sy;                             // the ring centres on the word "Yes", today about (63, 349)
+  const sy = Math.round(m.top + 40 - 57);                  // the NVDAx label row sits wholly under the header; the question starts the window
+  const dx = m.x, dy = m.y - sy;                             // the ring centres on the word "Yes"
+  if (dy > WIN.height - 24) throw new Error(`Yes sits at ${dy}px, below the ${WIN.height}px window`);
   await p.evaluate(([sy, dx, dy]) => {
     scrollTo(0, sy);
     for (const id of ["dot", "rip"]) { const d = document.createElement("div"); d.id = id;
       Object.assign(d.style, { position: "fixed", left: dx - 22 + "px", top: dy - 22 + "px", width: "44px", height: "44px", borderRadius: "50%", pointerEvents: "none", zIndex: 99999, opacity: 0 });
       document.body.appendChild(d); }
     Object.assign(document.getElementById("dot").style, { background: "rgba(244,241,234,.14)", border: "2px solid rgba(244,241,234,.9)" });
-    document.getElementById("rip").style.border = "3px solid #ff6a2a";
+    document.getElementById("rip").style.border = "3px solid #ffd23c";
   }, [sy, dx, dy]);
   await film(p, "predict", 2.2, (t) => p.evaluate((t) => {        // the push in edit.py moves every frame; the tap lands at 0.7 s
     const card = document.querySelector('[data-market-id][data-status="open"]');
@@ -69,17 +92,18 @@ async function film(p, name, seconds, frame) {
   }, t));
   await ctx.close(); }
 
-// 2. Compete: stats grid with the live countdown, then the board.
-{ const { ctx, p } = await open("/competition", () => [...document.querySelectorAll("dt")].some((e) => /closes in/i.test(e.textContent)) && [...document.querySelectorAll("h2")].some((e) => e.textContent.trim() === "Leaderboard"));
+// 2. Compete: the paper-trade ticket (no player names on screen): the twelve xStocks, then a live price with its source and age.
+{ const { ctx, p } = await open("/competition", () => [...document.querySelectorAll("h2")].some((e) => e.textContent.trim() === "Paper trade"));
   const m = await p.evaluate(() => {
-    const dt = [...document.querySelectorAll("dt")].find((e) => /closes in/i.test(e.textContent));
-    const lb = [...document.querySelectorAll("h2")].find((e) => e.textContent.trim() === "Leaderboard");
-    const bots = [...dt.closest("dl").querySelectorAll("*")].map((e) => e.textContent.trim().match(/^(\d+) of them house bots$/)).find(Boolean);
-    return { grid: dt.closest("dl").getBoundingClientRect().top + scrollY, lb: lb.getBoundingClientRect().top + scrollY, bots: bots ? Number(bots[1]) : null };
+    const h = [...document.querySelectorAll("h2")].find((e) => e.textContent.trim() === "Paper trade");
+    const box = h.closest("section, aside, div");
+    const price = [...document.querySelectorAll("p, span, div")].filter((e) => e.children.length === 0 && /^\$[\d,]+\.\d\d$/.test(e.textContent.trim()))
+      .map((e) => e.getBoundingClientRect()).filter((r) => r.top > h.getBoundingClientRect().top)[0];
+    return { head: h.getBoundingClientRect().top + scrollY, priceBottom: price ? price.bottom + scrollY : null };
   });
-  if (m.bots !== 15) throw new Error(`Band 2 says "Beat 15 house bots" but the page shows ${m.bots}. Update bands.compete in gfx.mjs.`);
-  const a = m.grid - 66, z = m.lb - 73;                      // today 218 and 719
-  await film(p, "compete", 2.8, (t) => p.evaluate((y) => scrollTo(0, y), seg(t, 0.4, 1.9, a, z)));
+  if (!m.priceBottom) throw new Error("No live price under the Paper trade heading");
+  const a = Math.round(m.head - 57 - 18), z = Math.round(Math.max(a, m.priceBottom + 16 - WIN.height));   // heading first, then down to the price row
+  await film(p, "compete", 2.8, (t) => p.evaluate((y) => scrollTo(0, y), seg(t, 0.6, 1.9, a, z)));
   await ctx.close(); }
 
 // 3. Check: on-chain quests this public wallet already meets. No address, no amounts, no Proof sheet.

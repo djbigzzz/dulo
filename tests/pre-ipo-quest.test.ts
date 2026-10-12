@@ -229,6 +229,7 @@ describe("rule hints follow the Play's asset source", () => {
 
 describe("every word about PreStocks in the docs", () => {
   const README = read("README.md");
+  const GUIDE = read("docs/HOW-IT-WORKS.md");
   const SUBMISSION = read("docs/SUBMISSION.md");
   const HANDOFF = read("docs/HANDOFF.md");
   const BRIEF = read("CLAUDE.md");
@@ -246,6 +247,7 @@ describe("every word about PreStocks in the docs", () => {
   it("no doc calls a pre-IPO token a share, equity or stock, or the mark-to-pool gap a discount", () => {
     const docs: Array<[string, string]> = [
       ["README.md", README],
+      ["docs/HOW-IT-WORKS.md", GUIDE],
       ["docs/SUBMISSION.md", SUBMISSION],
       ["docs/HANDOFF.md", HANDOFF],
       ["CLAUDE.md", BRIEF],
@@ -293,17 +295,17 @@ describe("every word about PreStocks in the docs", () => {
     expect(BRIEF).toMatch(/^- PreStocks[^\n]*pre-IPO token/m);
   });
 
-  it("README: the judging row, the Why Solana paragraph, the quest row, the Partner row and the limitation", () => {
+  it("README: the judging row and Why Solana; HOW-IT-WORKS: the quest row, the Partner row and the limitation", () => {
     const judging = section(README, "## Judging criteria");
     expect(judging).toMatch(/\| \*\*Why Solana\*\* \|[^\n]*PreStocks[^\n]*same interfaces/);
     const why = section(README, "## Why Solana");
     expect(why).toMatch(/PreStocks[^\n]*(zero|no) extra RPC call/);
     expect(why).toMatch(/pre-IPO token/);
-    const quests = section(README, "### 3. Quests");
+    const quests = section(GUIDE, "### 3. Quests");
     expect(quests).toMatch(/^\| Pre-IPO Position \| `hold_any` \|[^\n]*pre-IPO token[^\n]*\| 100 \| +\|$/m);
-    const partners = section(README, "## Partners");
+    const partners = section(GUIDE, "## Partners");
     expect(partners).toMatch(/^\| PreStocks \| Quests live \|[^\n]*pre-IPO token/m);
-    const limits = section(README, "## Known limitations");
+    const limits = section(GUIDE, "## Known limitations");
     const bullet = limits.split(/\r?\n/).find((l) => /PreStocks/.test(l))!;
     expect(bullet).toBeDefined();
     for (const needle of [/thin/i, /Jupiter/, /mark/i, /not a (tradeable|tradable) quote/i]) expect(bullet).toMatch(needle);
